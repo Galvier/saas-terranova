@@ -8,9 +8,11 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import AppLogo from '@/components/AppLogo';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LocationState {
   email?: string;
+  from?: string;
 }
 
 const Login = () => {
@@ -22,7 +24,7 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  // Obter email da navegação (caso venha do primeiro acesso)
+  // Get email from navigation (if coming from first access)
   useEffect(() => {
     const state = location.state as LocationState;
     if (state?.email) {
@@ -32,35 +34,55 @@ const Login = () => {
         description: "Use as credenciais criadas para fazer login",
       });
     }
-  }, [location.state, toast]);
+    
+    // Check if user is already logged in
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // If already authenticated, redirect to dashboard
+        navigate('/dashboard');
+      }
+    };
+    
+    checkSession();
+  }, [location.state, toast, navigate]);
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulating authentication
-    setTimeout(() => {
-      // For demo purposes, any login works
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) throw error;
+      
       setIsLoading(false);
       
-      if (email && password.length >= 6) {
-        toast({
-          title: "Login realizado com sucesso",
-          description: "Bem-vindo ao Business Manager"
-        });
-        navigate('/dashboard');
-      } else {
-        toast({
-          title: "Erro no login",
-          description: "Por favor, verifique suas credenciais",
-          variant: "destructive"
-        });
-      }
-    }, 1000);
+      // Get the redirect location or default to dashboard
+      const state = location.state as LocationState;
+      const redirectTo = state?.from || '/dashboard';
+      
+      // Create shallow navigation to prevent back button returning to login
+      navigate(redirectTo, { replace: true });
+      
+    } catch (error) {
+      setIsLoading(false);
+      
+      toast({
+        title: "Erro no login",
+        description: error instanceof Error 
+          ? error.message 
+          : "Por favor, verifique suas credenciais",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

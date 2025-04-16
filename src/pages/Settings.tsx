@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -26,12 +25,14 @@ import {
   Link, 
   Database 
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Settings = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [theme, setTheme] = useState('light');
   const [density, setDensity] = useState('default');
+  const navigate = useNavigate();
   
   // Notification states
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -66,6 +67,10 @@ const Settings = () => {
       title: "Restauração de dados",
       description: "Selecione um arquivo de backup para restaurar os dados."
     });
+  };
+  
+  const handleDiagnostic = () => {
+    navigate('/diagnostico');
   };
   
   return (
@@ -452,6 +457,38 @@ const Settings = () => {
                         <Button className="w-full" variant="outline" onClick={handleRestoreData}>
                           <UploadCloud className="mr-2 h-4 w-4" />
                           Restaurar Backup
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-md">Diagnóstico do Sistema</CardTitle>
+                        <CardDescription>
+                          Verifique a conexão com o banco de dados
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button className="w-full" variant="secondary" onClick={handleDiagnostic}>
+                          <Database className="mr-2 h-4 w-4" />
+                          Verificar Conexão
+                        </Button>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-md">Configurações Avançadas</CardTitle>
+                        <CardDescription>
+                          Opções avançadas de manutenção
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button className="w-full" variant="outline">
+                          <Settings2 className="mr-2 h-4 w-4" />
+                          Opções Avançadas
                         </Button>
                       </CardContent>
                     </Card>

@@ -11,6 +11,7 @@ import Departments from "./pages/Departments";
 import Managers from "./pages/Managers";
 import Metrics from "./pages/Metrics";
 import Settings from "./pages/Settings";
+import Diagnostic from "./pages/Diagnostic";
 import NotFound from "./pages/NotFound";
 import AppLayout from "./layouts/AppLayout";
 
@@ -33,6 +34,8 @@ const App = () => (
             <Route path="/managers" element={<Managers />} />
             <Route path="/metrics" element={<Metrics />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/diagnostico" element={<Diagnostic />} />
+            <Route path="/admin/diagnostico" element={<Diagnostic />} />
           </Route>
           
           <Route path="*" element={<NotFound />} />

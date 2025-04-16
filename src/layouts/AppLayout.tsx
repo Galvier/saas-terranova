@@ -1,32 +1,62 @@
 
 import React, { useState, useEffect } from 'react';
-import AppSidebar from '@/components/AppSidebar';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import AppSidebar from '@/components/AppSidebar';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const AppLayout = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Simulação de autenticação
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
-  // Verificar autenticação (simulação)
+  // Check authentication on load and set up auth listener
   useEffect(() => {
-    // Em uma implementação real, verificaria o token de autenticação
-    const checkAuth = () => {
-      // Simulação: usuário autenticado
-      const hasToken = localStorage.getItem('auth_token');
-      setIsAuthenticated(!!hasToken);
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        const hasSession = !!session;
+        setIsAuthenticated(hasSession);
+        
+        if (event === 'SIGNED_IN') {
+          toast({
+            title: "Login realizado com sucesso",
+            description: "Bem-vindo ao Business Manager"
+          });
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          toast({
+            title: "Desconectado",
+            description: "Sessão encerrada com sucesso"
+          });
+          navigate('/login');
+        }
+      }
+    );
+
+    // Check for existing session
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
       
-      if (!hasToken) {
+      if (!session) {
         navigate('/login');
       }
     };
-    
-    checkAuth();
-  }, [navigate]);
+
+    checkSession();
+
+    // Clean up subscription
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
   
-  // Simular carregamento ao mudar de página
+  // Simulate loading when changing routes
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {

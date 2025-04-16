@@ -1,506 +1,291 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import PageHeader from '@/components/PageHeader';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import PageHeader from '@/components/PageHeader';
+import { ArrowLeft, Loader2, Save, User } from 'lucide-react';
+import { Manager, ManagerStatus } from '@/types/manager';
 import CredentialsSection from '@/components/managers/CredentialsSection';
 
-// Tipos para gestores
-interface Manager {
-  id: number;
-  name: string;
-  email: string;
-  department: string;
-  role: string;
-  status: 'active' | 'inactive';
-}
-
-// Simulated data
-const initialManagers: Manager[] = [
-  { id: 1, name: 'Carlos Oliveira', email: 'carlos@empresa.com', department: 'Vendas', role: 'Gestor', status: 'active' },
-  { id: 2, name: 'Ana Silva', email: 'ana@empresa.com', department: 'Marketing', role: 'Gestora', status: 'active' },
-  { id: 3, name: 'Roberto Santos', email: 'roberto@empresa.com', department: 'Financeiro', role: 'Gestor', status: 'active' },
-  { id: 4, name: 'Juliana Martins', email: 'juliana@empresa.com', department: 'RH', role: 'Coordenadora', status: 'active' },
-  { id: 5, name: 'Fernando Costa', email: 'fernando@empresa.com', department: 'TI', role: 'Diretor', status: 'inactive' },
-];
-
-const departmentOptions = [
-  'Vendas', 'Marketing', 'Financeiro', 'RH', 'TI', 'Operações', 'Logística', 'Jurídico'
-];
-
-const roleOptions = [
-  'Diretor', 'Gerente', 'Gestor', 'Coordenador', 'Supervisor'
-];
-
-const Managers = () => {
-  const [managers, setManagers] = useState<Manager[]>(initialManagers);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [managerToDelete, setManagerToDelete] = useState<Manager | null>(null);
-  const [currentManager, setCurrentManager] = useState<Manager>({
-    id: 0,
-    name: '',
-    email: '',
-    department: '',
-    role: '',
-    status: 'active'
-  });
-  
-  // Credenciais
-  const [hasCredentials, setHasCredentials] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [accessLevel, setAccessLevel] = useState('manager');
-  
+const ManagersUpdate = () => {
+  const { id } = useParams();
+  const isEditing = id !== 'new';
+  const navigate = useNavigate();
   const { toast } = useToast();
-
-  const resetForm = () => {
-    setCurrentManager({
-      id: 0,
-      name: '',
-      email: '',
-      department: '',
-      role: '',
-      status: 'active'
-    });
-    setHasCredentials(false);
-    setPassword('');
-    setConfirmPassword('');
-    setAccessLevel('manager');
-    setEditMode(false);
-  };
-
-  const openAddDialog = () => {
-    resetForm();
-    setIsDialogOpen(true);
-  };
-
-  const openEditDialog = (manager: Manager) => {
-    setCurrentManager(manager);
-    setEditMode(true);
-    setIsDialogOpen(true);
-  };
-
-  const openDeleteDialog = (manager: Manager) => {
-    setManagerToDelete(manager);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const validateCredentials = () => {
-    if (!hasCredentials) return true;
-    
-    if (password.length < 8) {
-      toast({
-        title: "Senha muito curta",
-        description: "A senha deve ter pelo menos 8 caracteres",
-        variant: "destructive"
-      });
-      return false;
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Form state
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [department, setDepartment] = useState('');
+  const [role, setRole] = useState('');
+  const [status, setStatus] = useState<ManagerStatus>('active');
+  
+  // Available departments (in a real app, these would come from an API)
+  const departments = [
+    { id: 1, name: 'Vendas' },
+    { id: 2, name: 'Marketing' },
+    { id: 3, name: 'Finanças' },
+    { id: 4, name: 'Operações' },
+    { id: 5, name: 'Recursos Humanos' },
+    { id: 6, name: 'Tecnologia' },
+  ];
+  
+  // Fetch manager data for editing
+  useEffect(() => {
+    if (isEditing) {
+      setIsLoading(true);
+      
+      // In a real app, this would be an API call
+      setTimeout(() => {
+        // Dummy data based on id
+        const managers: Manager[] = [
+          {
+            id: 1,
+            name: 'João Silva',
+            email: 'joao.silva@empresa.com',
+            department: 'Vendas',
+            role: 'Gerente Regional',
+            status: 'active'
+          },
+          {
+            id: 2,
+            name: 'Maria Oliveira',
+            email: 'maria.oliveira@empresa.com',
+            department: 'Marketing',
+            role: 'Diretora de Marketing',
+            status: 'active'
+          },
+          {
+            id: 3,
+            name: 'Carlos Santos',
+            email: 'carlos.santos@empresa.com',
+            department: 'Finanças',
+            role: 'Controller',
+            status: 'inactive'
+          }
+        ];
+        
+        const manager = managers.find(m => m.id === parseInt(id as string));
+        
+        if (manager) {
+          setName(manager.name);
+          setEmail(manager.email);
+          setDepartment(manager.department);
+          setRole(manager.role);
+          setStatus(manager.status);
+        } else {
+          toast({
+            title: "Gestor não encontrado",
+            description: "Não foi possível encontrar os dados do gestor.",
+            variant: "destructive"
+          });
+          navigate('/managers');
+        }
+        
+        setIsLoading(false);
+      }, 1000);
     }
-    
-    if (password !== confirmPassword) {
-      toast({
-        title: "Senhas não conferem",
-        description: "A senha e a confirmação precisam ser idênticas",
-        variant: "destructive"
-      });
-      return false;
-    }
-    
-    return true;
-  };
-
+  }, [id, isEditing, navigate, toast]);
+  
+  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     
-    // Validar campos básicos
-    if (!currentManager.name || !currentManager.email || !currentManager.department || !currentManager.role) {
+    // Validate form
+    if (!name || !email || !department || !role) {
       toast({
-        title: "Campos incompletos",
-        description: "Preencha todos os campos obrigatórios",
+        title: "Formulário incompleto",
+        description: "Por favor, preencha todos os campos obrigatórios.",
         variant: "destructive"
       });
+      setIsSaving(false);
       return;
     }
     
-    // Validar credenciais
-    if (!validateCredentials()) return;
-    
-    setIsProcessing(true);
-    
-    // Simular criação de credenciais no Supabase
-    const simulateSupabaseAuth = () => {
-      return new Promise<void>((resolve) => {
-        // Aqui seria a chamada para supabase.auth.signUp() ou atualização
-        setTimeout(() => {
-          console.log("Credenciais criadas/atualizadas:", {
-            email: currentManager.email,
-            password: password ? "*********" : "(sem alteração)",
-            accessLevel
-          });
-          resolve();
-        }, 1000);
-      });
-    };
-    
-    // Simulate API call delay
-    setTimeout(async () => {
-      // Criar credenciais se necessário
-      if (hasCredentials) {
-        try {
-          await simulateSupabaseAuth();
-        } catch (error) {
-          setIsProcessing(false);
-          toast({
-            title: "Erro nas credenciais",
-            description: "Não foi possível criar/atualizar as credenciais",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
-      
-      if (editMode) {
-        // Update existing manager
-        const updatedManagers = managers.map(manager => 
-          manager.id === currentManager.id ? currentManager : manager
-        );
-        setManagers(updatedManagers);
-        
-        toast({
-          title: "Gestor atualizado",
-          description: `Dados de ${currentManager.name} foram atualizados com sucesso`,
-        });
-        
-        if (hasCredentials) {
-          toast({
-            title: "Credenciais atualizadas",
-            description: "A senha foi alterada com sucesso",
-          });
-        }
-      } else {
-        // Add new manager
-        const id = managers.length > 0 ? Math.max(...managers.map(m => m.id)) + 1 : 1;
-        const managerToAdd = {
-          ...currentManager,
-          id
-        };
-        
-        setManagers([...managers, managerToAdd]);
-        
-        toast({
-          title: "Gestor adicionado",
-          description: `${currentManager.name} foi adicionado com sucesso`,
-        });
-        
-        if (hasCredentials) {
-          toast({
-            title: "Credenciais criadas",
-            description: "Acesso ao sistema configurado com sucesso",
-          });
-        }
-      }
-      
-      setIsProcessing(false);
-      setIsDialogOpen(false);
-      resetForm();
-    }, 1000);
-  };
-
-  const handleDeleteManager = () => {
-    if (!managerToDelete) return;
-    
-    setIsProcessing(true);
-    
-    // Simulate API call delay
+    // In a real app, this would be an API call
     setTimeout(() => {
-      const updatedManagers = managers.filter(manager => manager.id !== managerToDelete.id);
-      setManagers(updatedManagers);
+      // Simulate success
+      setIsSaving(false);
       
       toast({
-        title: "Gestor removido",
-        description: `${managerToDelete.name} foi removido com sucesso`,
+        title: isEditing ? "Gestor atualizado" : "Gestor criado",
+        description: isEditing
+          ? `As informações de ${name} foram atualizadas com sucesso.`
+          : `${name} foi adicionado(a) como novo gestor.`
       });
       
-      setIsProcessing(false);
-      setIsDeleteDialogOpen(false);
-      setManagerToDelete(null);
-    }, 1000);
+      navigate('/managers');
+    }, 1500);
   };
-
-  const toggleStatus = (id: number) => {
-    const updatedManagers = managers.map(manager => {
-      if (manager.id === id) {
-        return { 
-          ...manager, 
-          status: manager.status === 'active' ? 'inactive' : 'active' 
-        };
-      }
-      return manager;
-    });
-    
-    setManagers(updatedManagers);
-    
-    const manager = managers.find(m => m.id === id);
-    const newStatus = manager?.status === 'active' ? 'inactive' : 'active';
-    
-    toast({
-      title: `Status atualizado`,
-      description: `${manager?.name} agora está ${newStatus === 'active' ? 'ativo' : 'inativo'}`,
-    });
+  
+  // Go back to managers list
+  const handleCancel = () => {
+    navigate('/managers');
   };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
+  
   return (
-    <div className="animate-fade-in">
-      <PageHeader title="Gestores" subtitle="Gerencie os gestores da empresa" />
+    <div className="animate-fade-in space-y-6">
+      <PageHeader 
+        title={isEditing ? "Editar Gestor" : "Novo Gestor"} 
+        subtitle={isEditing ? "Atualize as informações do gestor" : "Adicione um novo gestor ao sistema"}
+        backButton={
+          <Button variant="outline" size="sm" onClick={handleCancel}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar
+          </Button>
+        }
+      />
       
-      <div className="flex justify-end mb-6">
-        <Button 
-          className="flex items-center gap-2" 
-          onClick={openAddDialog}
-        >
-          <Plus className="h-4 w-4" />
-          Novo Gestor
-        </Button>
-      </div>
-      
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Departamento</TableHead>
-              <TableHead>Cargo</TableHead>
-              <TableHead className="text-center">Status</TableHead>
-              <TableHead className="w-[100px] text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {managers.map((manager) => (
-              <TableRow key={manager.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback>{getInitials(manager.name)}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{manager.name}</span>
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground">Carregando informações...</span>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-10 w-10 text-primary" />
                   </div>
-                </TableCell>
-                <TableCell>{manager.email}</TableCell>
-                <TableCell>{manager.department}</TableCell>
-                <TableCell>{manager.role}</TableCell>
-                <TableCell className="text-center">
-                  <Badge 
-                    variant={manager.status === 'active' ? 'default' : 'secondary'}
-                    className="cursor-pointer"
-                    onClick={() => toggleStatus(manager.id)}
-                  >
-                    {manager.status === 'active' ? 'Ativo' : 'Inativo'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => openEditDialog(manager)}
-                      className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => openDeleteDialog(manager)}
-                      className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div>
+                    <h3 className="text-lg font-medium">Informações Pessoais</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Dados básicos do gestor no sistema
+                    </p>
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      
-      {/* Dialog para adicionar/editar gestor */}
-      <Dialog open={isDialogOpen} onOpenChange={(open) => {
-        if (!open) resetForm();
-        setIsDialogOpen(open);
-      }}>
-        <DialogContent className="max-w-md sm:max-w-lg">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>{editMode ? 'Editar Gestor' : 'Adicionar Gestor'}</DialogTitle>
-              <DialogDescription>
-                {editMode 
-                  ? 'Edite as informações do gestor abaixo.' 
-                  : 'Adicione um novo gestor à empresa.'
-                }
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-1">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome Completo</Label>
-                <Input 
-                  id="name" 
-                  value={currentManager.name}
-                  onChange={e => setCurrentManager({...currentManager, name: e.target.value})}
-                  required
-                />
+                </div>
+                
+                <Separator className="my-4" />
+                
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome completo</Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Nome do gestor"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="email@empresa.com"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Departamento</Label>
+                    <Select
+                      value={department}
+                      onValueChange={setDepartment}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um departamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.name}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Função</Label>
+                    <Input
+                      id="role"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      placeholder="Cargo ou função"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={status}
+                      onValueChange={(value) => setStatus(value as ManagerStatus)}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Ativo</SelectItem>
+                        <SelectItem value="inactive">Inativo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email"
-                  value={currentManager.email}
-                  onChange={e => setCurrentManager({...currentManager, email: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="department">Departamento</Label>
-                <Select 
-                  value={currentManager.department}
-                  onValueChange={value => setCurrentManager({...currentManager, department: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um departamento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departmentOptions.map(dept => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Cargo</Label>
-                <Select 
-                  value={currentManager.role}
-                  onValueChange={value => setCurrentManager({...currentManager, role: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um cargo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roleOptions.map(role => (
-                      <SelectItem key={role} value={role}>{role}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select 
-                  value={currentManager.status}
-                  onValueChange={value => setCurrentManager({
-                    ...currentManager, 
-                    status: value as 'active' | 'inactive'
-                  })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="inactive">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Seção de credenciais */}
-              <CredentialsSection 
-                hasCredentials={hasCredentials}
-                setHasCredentials={setHasCredentials}
-                email={currentManager.email}
-                password={password}
-                confirmPassword={confirmPassword}
-                accessLevel={accessLevel}
-                setPassword={setPassword}
-                setConfirmPassword={setConfirmPassword}
-                setAccessLevel={setAccessLevel}
-                isEdit={editMode}
-              />
-            </div>
-            <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setIsDialogOpen(false)}
-                disabled={isProcessing}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isProcessing}>
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {editMode ? 'Atualizando...' : 'Salvando...'}
-                  </>
-                ) : (
-                  <>{editMode ? 'Atualizar' : 'Salvar'}</>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Dialog de confirmação para exclusão */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja remover <strong>{managerToDelete?.name}</strong>? 
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteManager}
-              disabled={isProcessing}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            </CardContent>
+          </Card>
+          
+          {/* Credentials Section - For managing user credentials */}
+          <CredentialsSection isEditing={isEditing} />
+          
+          <div className="flex justify-end gap-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleCancel}
             >
-              {isProcessing ? (
+              Cancelar
+            </Button>
+            <Button 
+              type="submit"
+              disabled={isSaving}
+            >
+              {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Excluindo...
+                  {isEditing ? 'Salvando...' : 'Criando...'}
                 </>
               ) : (
-                <>Excluir</>
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isEditing ? 'Salvar Alterações' : 'Criar Gestor'}
+                </>
               )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   );
 };
 
-export default Managers;
+export default ManagersUpdate;
