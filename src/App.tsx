@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Departments from "./pages/Departments";
 import Managers from "./pages/Managers";
 import Metrics from "./pages/Metrics";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import AppLayout from "./layouts/AppLayout";
 
@@ -29,7 +30,7 @@ const App = () => (
             <Route path="/departments" element={<Departments />} />
             <Route path="/managers" element={<Managers />} />
             <Route path="/metrics" element={<Metrics />} />
-            <Route path="/settings" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
           
           <Route path="*" element={<NotFound />} />
