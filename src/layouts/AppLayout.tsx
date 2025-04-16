@@ -1,12 +1,30 @@
 
 import React, { useState, useEffect } from 'react';
 import AppSidebar from '@/components/AppSidebar';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 const AppLayout = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Simulação de autenticação
   const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Verificar autenticação (simulação)
+  useEffect(() => {
+    // Em uma implementação real, verificaria o token de autenticação
+    const checkAuth = () => {
+      // Simulação: usuário autenticado
+      const hasToken = localStorage.getItem('auth_token');
+      setIsAuthenticated(!!hasToken);
+      
+      if (!hasToken) {
+        navigate('/login');
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
   
   // Simular carregamento ao mudar de página
   useEffect(() => {
