@@ -99,7 +99,7 @@ const Metrics = () => {
   const [newMetric, setNewMetric] = useState({
     name: '',
     description: '',
-    target: '',
+    target: 0, // Changed from '' to 0 to match the expected type
     unit: '',
     department: '',
     frequency: 'monthly',
@@ -130,7 +130,7 @@ const Metrics = () => {
     setNewMetric({
       name: '',
       description: '',
-      target: '',
+      target: 0, // Changed from '' to 0 to match the expected type
       unit: '',
       department: '',
       frequency: 'monthly',
@@ -216,7 +216,7 @@ const Metrics = () => {
                       id="target" 
                       type="number"
                       value={newMetric.target}
-                      onChange={e => setNewMetric({...newMetric, target: e.target.value})}
+                      onChange={e => setNewMetric({...newMetric, target: Number(e.target.value)})}
                       required
                     />
                   </div>
