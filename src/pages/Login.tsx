@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import AppLogo from '@/components/AppLogo';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { authService } from '@/services/authService';
+import { testSupabaseConnection } from '@/integrations/supabase/supabaseClient';
 
 interface LocationState {
   email?: string;
@@ -20,11 +21,61 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null);
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
-  // Get email from navigation (if coming from first access)
+  // Configuração inicial - verifica conexão e sessão
+  useEffect(() => {
+    const initialize = async () => {
+      setIsCheckingConnection(true);
+      
+      try {
+        // Verifica a conexão com o Supabase
+        const connected = await testSupabaseConnection();
+        setConnectionStatus(connected);
+        
+        if (!connected) {
+          toast({
+            title: "Erro de conexão",
+            description: "Não foi possível conectar ao banco de dados. Tente novamente mais tarde.",
+            variant: "destructive"
+          });
+          setIsCheckingConnection(false);
+          return;
+        }
+        
+        // Verifica se há uma sessão ativa
+        const { session } = await authService.getSession();
+        
+        if (session) {
+          // Se já temos uma sessão, redirecionamos para o dashboard
+          console.log('Sessão ativa encontrada, redirecionando...');
+          navigate('/dashboard');
+          return;
+        }
+        
+        // Finaliza a verificação
+        setIsCheckingConnection(false);
+      } catch (error) {
+        console.error('Erro ao inicializar:', error);
+        setConnectionStatus(false);
+        setIsCheckingConnection(false);
+        toast({
+          title: "Erro de inicialização",
+          description: "Falha ao conectar com o servidor. Verifique sua conexão.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    initialize();
+  }, [navigate, toast]);
+
+  // Recupera email da navegação (se vindo de primeiro acesso)
   useEffect(() => {
     const state = location.state as LocationState;
     if (state?.email) {
@@ -34,18 +85,7 @@ const Login = () => {
         description: "Use as credenciais criadas para fazer login",
       });
     }
-    
-    // Check if user is already logged in
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // If already authenticated, redirect to dashboard
-        navigate('/dashboard');
-      }
-    };
-    
-    checkSession();
-  }, [location.state, toast, navigate]);
+  }, [location.state, toast]);
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
@@ -56,34 +96,68 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Tenta fazer login usando o serviço de autenticação
+      const result = await authService.loginUser({
         email,
         password
       });
       
-      if (error) throw error;
+      if (result.status === 'error') {
+        setIsLoading(false);
+        toast({
+          title: "Erro no login",
+          description: result.message,
+          variant: "destructive"
+        });
+        return;
+      }
       
       setIsLoading(false);
       
-      // Get the redirect location or default to dashboard
+      // Prepara redirecionamento
       const state = location.state as LocationState;
       const redirectTo = state?.from || '/dashboard';
       
-      // Create shallow navigation to prevent back button returning to login
+      // Cria navegação shallow para prevenir botão de voltar retornando ao login
       navigate(redirectTo, { replace: true });
       
-    } catch (error) {
+    } catch (error: any) {
       setIsLoading(false);
       
       toast({
         title: "Erro no login",
-        description: error instanceof Error 
-          ? error.message 
-          : "Por favor, verifique suas credenciais",
+        description: error.message || "Por favor, verifique suas credenciais",
         variant: "destructive"
       });
     }
   };
+
+  if (isCheckingConnection) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Verificando conexão...</p>
+      </div>
+    </div>;
+  }
+
+  if (connectionStatus === false) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center max-w-md text-center p-4">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <h2 className="text-xl font-bold mb-2">Erro de conexão</h2>
+        <p className="text-muted-foreground mb-6">
+          Não foi possível conectar ao banco de dados. Verifique sua conexão e tente novamente.
+        </p>
+        <Button 
+          onClick={() => window.location.reload()}
+          variant="outline"
+        >
+          Tentar novamente
+        </Button>
+      </div>
+    </div>;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
@@ -118,6 +192,13 @@ const Login = () => {
                   <a 
                     href="#" 
                     className="text-sm text-primary underline-offset-4 hover:underline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toast({
+                        title: "Recuperação de senha",
+                        description: "Funcionalidade em desenvolvimento"
+                      });
+                    }}
                   >
                     Esqueceu a senha?
                   </a>

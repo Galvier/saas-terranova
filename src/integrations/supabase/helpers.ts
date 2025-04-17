@@ -1,17 +1,15 @@
 
 // Helper functions for Supabase client
-import { supabase } from "./client";
+import { supabase } from "./supabaseClient";
 
 // Safe accessor for Supabase URL (since supabaseUrl is protected)
 export const getSupabaseUrl = (): string => {
-  // Hardcoded URL as a fallback - this matches the one in client.ts
   return "https://zghthguqsravpcvrgahe.supabase.co";
 };
 
 // Helper function to call RPC functions with proper typing
 export async function callRPC<T>(functionName: string, params?: Record<string, any>): Promise<{ data: T | null; error: any }> {
   try {
-    // Use a more comprehensive type assertion to bypass TypeScript error
     // @ts-ignore - Ignore TypeScript's complaints about the function name
     const { data, error } = await supabase.rpc(functionName, params);
     return { data, error };
@@ -34,4 +32,31 @@ export interface Manager {
 export interface TableCheckResult {
   exists: boolean;
   count: number;
+}
+
+// Interface para resultados de operações CRUD
+export interface CrudResult<T> {
+  data: T | null;
+  error: any;
+  status: 'success' | 'error';
+  message: string;
+}
+
+// Função para padronizar resultados de operações
+export function formatCrudResult<T>(data: T | null, error: any): CrudResult<T> {
+  if (error) {
+    return {
+      data: null,
+      error,
+      status: 'error',
+      message: error.message || 'Ocorreu um erro na operação'
+    };
+  }
+  
+  return {
+    data,
+    error: null,
+    status: 'success',
+    message: 'Operação realizada com sucesso'
+  };
 }

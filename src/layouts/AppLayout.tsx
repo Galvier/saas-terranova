@@ -3,60 +3,24 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import AppSidebar from '@/components/AppSidebar';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const AppLayout = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
-  // Check authentication on load and set up auth listener
+  // Verifica autenticação e redireciona se necessário
   useEffect(() => {
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        const hasSession = !!session;
-        setIsAuthenticated(hasSession);
-        
-        if (event === 'SIGNED_IN') {
-          toast({
-            title: "Login realizado com sucesso",
-            description: "Bem-vindo ao Business Manager"
-          });
-        }
-        
-        if (event === 'SIGNED_OUT') {
-          toast({
-            title: "Desconectado",
-            description: "Sessão encerrada com sucesso"
-          });
-          navigate('/login');
-        }
-      }
-    );
-
-    // Check for existing session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(!!session);
-      
-      if (!session) {
-        navigate('/login');
-      }
-    };
-
-    checkSession();
-
-    // Clean up subscription
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate, toast]);
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login', { 
+        state: { from: location.pathname }
+      });
+    }
+  }, [isAuthenticated, authLoading, navigate, location.pathname]);
   
-  // Simulate loading when changing routes
+  // Simula carregamento ao mudar de rota
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
@@ -65,6 +29,23 @@ const AppLayout = () => {
     
     return () => clearTimeout(timer);
   }, [location.pathname]);
+  
+  // Se ainda está verificando autenticação, mostra loader
+  if (authLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground animate-pulse">Verificando autenticação...</span>
+        </div>
+      </div>
+    );
+  }
+  
+  // Se não estiver autenticado, não mostra nada (será redirecionado pelo useEffect)
+  if (!isAuthenticated) {
+    return null;
+  }
   
   return (
     <div className="flex h-screen">

@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import AppLogo from '@/components/AppLogo';
 import { Loader2, Check, AlertTriangle, Eye, EyeOff, Shield } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { authService, UserRegistrationData } from '@/services/authService';
+import { testSupabaseConnection } from '@/integrations/supabase/supabaseClient';
 
 const FirstAccess = () => {
   const [name, setName] = useState('');
@@ -20,29 +22,63 @@ const FirstAccess = () => {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [hasUsers, setHasUsers] = useState(false);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Simulação da verificação se já existem usuários
+  // Verifica a conexão com o Supabase e se já existem usuários
   useEffect(() => {
     const checkForExistingUsers = async () => {
-      // Em uma implementação real, isso verificaria o Supabase
-      // Aqui vamos simular que não existem usuários inicialmente
-      setTimeout(() => {
+      setIsCheckingConnection(true);
+      
+      try {
+        // Primeiro, testa a conexão com o Supabase
+        const connected = await testSupabaseConnection();
+        setConnectionStatus(connected);
+        
+        if (!connected) {
+          toast({
+            title: "Erro de conexão",
+            description: "Não foi possível conectar ao banco de dados. Tente novamente mais tarde.",
+            variant: "destructive"
+          });
+          setIsCheckingConnection(false);
+          return;
+        }
+        
+        // Verifica se já existem usuários
+        // Isso será feito através da tabela de perfis no public schema
+        const { data: { session } } = await authService.getSession();
+        if (session) {
+          // Se já temos uma sessão, redirecionamos para o dashboard
+          toast({
+            title: "Sessão ativa",
+            description: "Você já está logado. Redirecionando para o dashboard."
+          });
+          navigate('/dashboard');
+          return;
+        }
+        
+        // Em uma implementação real, verificaríamos se existem usuários no banco
+        // Por simplicidade, vamos assumir que não existem
         setHasUsers(false);
-      }, 1000);
+        setIsCheckingConnection(false);
+      } catch (error) {
+        console.error("Erro ao verificar usuários:", error);
+        toast({
+          title: "Erro de conexão",
+          description: "Falha ao verificar o banco de dados. Verifique sua conexão.",
+          variant: "destructive"
+        });
+        setConnectionStatus(false);
+        setIsCheckingConnection(false);
+      }
     };
 
     checkForExistingUsers();
-  }, []);
-
-  // Redirecionamento se já existirem usuários
-  useEffect(() => {
-    if (hasUsers) {
-      navigate('/login');
-    }
-  }, [hasUsers, navigate]);
+  }, [navigate, toast]);
 
   // Cálculo da força da senha
   useEffect(() => {
@@ -84,7 +120,7 @@ const FirstAccess = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validações básicas
@@ -126,12 +162,29 @@ const FirstAccess = () => {
 
     setIsLoading(true);
     
-    // Simulação de criação do usuário inicial com Supabase
-    setTimeout(() => {
-      // Em uma implementação real, isso usaria Supabase
-      // supabase.auth.signUp({ email, password })
-      //  .then(() => supabase.from('users').insert({...}))
+    // Dados para registro do usuário
+    const userData: UserRegistrationData = {
+      name,
+      email,
+      password,
+      role: 'admin' // O primeiro usuário sempre será admin
+    };
+    
+    try {
+      // Chama o serviço de autenticação para registrar o usuário
+      const result = await authService.registerUser(userData);
       
+      if (result.status === 'error') {
+        setIsLoading(false);
+        toast({
+          title: "Erro no cadastro",
+          description: result.message,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Registro bem-sucedido
       setIsLoading(false);
       setSuccessMessage("Administrador inicial criado com sucesso!");
       
@@ -146,12 +199,57 @@ const FirstAccess = () => {
           state: { email: email } // Passa o email para preencher no login
         });
       }, 3000);
-    }, 2000);
+    } catch (error: any) {
+      setIsLoading(false);
+      toast({
+        title: "Erro inesperado",
+        description: error.message || "Ocorreu um erro ao criar o usuário",
+        variant: "destructive"
+      });
+    }
   };
+
+  if (isCheckingConnection) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Verificando conexão com o banco de dados...</p>
+      </div>
+    </div>;
+  }
+
+  if (connectionStatus === false) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center max-w-md text-center p-4">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <h2 className="text-xl font-bold mb-2">Erro de conexão</h2>
+        <p className="text-muted-foreground mb-6">
+          Não foi possível conectar ao banco de dados. Verifique sua conexão e tente novamente.
+        </p>
+        <Button 
+          onClick={() => window.location.reload()}
+          variant="outline"
+        >
+          Tentar novamente
+        </Button>
+      </div>
+    </div>;
+  }
 
   if (hasUsers) {
     return <div className="flex items-center justify-center min-h-screen">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center max-w-md text-center p-4">
+        <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+        <h2 className="text-xl font-bold mb-2">Configuração já realizada</h2>
+        <p className="text-muted-foreground mb-6">
+          O sistema já possui usuários cadastrados. Por favor, acesse a página de login.
+        </p>
+        <Button 
+          onClick={() => navigate('/login')}
+        >
+          Ir para login
+        </Button>
+      </div>
     </div>;
   }
 
