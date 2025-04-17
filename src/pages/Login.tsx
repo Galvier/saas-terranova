@@ -35,10 +35,11 @@ const Login = () => {
       
       try {
         // Verifica a conexão com o Supabase
-        const connected = await testSupabaseConnection();
-        setConnectionStatus(connected);
+        const connectionResult = await testSupabaseConnection();
+        // Fix: properly set the boolean value rather than the whole object
+        setConnectionStatus(connectionResult.success);
         
-        if (!connected) {
+        if (!connectionResult.success) {
           toast({
             title: "Erro de conexão",
             description: "Não foi possível conectar ao banco de dados. Tente novamente mais tarde.",

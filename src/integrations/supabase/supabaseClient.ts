@@ -59,9 +59,16 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
   for (const tableName of tablesToCheck) {
     try {
       console.log(`Checking table: ${tableName}`);
+      
+      // Define the expected return type to fix the TypeScript errors
+      interface TableCheckResult {
+        exists: boolean;
+        count?: number;
+      }
+      
       // Use @ts-ignore to bypass TypeScript's error
       // @ts-ignore
-      const { data, error } = await supabase.rpc('check_table_exists_and_count', {
+      const { data, error } = await supabase.rpc<TableCheckResult>('check_table_exists_and_count', {
         table_name: tableName
       });
       
@@ -71,12 +78,18 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
         continue;
       }
       
-      if (!data || !data.exists) {
+      if (!data) {
         results[tableName] = { exists: false };
         continue;
       }
       
-      results[tableName] = { exists: true, count: data.count };
+      // Type assertion to help TypeScript understand the structure
+      const checkResult = data as unknown as TableCheckResult;
+      
+      results[tableName] = { 
+        exists: checkResult.exists, 
+        count: checkResult.count 
+      };
     } catch (error) {
       console.error(`Error checking table ${tableName}:`, error);
       results[tableName] = { 
