@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { getSupabaseUrl, callRPC, TableCheckResult } from "@/integrations/supabase/helpers";
+import { getSupabaseUrl } from "@/integrations/supabase/helpers";
 
 export interface DiagnosticResult {
   status: "success" | "error";
@@ -29,8 +29,12 @@ export async function testConnection(): Promise<ConnectionInfo> {
   let connected = false;
 
   try {
-    // Simple query to test connection
-    const { data, error } = await callRPC<string>('postgres_version');
+    // Simple query to test connection rather than using postgres_version
+    // @ts-ignore - profiles table should exist in most Supabase projects
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('count')
+      .limit(1);
     
     if (error) throw error;
     
@@ -55,10 +59,12 @@ export async function testConnection(): Promise<ConnectionInfo> {
 // Check if a table exists
 export async function checkTable(tableName: string): Promise<TableInfo> {
   try {
-    // Create a SQL query to check if table exists and count rows
-    const { data, error } = await callRPC<TableCheckResult>('check_table_exists_and_count', {
-      table_name: tableName
-    });
+    // Direct query approach to check if table exists
+    // @ts-ignore - Might not be in type definition
+    const { error } = await supabase
+      .from(tableName)
+      .select('count')
+      .limit(0);
 
     if (error) {
       return {
@@ -69,29 +75,25 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
       };
     }
 
-    // Handle the response based on the RPC result structure
-    if (!data) {
-      return {
-        name: tableName,
-        recordCount: null,
-        status: "error",
-        message: "No data returned from check"
-      };
-    }
+    // If no error, table exists. Now count records
+    // @ts-ignore
+    const { count, error: countError } = await supabase
+      .from(tableName)
+      .select('*', { count: 'exact', head: true });
 
-    if (!data.exists) {
+    if (countError) {
       return {
         name: tableName,
         recordCount: null,
         status: "error",
-        message: "Table does not exist"
+        message: countError.message
       };
     }
 
     return {
       name: tableName,
-      recordCount: data.count,
-      status: data.count === 0 ? "empty" : "ok"
+      recordCount: count,
+      status: count === 0 ? "empty" : "ok"
     };
   } catch (error) {
     console.error(`Error checking table ${tableName}:`, error);
@@ -109,13 +111,14 @@ export async function testWriteOperation(): Promise<DiagnosticResult> {
   const testId = `test-${Date.now()}`;
   
   try {
-    // Create diagnostic table if it doesn't exist
-    await callRPC('create_diagnostic_table_if_not_exists');
-    
-    // Use a stored procedure for the test
-    const { data, error } = await callRPC<boolean>('run_diagnostic_write_test', {
-      test_id: testId
-    });
+    // Attempt to write to a diagnostic_tests table (assuming it exists)
+    // @ts-ignore
+    const { error } = await supabase
+      .from('diagnostic_tests')
+      .insert({
+        test_id: testId,
+        test_type: 'connection_test'
+      });
     
     if (error) throw error;
 
