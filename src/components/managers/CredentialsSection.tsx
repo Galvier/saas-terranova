@@ -10,29 +10,29 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
 interface CredentialsSectionProps {
-  hasCredentials: boolean;
-  setHasCredentials: (value: boolean) => void;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  accessLevel: string;
-  setPassword: (value: string) => void;
-  setConfirmPassword: (value: string) => void;
-  setAccessLevel: (value: string) => void;
   isEdit?: boolean;
+  hasCredentials?: boolean;
+  setHasCredentials?: (value: boolean) => void;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  accessLevel?: string;
+  setPassword?: (value: string) => void;
+  setConfirmPassword?: (value: string) => void;
+  setAccessLevel?: (value: string) => void;
 }
 
 const CredentialsSection = ({
-  hasCredentials,
-  setHasCredentials,
-  email,
-  password,
-  confirmPassword,
-  accessLevel,
-  setPassword,
-  setConfirmPassword,
-  setAccessLevel,
-  isEdit = false
+  isEdit = false,
+  hasCredentials = false,
+  setHasCredentials = () => {},
+  email = '',
+  password = '',
+  confirmPassword = '',
+  accessLevel = 'viewer',
+  setPassword = () => {},
+  setConfirmPassword = () => {},
+  setAccessLevel = () => {}
 }: CredentialsSectionProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);

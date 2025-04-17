@@ -35,7 +35,7 @@ export async function testConnection(): Promise<ConnectionInfo> {
     
     connected = true;
     return {
-      url: supabase.getUrl(), // Use getUrl() method instead of accessing protected property
+      url: supabase.supabaseUrl, // Use supabaseUrl property instead of getUrl() method
       responseTime: Math.round(performance.now() - startTime),
       connected,
       timestamp: new Date()
@@ -43,7 +43,7 @@ export async function testConnection(): Promise<ConnectionInfo> {
   } catch (error) {
     console.error('Connection test failed:', error);
     return {
-      url: supabase.getUrl(), // Use getUrl() method instead of accessing protected property
+      url: supabase.supabaseUrl, // Use supabaseUrl property instead of getUrl() method
       responseTime: Math.round(performance.now() - startTime),
       connected: false,
       timestamp: new Date()
@@ -68,7 +68,7 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
       };
     }
 
-    if (!data || !data.exists) {
+    if (data && typeof data === 'object' && 'exists' in data && !data.exists) {
       return {
         name: tableName,
         recordCount: null,
@@ -79,8 +79,8 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
 
     return {
       name: tableName,
-      recordCount: data.count,
-      status: data.count === 0 ? "empty" : "ok"
+      recordCount: data && typeof data === 'object' && 'count' in data ? data.count : 0,
+      status: data && typeof data === 'object' && 'count' in data && data.count === 0 ? "empty" : "ok"
     };
   } catch (error) {
     console.error(`Error checking table ${tableName}:`, error);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -28,14 +27,12 @@ const ManagersUpdate = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [department, setDepartment] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState<ManagerStatus>('active');
   
-  // Available departments (in a real app, these would come from an API)
   const departments = [
     { id: 1, name: 'Vendas' },
     { id: 2, name: 'Marketing' },
@@ -45,14 +42,11 @@ const ManagersUpdate = () => {
     { id: 6, name: 'Tecnologia' },
   ];
   
-  // Fetch manager data for editing
   useEffect(() => {
     if (isEditing) {
       setIsLoading(true);
       
-      // In a real app, this would be an API call
       setTimeout(() => {
-        // Dummy data based on id
         const managers: Manager[] = [
           {
             id: 1,
@@ -102,12 +96,10 @@ const ManagersUpdate = () => {
     }
   }, [id, isEditing, navigate, toast]);
   
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     
-    // Validate form
     if (!name || !email || !department || !role) {
       toast({
         title: "Formulário incompleto",
@@ -118,9 +110,7 @@ const ManagersUpdate = () => {
       return;
     }
     
-    // In a real app, this would be an API call
     setTimeout(() => {
-      // Simulate success
       setIsSaving(false);
       
       toast({
@@ -134,7 +124,6 @@ const ManagersUpdate = () => {
     }, 1500);
   };
   
-  // Go back to managers list
   const handleCancel = () => {
     navigate('/managers');
   };
@@ -254,8 +243,7 @@ const ManagersUpdate = () => {
             </CardContent>
           </Card>
           
-          {/* Credentials Section - For managing user credentials */}
-          <CredentialsSection isEditing={isEditing} />
+          <CredentialsSection isEdit={isEditing} />
           
           <div className="flex justify-end gap-4">
             <Button 

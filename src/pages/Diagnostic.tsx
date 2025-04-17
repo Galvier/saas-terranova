@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,9 +9,8 @@ import PageHeader from '@/components/PageHeader';
 import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDown } from 'lucide-react';
 import { runFullDiagnostic, ConnectionInfo, TableInfo, DiagnosticResult } from '@/utils/supabaseDiagnostic';
 import { supabase } from '@/integrations/supabase/client';
-import { CustomBadge } from '@/components/ui/custom-badge'; // Import our custom badge component
+import { CustomBadge } from '@/components/ui/custom-badge';
 
-// List of essential tables to check
 const ESSENTIAL_TABLES = [
   'users',
   'profiles',
@@ -59,7 +57,6 @@ const Diagnostic = () => {
     }
   };
 
-  // Run diagnostic on component mount
   useEffect(() => {
     runDiagnostic();
   }, []);
@@ -70,7 +67,7 @@ const Diagnostic = () => {
       connection,
       tables,
       writeTest,
-      supabaseUrl: supabase.getUrl() // Use getUrl() method instead of accessing protected property
+      supabaseUrl: supabase.supabaseUrl
     };
     
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
@@ -97,7 +94,6 @@ const Diagnostic = () => {
       />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Connection Status Card */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center">
@@ -152,7 +148,6 @@ const Diagnostic = () => {
           </CardContent>
         </Card>
         
-        {/* Write Test Card */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center">
@@ -207,7 +202,6 @@ const Diagnostic = () => {
           </CardContent>
         </Card>
         
-        {/* Summary Card */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center">
@@ -257,7 +251,6 @@ const Diagnostic = () => {
         </Card>
       </div>
       
-      {/* Tables Status */}
       <Card>
         <CardHeader>
           <CardTitle>Status das Tabelas</CardTitle>
@@ -341,7 +334,6 @@ const Diagnostic = () => {
         </CardFooter>
       </Card>
       
-      {/* Recommendations Section */}
       {tables.some(t => t.status === "error") && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
