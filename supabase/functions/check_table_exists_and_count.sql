@@ -1,25 +1,34 @@
 
--- Function to check if a table exists and count records
+-- Function to check if a table exists and count its rows
 create or replace function check_table_exists_and_count(table_name text)
 returns json as $$
 declare
+  exists_result boolean;
+  count_result integer;
   result json;
-  rec record;
-  cnt int;
 begin
   -- Check if table exists
-  select into rec 1 from information_schema.tables 
-    where table_schema = 'public' and table_name = check_table_exists_and_count.table_name;
+  execute format('
+    SELECT EXISTS (
+      SELECT FROM information_schema.tables 
+      WHERE table_schema = ''public'' 
+      AND table_name = %L
+    )', table_name) 
+  into exists_result;
   
-  if rec is null then
-    result := json_build_object('exists', false, 'count', null);
-    return result;
+  -- Count rows if table exists
+  if exists_result then
+    execute format('SELECT COUNT(*) FROM %I', table_name) into count_result;
+  else
+    count_result := 0;
   end if;
   
-  -- Count records in the table
-  execute format('select count(*) from public.%I', table_name) into cnt;
+  -- Create JSON result
+  select json_build_object(
+    'exists', exists_result,
+    'count', count_result
+  ) into result;
   
-  result := json_build_object('exists', true, 'count', cnt);
   return result;
 end;
 $$ language plpgsql security definer;

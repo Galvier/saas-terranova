@@ -1,8 +1,11 @@
 
--- Stored procedure to check Postgres version
+-- Function to get postgres version
 create or replace function postgres_version()
 returns text as $$
+declare
+  version_info text;
 begin
-  return current_setting('server_version');
+  select version() into version_info;
+  return version_info;
 end;
 $$ language plpgsql security definer;

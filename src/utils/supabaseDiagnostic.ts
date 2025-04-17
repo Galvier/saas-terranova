@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { getSupabaseUrl } from "@/integrations/supabase/helpers";
+import { getSupabaseUrl, callRPC, TableCheckResult } from "@/integrations/supabase/helpers";
 
 export interface DiagnosticResult {
   status: "success" | "error";
@@ -30,7 +30,7 @@ export async function testConnection(): Promise<ConnectionInfo> {
 
   try {
     // Simple query to test connection
-    const { data, error } = await supabase.rpc('postgres_version');
+    const { data, error } = await callRPC<string>('postgres_version');
     
     if (error) throw error;
     
@@ -56,7 +56,7 @@ export async function testConnection(): Promise<ConnectionInfo> {
 export async function checkTable(tableName: string): Promise<TableInfo> {
   try {
     // Create a SQL query to check if table exists and count rows
-    const { data, error } = await supabase.rpc('check_table_exists_and_count', {
+    const { data, error } = await callRPC<TableCheckResult>('check_table_exists_and_count', {
       table_name: tableName
     });
 
@@ -79,10 +79,7 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
       };
     }
 
-    // We expect the RPC to return an object with exists and count properties
-    const result = data as { exists: boolean, count: number };
-    
-    if (!result.exists) {
+    if (!data.exists) {
       return {
         name: tableName,
         recordCount: null,
@@ -93,8 +90,8 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
 
     return {
       name: tableName,
-      recordCount: result.count,
-      status: result.count === 0 ? "empty" : "ok"
+      recordCount: data.count,
+      status: data.count === 0 ? "empty" : "ok"
     };
   } catch (error) {
     console.error(`Error checking table ${tableName}:`, error);
@@ -112,8 +109,11 @@ export async function testWriteOperation(): Promise<DiagnosticResult> {
   const testId = `test-${Date.now()}`;
   
   try {
-    // Use a stored procedure instead of direct table operations
-    const { data, error } = await supabase.rpc('run_diagnostic_write_test', {
+    // Create diagnostic table if it doesn't exist
+    await callRPC('create_diagnostic_table_if_not_exists');
+    
+    // Use a stored procedure for the test
+    const { data, error } = await callRPC<boolean>('run_diagnostic_write_test', {
       test_id: testId
     });
     

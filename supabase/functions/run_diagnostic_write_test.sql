@@ -1,21 +1,17 @@
 
--- Function to run a write test
+-- Function to run diagnostic write test
 create or replace function run_diagnostic_write_test(test_id text)
 returns boolean as $$
+declare
+  result boolean;
 begin
-  -- Create test table if it doesn't exist
-  perform create_diagnostic_table_if_not_exists();
+  -- Simple write test
+  insert into diagnostic_tests (test_id, created_at)
+  values (test_id, now());
   
-  -- Insert test record
-  insert into public._diagnosis_test (id, test_value, created_at)
-  values (test_id, 'test', now());
-  
-  -- Delete test record
-  delete from public._diagnosis_test where id = test_id;
+  -- Clean up
+  delete from diagnostic_tests where test_id = test_id;
   
   return true;
-exception
-  when others then
-    return false;
 end;
 $$ language plpgsql security definer;
