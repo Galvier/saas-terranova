@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +10,7 @@ import PageHeader from '@/components/PageHeader';
 import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDown } from 'lucide-react';
 import { runFullDiagnostic, ConnectionInfo, TableInfo, DiagnosticResult } from '@/utils/supabaseDiagnostic';
 import { supabase } from '@/integrations/supabase/client';
+import { CustomBadge } from '@/components/ui/custom-badge'; // Import our custom badge component
 
 // List of essential tables to check
 const ESSENTIAL_TABLES = [
@@ -70,7 +70,7 @@ const Diagnostic = () => {
       connection,
       tables,
       writeTest,
-      supabaseUrl: supabase.supabaseUrl
+      supabaseUrl: supabase.getUrl() // Use getUrl() method instead of accessing protected property
     };
     
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
@@ -117,7 +117,7 @@ const Diagnostic = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Status:</span>
-                  <Badge 
+                  <CustomBadge 
                     variant={connection.connected ? "success" : "destructive"}
                     className="flex items-center"
                   >
@@ -126,7 +126,7 @@ const Diagnostic = () => {
                     ) : (
                       <><AlertCircle className="mr-1 h-3 w-3" /> Desconectado</>
                     )}
-                  </Badge>
+                  </CustomBadge>
                 </div>
                 
                 <div className="flex justify-between items-center">
@@ -172,7 +172,7 @@ const Diagnostic = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Status:</span>
-                  <Badge 
+                  <CustomBadge 
                     variant={writeTest.status === "success" ? "success" : "destructive"}
                     className="flex items-center"
                   >
@@ -181,7 +181,7 @@ const Diagnostic = () => {
                     ) : (
                       <><AlertCircle className="mr-1 h-3 w-3" /> Falha</>
                     )}
-                  </Badge>
+                  </CustomBadge>
                 </div>
                 
                 <div className="flex justify-between items-center">
@@ -285,7 +285,7 @@ const Diagnostic = () => {
                   <TableRow key={table.name}>
                     <TableCell className="font-medium">{table.name}</TableCell>
                     <TableCell>
-                      <Badge 
+                      <CustomBadge 
                         variant={
                           table.status === "ok" 
                             ? "success" 
@@ -299,7 +299,7 @@ const Diagnostic = () => {
                           : table.status === "empty" 
                             ? "Vazia" 
                             : "Erro"}
-                      </Badge>
+                      </CustomBadge>
                     </TableCell>
                     <TableCell className="text-right">
                       {table.recordCount !== null ? table.recordCount : "N/A"}

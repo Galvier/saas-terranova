@@ -29,13 +29,13 @@ export async function testConnection(): Promise<ConnectionInfo> {
 
   try {
     // Simple query to test connection
-    const { data, error } = await supabase.from('_diagnosis_test').select('count(*)', { count: 'exact', head: true });
+    const { data, error } = await supabase.rpc('postgres_version');
     
     if (error) throw error;
     
     connected = true;
     return {
-      url: supabase.supabaseUrl,
+      url: supabase.getUrl(), // Use getUrl() method instead of accessing protected property
       responseTime: Math.round(performance.now() - startTime),
       connected,
       timestamp: new Date()
@@ -43,7 +43,7 @@ export async function testConnection(): Promise<ConnectionInfo> {
   } catch (error) {
     console.error('Connection test failed:', error);
     return {
-      url: supabase.supabaseUrl,
+      url: supabase.getUrl(), // Use getUrl() method instead of accessing protected property
       responseTime: Math.round(performance.now() - startTime),
       connected: false,
       timestamp: new Date()
@@ -54,10 +54,10 @@ export async function testConnection(): Promise<ConnectionInfo> {
 // Check if a table exists
 export async function checkTable(tableName: string): Promise<TableInfo> {
   try {
-    // Try to get count from the table
-    const { count, error } = await supabase
-      .from(tableName)
-      .select('*', { count: 'exact', head: true });
+    // Create a SQL query to check if table exists and count rows
+    const { data, error } = await supabase.rpc('check_table_exists_and_count', {
+      table_name: tableName
+    });
 
     if (error) {
       return {
@@ -68,10 +68,19 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
       };
     }
 
+    if (!data || !data.exists) {
+      return {
+        name: tableName,
+        recordCount: null,
+        status: "error",
+        message: "Table does not exist"
+      };
+    }
+
     return {
       name: tableName,
-      recordCount: count,
-      status: count === 0 ? "empty" : "ok"
+      recordCount: data.count,
+      status: data.count === 0 ? "empty" : "ok"
     };
   } catch (error) {
     console.error(`Error checking table ${tableName}:`, error);
@@ -89,23 +98,12 @@ export async function testWriteOperation(): Promise<DiagnosticResult> {
   const testId = `test-${Date.now()}`;
   
   try {
-    // First try to create a test table if it doesn't exist
-    await supabase.rpc('create_diagnostic_table_if_not_exists');
+    // Use a stored procedure instead of direct table operations
+    const { data, error } = await supabase.rpc('run_diagnostic_write_test', {
+      test_id: testId
+    });
     
-    // Insert a test record
-    const { error: insertError } = await supabase
-      .from('_diagnosis_test')
-      .insert({ id: testId, test_value: 'test', created_at: new Date().toISOString() });
-
-    if (insertError) throw insertError;
-
-    // Delete the test record
-    const { error: deleteError } = await supabase
-      .from('_diagnosis_test')
-      .delete()
-      .eq('id', testId);
-
-    if (deleteError) throw deleteError;
+    if (error) throw error;
 
     return {
       status: "success",

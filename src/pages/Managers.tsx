@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -27,11 +26,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { Edit, MoreHorizontal, Plus, Search, Trash2, UserPlus } from 'lucide-react';
 import { Manager, ManagerStatus } from '@/types/manager';
+import { CustomBadge } from '@/components/ui/custom-badge';
 
 const Managers = () => {
   const [managers, setManagers] = useState<Manager[]>([]);
@@ -41,9 +40,7 @@ const Managers = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Fetch managers (simulated)
   useEffect(() => {
-    // Dummy data for demonstration
     const dummyManagers: Manager[] = [
       {
         id: 1,
@@ -90,7 +87,6 @@ const Managers = () => {
     setManagers(dummyManagers);
   }, []);
 
-  // Filter managers based on search term
   const filteredManagers = managers.filter(manager => 
     manager.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     manager.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -98,20 +94,16 @@ const Managers = () => {
     manager.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handle add new manager
   const handleAddManager = () => {
     navigate('/managers/new');
   };
 
-  // Handle edit manager
   const handleEditManager = (id: number) => {
     navigate(`/managers/edit/${id}`);
   };
 
-  // Handle confirm delete
   const confirmDelete = () => {
     if (managerToDelete) {
-      // In a real app, call an API to delete
       setManagers(managers.filter(manager => manager.id !== managerToDelete.id));
       
       toast({
@@ -124,7 +116,6 @@ const Managers = () => {
     }
   };
 
-  // Open delete dialog
   const openDeleteDialog = (manager: Manager) => {
     setManagerToDelete(manager);
     setIsDeleteDialogOpen(true);
@@ -183,9 +174,9 @@ const Managers = () => {
                   <TableCell>{manager.department}</TableCell>
                   <TableCell>{manager.role}</TableCell>
                   <TableCell>
-                    <Badge variant={manager.status === 'active' ? "success" : "secondary"}>
+                    <CustomBadge variant={manager.status === 'active' ? "success" : "secondary"}>
                       {manager.status === 'active' ? 'Ativo' : 'Inativo'}
-                    </Badge>
+                    </CustomBadge>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -222,7 +213,6 @@ const Managers = () => {
         </Table>
       </div>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
