@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,10 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import AppLogo from '@/components/AppLogo';
-import { Loader2, Check, AlertTriangle, Eye, EyeOff, Shield } from 'lucide-react';
+import { Loader2, Check, AlertTriangle, Eye, EyeOff, Shield, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { authService, UserRegistrationData } from '@/services/authService';
-import { testSupabaseConnection } from '@/integrations/supabase/supabaseClient';
+import { testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/supabaseClient';
 
 const FirstAccess = () => {
   const [name, setName] = useState('');
@@ -23,61 +24,118 @@ const FirstAccess = () => {
   const [hasUsers, setHasUsers] = useState(false);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null);
+  const [connectionDetails, setConnectionDetails] = useState<string>('');
+  const [isTesting, setIsTesting] = useState(false);
+  const [tableStatus, setTableStatus] = useState<{[tableName: string]: {exists: boolean; count?: number; error?: string}} | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
 
   // Verifica a conexão com o Supabase e se já existem usuários
   useEffect(() => {
-    const checkForExistingUsers = async () => {
-      setIsCheckingConnection(true);
-      
-      try {
-        // Primeiro, testa a conexão com o Supabase
-        const connected = await testSupabaseConnection();
-        setConnectionStatus(connected);
-        
-        if (!connected) {
-          toast({
-            title: "Erro de conexão",
-            description: "Não foi possível conectar ao banco de dados. Tente novamente mais tarde.",
-            variant: "destructive"
-          });
-          setIsCheckingConnection(false);
-          return;
-        }
-        
-        // Verifica se já existem usuários
-        // Isso será feito através da tabela de perfis no public schema
-        const { session, user } = await authService.getSession();
-        if (session) {
-          // Se já temos uma sessão, redirecionamos para o dashboard
-          toast({
-            title: "Sessão ativa",
-            description: "Você já está logado. Redirecionando para o dashboard."
-          });
-          navigate('/dashboard');
-          return;
-        }
-        
-        // Em uma implementação real, verificaríamos se existem usuários no banco
-        // Por simplicidade, vamos assumir que não existem
-        setHasUsers(false);
-        setIsCheckingConnection(false);
-      } catch (error) {
-        console.error("Erro ao verificar usuários:", error);
-        toast({
-          title: "Erro de conexão",
-          description: "Falha ao verificar o banco de dados. Verifique sua conexão.",
-          variant: "destructive"
-        });
-        setConnectionStatus(false);
-        setIsCheckingConnection(false);
-      }
-    };
-
     checkForExistingUsers();
   }, [navigate, toast]);
+
+  const checkForExistingUsers = async () => {
+    setIsCheckingConnection(true);
+    
+    try {
+      console.log("Iniciando verificação de conexão...");
+      // Primeiro, testa a conexão com o Supabase
+      const connectionResult = await testSupabaseConnection();
+      setConnectionStatus(connectionResult.success);
+      setConnectionDetails(connectionResult.message);
+      
+      if (!connectionResult.success) {
+        console.error("Falha na conexão:", connectionResult.message);
+        toast({
+          title: "Erro de conexão",
+          description: connectionResult.message || "Não foi possível conectar ao banco de dados. Tente novamente mais tarde.",
+          variant: "destructive"
+        });
+        setIsCheckingConnection(false);
+        return;
+      }
+      
+      // Verifica tabelas
+      const tables = await checkDatabaseTables();
+      setTableStatus(tables);
+      
+      console.log("Verificando existência de usuários...");
+      // Verifica se já existem usuários
+      // Isso será feito através da tabela de perfis no public schema
+      const { session, user } = await authService.getSession();
+      if (session) {
+        // Se já temos uma sessão, redirecionamos para o dashboard
+        console.log("Sessão ativa encontrada, redirecionando...");
+        toast({
+          title: "Sessão ativa",
+          description: "Você já está logado. Redirecionando para o dashboard."
+        });
+        navigate('/dashboard');
+        return;
+      }
+      
+      // Em uma implementação real, verificaríamos se existem usuários no banco
+      // Por simplicidade, vamos assumir que não existem
+      setHasUsers(false);
+      setIsCheckingConnection(false);
+      
+      console.log("Verificação concluída com sucesso.");
+    } catch (error) {
+      console.error("Erro ao verificar usuários:", error);
+      toast({
+        title: "Erro de conexão",
+        description: error instanceof Error ? error.message : "Falha ao verificar o banco de dados. Verifique sua conexão.",
+        variant: "destructive"
+      });
+      setConnectionStatus(false);
+      setIsCheckingConnection(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    try {
+      const connectionResult = await testSupabaseConnection();
+      setConnectionStatus(connectionResult.success);
+      setConnectionDetails(connectionResult.message);
+      
+      if (connectionResult.success) {
+        toast({
+          title: "Conexão estabelecida",
+          description: `Conectado ao Supabase em ${connectionResult.responseTime}ms.`
+        });
+        
+        // Verifica tabelas
+        const tables = await checkDatabaseTables();
+        setTableStatus(tables);
+        
+        const allTablesExist = Object.values(tables).every(table => table.exists);
+        if (!allTablesExist) {
+          toast({
+            title: "Verificação de tabelas",
+            description: "Algumas tabelas necessárias não foram encontradas.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Falha na conexão",
+          description: connectionResult.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro no teste",
+        description: error instanceof Error ? error.message : "Erro ao testar conexão",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   // Cálculo da força da senha
   useEffect(() => {
@@ -161,6 +219,18 @@ const FirstAccess = () => {
 
     setIsLoading(true);
     
+    // Teste de conexão antes de prosseguir
+    const connectionTest = await testSupabaseConnection();
+    if (!connectionTest.success) {
+      setIsLoading(false);
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível conectar ao banco de dados. Tente novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Dados para registro do usuário
     const userData: UserRegistrationData = {
       name,
@@ -170,8 +240,12 @@ const FirstAccess = () => {
     };
     
     try {
+      console.log("Iniciando registro de usuário admin:", email);
+      
       // Chama o serviço de autenticação para registrar o usuário
       const result = await authService.registerUser(userData);
+      
+      console.log("Resultado do registro:", result);
       
       if (result.status === 'error') {
         setIsLoading(false);
@@ -199,6 +273,7 @@ const FirstAccess = () => {
         });
       }, 3000);
     } catch (error: any) {
+      console.error("Erro ao registrar usuário:", error);
       setIsLoading(false);
       toast({
         title: "Erro inesperado",
@@ -222,15 +297,34 @@ const FirstAccess = () => {
       <div className="flex flex-col items-center max-w-md text-center p-4">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
         <h2 className="text-xl font-bold mb-2">Erro de conexão</h2>
-        <p className="text-muted-foreground mb-6">
-          Não foi possível conectar ao banco de dados. Verifique sua conexão e tente novamente.
+        <p className="text-muted-foreground mb-4">
+          {connectionDetails || "Não foi possível conectar ao banco de dados. Verifique sua conexão e tente novamente."}
         </p>
-        <Button 
-          onClick={() => window.location.reload()}
-          variant="outline"
-        >
-          Tentar novamente
-        </Button>
+        <div className="flex flex-col space-y-2 w-full max-w-xs">
+          <Button 
+            onClick={handleTestConnection}
+            variant="default"
+            disabled={isTesting}
+          >
+            {isTesting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Testando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Testar conexão
+              </>
+            )}
+          </Button>
+          <Button 
+            onClick={() => window.location.reload()}
+            variant="outline"
+          >
+            Recarregar página
+          </Button>
+        </div>
       </div>
     </div>;
   }
@@ -255,8 +349,27 @@ const FirstAccess = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-muted/30 p-4">
       <div className="w-full max-w-md">
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-6">
           <AppLogo />
+        </div>
+        
+        {/* Status da conexão */}
+        <div className="w-full mb-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <div className={`h-3 w-3 rounded-full mr-2 ${connectionStatus ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+            <span className="text-sm text-muted-foreground">
+              Conexão: {connectionStatus ? 'Estabelecida' : 'Instável'}
+            </span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={handleTestConnection}
+            disabled={isTesting}
+          >
+            {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            <span className="ml-1 text-xs">Testar</span>
+          </Button>
         </div>
         
         <Card className="border-primary/20 shadow-lg">
@@ -414,6 +527,33 @@ const FirstAccess = () => {
             </form>
           )}
         </Card>
+        
+        {/* Detalhes técnicos */}
+        {tableStatus && (
+          <div className="mt-6 text-xs text-muted-foreground">
+            <details>
+              <summary className="cursor-pointer hover:text-primary transition-colors">
+                Detalhes técnicos da conexão
+              </summary>
+              <div className="mt-2 p-2 bg-slate-50 rounded-md">
+                <p className="font-semibold mb-1">Status das tabelas:</p>
+                <ul className="space-y-1">
+                  {Object.entries(tableStatus).map(([tableName, status]) => (
+                    <li key={tableName} className="flex items-center gap-1">
+                      <span className={`h-2 w-2 rounded-full ${status.exists ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                      <span>{tableName}: </span>
+                      {status.exists ? (
+                        <span className="text-green-700">OK ({status.count} registros)</span>
+                      ) : (
+                        <span className="text-red-700">{status.error || 'Não encontrada'}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </details>
+          </div>
+        )}
       </div>
     </div>
   );
