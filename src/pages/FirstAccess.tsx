@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -50,7 +49,7 @@ const FirstAccess = () => {
         
         // Verifica se já existem usuários
         // Isso será feito através da tabela de perfis no public schema
-        const { data: { session } } = await authService.getSession();
+        const { session, user } = await authService.getSession();
         if (session) {
           // Se já temos uma sessão, redirecionamos para o dashboard
           toast({

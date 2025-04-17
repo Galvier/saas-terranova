@@ -10,7 +10,8 @@ export const getSupabaseUrl = (): string => {
 // Helper function to call RPC functions with proper typing
 export async function callRPC<T>(functionName: string, params?: Record<string, any>): Promise<{ data: T | null; error: any }> {
   try {
-    // @ts-ignore - Ignore TypeScript's complaints about the function name
+    // Use @ts-ignore to bypass TypeScript's error on this line
+    // @ts-ignore
     const { data, error } = await supabase.rpc(functionName, params);
     return { data, error };
   } catch (error) {

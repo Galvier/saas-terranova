@@ -1,6 +1,7 @@
 
 import { callRPC, formatCrudResult, CrudResult, TableCheckResult } from '@/integrations/supabase/helpers';
 import { supabase } from '@/integrations/supabase/supabaseClient';
+import { getSupabaseUrl } from '@/integrations/supabase/helpers';
 
 export interface DiagnosticResult {
   status: "success" | "error";
@@ -37,7 +38,7 @@ export const diagnosticService = {
       
       connected = true;
       return {
-        url: supabase.supabaseUrl,
+        url: getSupabaseUrl(),
         responseTime: Math.round(performance.now() - startTime),
         connected,
         timestamp: new Date()
@@ -45,7 +46,7 @@ export const diagnosticService = {
     } catch (error) {
       console.error('Connection test failed:', error);
       return {
-        url: supabase.supabaseUrl,
+        url: getSupabaseUrl(),
         responseTime: Math.round(performance.now() - startTime),
         connected: false,
         timestamp: new Date()
@@ -175,6 +176,7 @@ export const diagnosticService = {
       }
       
       // Verifica se existe um perfil para o usuário atual
+      // @ts-ignore - Bypass TypeScript's complaints about the table name
       const { data, error } = await supabase
         .from('profiles')
         .select('*')

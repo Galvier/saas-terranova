@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { authService } from '@/services/authService';
@@ -23,7 +22,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Configura o listener de mudanças de estado de autenticação
     const { data: { subscription } } = authService.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user || null);
@@ -43,7 +41,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Verifica se já existe uma sessão
     const checkSession = async () => {
       try {
         const { session, user } = await authService.getSession();
@@ -58,7 +55,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     checkSession();
 
-    // Limpa a subscrição quando o componente for desmontado
     return () => {
       subscription.unsubscribe();
     };
