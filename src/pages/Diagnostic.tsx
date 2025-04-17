@@ -10,6 +10,7 @@ import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDow
 import { runFullDiagnostic, ConnectionInfo, TableInfo, DiagnosticResult } from '@/utils/supabaseDiagnostic';
 import { supabase } from '@/integrations/supabase/client';
 import { CustomBadge } from '@/components/ui/custom-badge';
+import { getSupabaseUrl } from '@/integrations/supabase/helpers';
 
 const ESSENTIAL_TABLES = [
   'users',
@@ -67,7 +68,7 @@ const Diagnostic = () => {
       connection,
       tables,
       writeTest,
-      supabaseUrl: supabase.supabaseUrl
+      supabaseUrl: getSupabaseUrl()
     };
     
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });

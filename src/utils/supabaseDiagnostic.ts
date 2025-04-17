@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseUrl } from "@/integrations/supabase/helpers";
 
 export interface DiagnosticResult {
   status: "success" | "error";
@@ -35,7 +36,7 @@ export async function testConnection(): Promise<ConnectionInfo> {
     
     connected = true;
     return {
-      url: supabase.supabaseUrl, // Use supabaseUrl property instead of getUrl() method
+      url: getSupabaseUrl(),
       responseTime: Math.round(performance.now() - startTime),
       connected,
       timestamp: new Date()
@@ -43,7 +44,7 @@ export async function testConnection(): Promise<ConnectionInfo> {
   } catch (error) {
     console.error('Connection test failed:', error);
     return {
-      url: supabase.supabaseUrl, // Use supabaseUrl property instead of getUrl() method
+      url: getSupabaseUrl(),
       responseTime: Math.round(performance.now() - startTime),
       connected: false,
       timestamp: new Date()
@@ -68,7 +69,20 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
       };
     }
 
-    if (data && typeof data === 'object' && 'exists' in data && !data.exists) {
+    // Handle the response based on the RPC result structure
+    if (!data) {
+      return {
+        name: tableName,
+        recordCount: null,
+        status: "error",
+        message: "No data returned from check"
+      };
+    }
+
+    // We expect the RPC to return an object with exists and count properties
+    const result = data as { exists: boolean, count: number };
+    
+    if (!result.exists) {
       return {
         name: tableName,
         recordCount: null,
@@ -79,8 +93,8 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
 
     return {
       name: tableName,
-      recordCount: data && typeof data === 'object' && 'count' in data ? data.count : 0,
-      status: data && typeof data === 'object' && 'count' in data && data.count === 0 ? "empty" : "ok"
+      recordCount: result.count,
+      status: result.count === 0 ? "empty" : "ok"
     };
   } catch (error) {
     console.error(`Error checking table ${tableName}:`, error);

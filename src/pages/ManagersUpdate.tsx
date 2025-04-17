@@ -13,9 +13,23 @@ import PageHeader from '@/components/PageHeader';
 import { Loader2, User, Mail, Lock, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DepartmentsSelect } from '@/components/DepartmentsSelect';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Switch } from "@/components/ui/switch"
-import { cn } from "@/lib/utils"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
+import { Progress } from '@/components/ui/custom-progress';
+
+interface Manager {
+  id: string;
+  name: string;
+  email: string;
+  department_id: string;
+  is_active: boolean;
+}
+
+interface Department {
+  id: string;
+  name: string;
+}
 
 const managerUpdateSchema = z.object({
   name: z.string().min(3, {
@@ -35,8 +49,8 @@ type ManagerUpdateValues = z.infer<typeof managerUpdateSchema>
 const ManagersUpdate = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [manager, setManager] = useState<any>(null);
-  const [departments, setDepartments] = useState<any[]>([]);
+  const [manager, setManager] = useState<Manager | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [isNewUser, setIsNewUser] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -68,22 +82,21 @@ const ManagersUpdate = () => {
   const fetchManager = async (managerId: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('managers')
-        .select('*')
-        .eq('id', managerId)
-        .single();
+      const { data, error } = await supabase.rpc('get_manager_by_id', { 
+        manager_id: managerId 
+      });
 
       if (error) {
         throw error;
       }
 
       if (data) {
-        setManager(data);
-        form.setValue("name", data.name);
-        form.setValue("email", data.email);
-        form.setValue("department_id", data.department_id);
-        form.setValue("is_active", data.is_active);
+        const managerData = data as Manager;
+        setManager(managerData);
+        form.setValue("name", managerData.name);
+        form.setValue("email", managerData.email);
+        form.setValue("department_id", managerData.department_id);
+        form.setValue("is_active", managerData.is_active);
       }
     } catch (error: any) {
       toast({
@@ -98,16 +111,14 @@ const ManagersUpdate = () => {
 
   const fetchDepartments = async () => {
     try {
-      const { data, error } = await supabase
-        .from('departments')
-        .select('id, name');
+      const { data, error } = await supabase.rpc('get_all_departments');
 
       if (error) {
         throw error;
       }
 
       if (data) {
-        setDepartments(data);
+        setDepartments(data as Department[]);
       }
     } catch (error: any) {
       toast({
@@ -121,15 +132,13 @@ const ManagersUpdate = () => {
   const updateManager = async (values: ManagerUpdateValues) => {
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('managers')
-        .update({
-          name: values.name,
-          email: values.email,
-          department_id: values.department_id,
-          is_active: values.is_active,
-        })
-        .eq('id', id);
+      const { error } = await supabase.rpc('update_manager', {
+        manager_id: id,
+        manager_name: values.name,
+        manager_email: values.email,
+        manager_department_id: values.department_id,
+        manager_is_active: values.is_active
+      });
 
       if (error) {
         throw error;
@@ -323,16 +332,12 @@ const CredentialsSection: React.FC<CredentialsSectionProps> = ({ isEdit, email }
 
     let strength = 0;
 
-    // Comprimento mínimo
     if (password.length >= 8) strength += 25;
 
-    // Contém letras maiúsculas e minúsculas
     if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
 
-    // Contém números
     if (/[0-9]/.test(password)) strength += 25;
 
-    // Contém caracteres especiais
     if (/[^a-zA-Z0-9]/.test(password)) strength += 25;
 
     setPasswordStrength(strength);
@@ -453,7 +458,7 @@ const CredentialsSection: React.FC<CredentialsSectionProps> = ({ isEdit, email }
               fill="currentColor"
               className="w-4 h-4"
             >
-              <path d="M3.53 2.47a1.25 1.25 0 0 1 0 1.77l1.1 1.1c.16.16.25.38.25.61v1.54c0 .23-.09.45-.25.61l-1.1 1.1a1.25 1.25 0 0 1 0 1.77l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45-.09.61-.25l1.1-1.1a1.25 1.25 0 0 1 1.77 0l2.82 2.83a3.75 3.75 0 0 1 0 5.3l-.88.87c-.11.11-.27.18-.44.18H4.88c-.17 0-.33-.07-.44-.18l-.88-.87a3.75 3.75 0 0 1 0-5.3l2.83-2.82a1.25 1.25 0 0 1 1.77 0l1.1 1.1c.16.16.25.38.25.61v1.54c0 .23-.09.45-.25.61l-1.1 1.1a1.25 1.25 0 0 1 0 1.77l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45-.09.61-.25l1.1-1.1a1.25 1.25 0 0 1 1.77 0l2.82 2.83a3.75 3.75 0 0 1 0 5.3l.87.88c.11.11.18.27.18.44v.88c0 .17-.07.33-.18.44l-.87.88a3.75 3.75 0 0 1-5.3 0l-2.83-2.82a1.25 1.25 0 0 1-1.77 0l-1.1 1.1c-.16.16-.38.25-.61.25H9.52c-.23 0-.45-.09-.61-.25l-1.1-1.1a1.25 1.25 0 0 1 0-1.77l1.1-1.1c.16-.16.25-.38.25-.61V9.52c0-.23-.09-.45-.25-.61l-1.1-1.1a1.25 1.25 0 0 1 0-1.77l1.1-1.1c.16-.16.38-.25.61-.25h1.54c.23 0 .45.09.61.25l1.1 1.1a1.25 1.25 0 0 1 1.77 0l2.83-2.83a3.75 3.75 0 0 1 0-5.3l.87-.88c.11-.11.18-.27.18-.44V4.88c0-.17-.07-.33-.18-.44l-.87-.88a3.75 3.75 0 0 1 0-5.3l2.82-2.83a1.25 1.25 0 0 1 1.77 0l1.1 1.1c.16-.16.38-.25.61-.25h1.54c.23 0 .45.09.61.25l1.1 1.1a1.25 1.25 0 0 1 0 1.77l-1.1 1.1c-.16.16-.25.38-.25.61v1.54c0 .23.09.45.25.61l1.1 1.1a1.25 1.25 0 0 1 0 1.77l-1.1 1.1c-.16.16-.38.25-.61.25H14.48c-.23 0-.45-.09-.61-.25l-1.1-1.1a1.25 1.25 0 0 1-1.77 0l-2.83 2.82a3.75 3.75 0 0 1-5.3 0l-.88-.87c-.11-.11-.27-.18-.44-.18H4.88c-.17 0-.33.07-.44.18l-.88.87a3.75 3.75 0 0 1 0 5.3l2.82 2.83a1.25 1.25 0 0 1 1.77 0l1.1-1.1c.16-.16.25-.38.25-.61V14.48c0-.23-.09-.45-.25-.61l-1.1-1.1a1.25 1.25 0 0 1 0-1.77l1.1-1.1c.16-.16.38-.25.61-.25h1.54c.23 0 .45.09.61.25l1.1 1.1a1.25 1.25 0 0 1 1.77 0l2.83-2.82a3.75 3.75 0 0 1 5.3 0l.87.88c.11.11.18.27.18.44v.88c0 .17-.07.33-.18.44l-.87.88a3.75 3.75 0 0 1 0 5.3l-2.82 2.83a1.25 1.25 0 0 1-1.77 0l-1.1-1.1c-.16.16-.25.38-.25.61v1.54c0 .23.09.45.25.61l1.1 1.1a1.25 1.25 0 0 1 0 1.77l-1.1 1.1c-.16.16-.38.25-.61.25H9.52c-.23 0-.45-.09-.61-.25l-1.1-1.1a1.25 1.25 0 0 1 0-1.77l1.1-1.1c.16-.16.25-.38.25-.61V9.52c0-.23-.09-.45-.25-.61l-1.1-1.1a1.25 1.25 0 0 1 0-1.77l1.1-1.1c.16-.16.38-.25.61-.25h1.54c.23 0 .45.09.61.25l1.1 1.1a1.25 1.25 0 0 1 1.77 0l2.82-2.83a3.75 3.75 0 0 1 5.3 0l.88.87c.11.11.27.18.44.18h.88c.17 0 .33-.07.44-.18l.88-.87a3.75 3.75 0 0 1 5.3 0l2.83 2.82a1.25 1.25 0 0 1 1.77 0l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45-.09.61-.25l1.1-1.1a1.25 1.25 0 0 1 0-1.77l-1.1-1.1c-.16-.16-.25-.38-.25-.61V9.52c0-.23.09-.45.25-.61l1.1-1.1a1.25 1.25 0 0 1 0-1.77l-1.1-1.1c-.16-.16-.38-.25-.61-.25H14.48c-.23 0-.45.09-.61.25l-1.1 1.1a1.25 1.25 0 0 1-1.77 0l-2.82-2.83a3.75 3.75 0 0 1-5.3 0l-.87.88c-.11.11-.18.27-.18.44V19.12c0 .17.07.33.18.44l.87.88a3.75 3.75 0 0 1 0 5.3l-2.83 2.82a1.25 1.25 0 0 1-1.77 0l-1.1-1.1c-.16.16-.38.25-.61.25H3.52c-.23 0-.45-.09-.61-.25l-1.1 1.1a1.25 1.25 0 0 1-1.77 0l-1.1-1.1c-.16-.16-.25-.38-.25-.61V14.48c0-.23.09-.45.25-.61l1.1-1.1a1.25 1.25 0 0 1 0-1.77l-1.1-1.1c-.16-.16-.25-.38-.25-.61V3.52c0-.23.09-.45.25-.61l1.1-1.1a1.25 1.25 0 0 1 1.77 0Z" />
+              <path d="M3.53 2.47a1.25 1.25 0 0 1 0 1.77l1.1 1.1c.16.16.25.38.25.61v1.54c0 .23-.09.45-.25.61l-1.1 1.1a1.25 1.25 0 0 1 0 1.77l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45-.09.61-.25l1.1-1.1a1.25 1.25 0 0 1 1.77 0l2.82 2.83a3.75 3.75 0 0 1 0 5.3l-.88.87c-.11.11-.27.18-.44.18H4.88c-.17 0-.33-.07-.44-.18l-.88-.87a3.75 3.75 0 0 1 0-5.3l2.83-2.82a1.25 1.25 0 0 1 1.77 0l1.1 1.1c.16.16.25.38.25.61v1.54c0 .23-.09.45-.25.61l-1.1 1.1a1.25 1.25 0 0 1 0 1.77l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45-.09.61-.25l1.1-1.1a1.25 1.25 0 0 1 1.77 0l2.82 2.83a3.75 3.75 0 0 1 0 5.3l.87.88c.11.11.18.27.18.44v.88c0 .17-.07.33-.18.44l-.87.88a3.75 3.75 0 0 1 5.3 0l-2.83-2.82a1.25 1.25 0 0 1 1.77 0l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45.09.61.25l1.1 1.1a1.25 1.25 0 0 1 1.77 0l2.83-2.82a3.75 3.75 0 0 1 5.3 0l.87.88c.11.11.27.18.44.18h.88c.17 0 .33-.07.44-.18l.88-.87a3.75 3.75 0 0 1 5.3 0l2.83 2.82a1.25 1.25 0 0 1 1.77 0l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45-.09.61-.25l1.1-1.1a1.25 1.25 0 0 1 0-1.77l-1.1-1.1c-.16-.16-.25-.38-.25-.61V9.52c0-.23-.09-.45-.25-.61l-1.1-1.1a1.25 1.25 0 0 1 0-1.77l1.1-1.1c-.16-.16-.25-.38-.25-.61V3.52c0-.23-.09-.45-.25-.61l1.1-1.1a1.25 1.25 0 0 1 1.77 0Z" />
             </svg> : <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
