@@ -11,8 +11,9 @@ export const getSupabaseUrl = (): string => {
 // Helper function to call RPC functions with proper typing
 export async function callRPC<T>(functionName: string, params?: Record<string, any>): Promise<{ data: T | null; error: any }> {
   try {
-    // Use explicit type casting to bypass the TypeScript error
-    const { data, error } = await supabase.rpc(functionName as any, params);
+    // Use a more comprehensive type assertion to bypass TypeScript error
+    // @ts-ignore - Ignore TypeScript's complaints about the function name
+    const { data, error } = await supabase.rpc(functionName, params);
     return { data, error };
   } catch (error) {
     console.error(`Error calling RPC function ${functionName}:`, error);
