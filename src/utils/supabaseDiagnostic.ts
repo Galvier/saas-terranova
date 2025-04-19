@@ -29,11 +29,8 @@ export async function testConnection(): Promise<ConnectionInfo> {
   let connected = false;
 
   try {
-    // Simple query to test connection
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('count')
-      .limit(1);
+    // Use a simple system function that doesn't require table access
+    const { error } = await supabase.rpc('pg_client_encoding');
     
     if (error) throw error;
     
@@ -76,42 +73,33 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
       };
     }
 
-    // Use type assertion for the table name
-    const typedTableName = tableName as keyof typeof validTables;
-    
-    // Direct query approach to check if table exists
-    const { error } = await supabase
-      .from(validTables[typedTableName])
-      .select('count')
-      .limit(0);
+    // Use a safer approach to check if the table exists
+    const { data, error } = await supabase.rpc('check_table_exists', {
+      table_name: tableName
+    });
 
-    if (error) {
+    if (error || !data) {
       return {
         name: tableName,
         recordCount: null,
         status: "error",
-        message: error.message
+        message: error ? error.message : "Failed to verify table existence"
       };
     }
 
-    // If no error, table exists. Now count records
-    const { count, error: countError } = await supabase
-      .from(validTables[typedTableName])
-      .select('*', { count: 'exact', head: true });
-
-    if (countError) {
+    if (!data.exists) {
       return {
         name: tableName,
         recordCount: null,
         status: "error",
-        message: countError.message
+        message: "Table does not exist"
       };
     }
 
     return {
       name: tableName,
-      recordCount: count,
-      status: count === 0 ? "empty" : "ok"
+      recordCount: data.count || 0,
+      status: data.count === 0 ? "empty" : "ok"
     };
   } catch (error) {
     console.error(`Error checking table ${tableName}:`, error);
@@ -129,13 +117,10 @@ export async function testWriteOperation(): Promise<DiagnosticResult> {
   const testId = `test-${Date.now()}`;
   
   try {
-    // Attempt to write to a diagnostic_tests table
-    const { error } = await supabase
-      .from('diagnostic_tests')
-      .insert({
-        test_id: testId,
-        test_type: 'connection_test'
-      });
+    // Use an RPC call to safely test write operations
+    const { error } = await supabase.rpc('run_diagnostic_write_test', {
+      test_id: testId
+    });
     
     if (error) throw error;
 

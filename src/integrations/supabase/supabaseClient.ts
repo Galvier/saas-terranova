@@ -31,11 +31,9 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
     console.log('Testing Supabase connection...');
     const startTime = performance.now();
     
-    // Use a direct query to the profiles table instead of dynamic table name
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('count')
-      .limit(1);
+    // Use a simpler query that's less likely to trigger policy recursion
+    // Just test if the connection works at all, without querying any tables
+    const { error } = await supabase.rpc('pg_client_encoding');
     
     const responseTime = Math.round(performance.now() - startTime);
     
@@ -47,7 +45,7 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
       };
     }
     
-    console.log(`Supabase connection successful (${responseTime}ms)`, data);
+    console.log(`Supabase connection successful (${responseTime}ms)`);
     return {
       success: true,
       message: `Connected successfully in ${responseTime}ms`,
@@ -62,7 +60,7 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
   }
 };
 
-// Test database tables
+// Test database tables with a more cautious approach
 export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exists: boolean; count?: number; error?: string}}> => {
   const tablesToCheck = ['profiles', 'departments', 'managers'] as const;
   const results: {[tableName: string]: {exists: boolean; count?: number; error?: string}} = {};
@@ -71,35 +69,31 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
     try {
       console.log(`Checking table: ${tableName}`);
       
-      // Use typed tableName directly instead of dynamic string
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('count')
-        .limit(0);
+      // First check if the table exists without trying to query it directly
+      // This is done to avoid policy recursion issues
+      const { data: tablesData, error: tablesError } = await supabase.rpc('check_table_exists', {
+        table_name: tableName
+      });
       
-      if (error) {
-        console.error(`Error checking table ${tableName}:`, error);
-        // Check if the error is related to table not existing
-        const tableNotFound = error.message.includes('does not exist') || 
-                             error.message.includes('relation') || 
-                             error.code === '42P01';
-        
+      if (tablesError || !tablesData) {
+        console.error(`Error checking if table ${tableName} exists:`, tablesError || 'No data returned');
         results[tableName] = { 
           exists: false, 
-          error: error.message 
+          error: tablesError ? tablesError.message : 'Failed to verify table existence' 
         };
         continue;
       }
       
-      // If we got here, the table exists
-      // Now let's count the records
-      const countResult = await supabase
-        .from(tableName)
-        .select('*', { count: 'exact', head: true });
+      // If the table doesn't exist, no need to try counting
+      if (!tablesData.exists) {
+        results[tableName] = { exists: false };
+        continue;
+      }
       
+      // If we got here, the table exists - try to get an approximate count safely
       results[tableName] = { 
         exists: true, 
-        count: countResult.count || 0
+        count: tablesData.count || 0
       };
     } catch (error) {
       console.error(`Error checking table ${tableName}:`, error);
