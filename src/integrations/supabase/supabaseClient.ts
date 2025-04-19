@@ -45,7 +45,7 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
     console.log('Testing Supabase connection...');
     const startTime = performance.now();
     
-    // Use the simpler pg_client_encoding RPC function that's less likely to trigger policy recursion
+    // Use the pg_client_encoding RPC function for testing connection
     const { data, error } = await supabase.rpc('pg_client_encoding');
     
     const responseTime = Math.round(performance.now() - startTime);
@@ -75,7 +75,7 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
 
 // Test database tables with a more cautious approach
 export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exists: boolean; count?: number; error?: string}}> => {
-  const tablesToCheck = [Tables.PROFILES, Tables.DEPARTMENTS, Tables.MANAGERS] as const;
+  const tablesToCheck = Object.values(Tables);
   const results: {[tableName: string]: {exists: boolean; count?: number; error?: string}} = {};
   
   for (const tableName of tablesToCheck) {

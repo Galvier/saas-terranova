@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getSupabaseUrl } from "@/integrations/supabase/helpers";
-import { Tables, ValidTableName, TableCheckResult } from "@/integrations/supabase/supabaseClient";
+import { Tables, ValidTableName, TableCheckResult } from "@/integrations/supabase/client";
 
 export interface DiagnosticResult {
   status: "success" | "error";

@@ -30,7 +30,7 @@ export interface TableCheckResult {
   count: number;
 }
 
-// Define valid table names as constants
+// Define valid table names as constants for type safety
 export const Tables = {
   PROFILES: 'profiles',
   DEPARTMENTS: 'departments', 
