@@ -23,7 +23,21 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
 });
 
 // Define valid table names to use with type safety
-export type ValidTableName = 'profiles' | 'departments' | 'managers' | 'diagnostic_tests';
+export const Tables = {
+  PROFILES: 'profiles',
+  DEPARTMENTS: 'departments',
+  MANAGERS: 'managers',
+  DIAGNOSTIC_TESTS: 'diagnostic_tests'
+} as const;
+
+// Type for storing the table names
+export type ValidTableName = typeof Tables[keyof typeof Tables];
+
+// Type definitions for RPC function returns
+export interface TableCheckResult {
+  exists: boolean;
+  count: number;
+}
 
 // Basic connection test function that doesn't rely on postgres_version()
 export const testSupabaseConnection = async (): Promise<{success: boolean; message: string; responseTime?: number}> => {
@@ -31,9 +45,8 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
     console.log('Testing Supabase connection...');
     const startTime = performance.now();
     
-    // Use a simpler query that's less likely to trigger policy recursion
-    // Just test if the connection works at all, without querying any tables
-    const { error } = await supabase.rpc('pg_client_encoding');
+    // Use the simpler pg_client_encoding RPC function that's less likely to trigger policy recursion
+    const { data, error } = await supabase.rpc('pg_client_encoding');
     
     const responseTime = Math.round(performance.now() - startTime);
     
@@ -62,7 +75,7 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
 
 // Test database tables with a more cautious approach
 export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exists: boolean; count?: number; error?: string}}> => {
-  const tablesToCheck = ['profiles', 'departments', 'managers'] as const;
+  const tablesToCheck = [Tables.PROFILES, Tables.DEPARTMENTS, Tables.MANAGERS] as const;
   const results: {[tableName: string]: {exists: boolean; count?: number; error?: string}} = {};
   
   for (const tableName of tablesToCheck) {
@@ -71,21 +84,21 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
       
       // First check if the table exists without trying to query it directly
       // This is done to avoid policy recursion issues
-      const { data: tablesData, error: tablesError } = await supabase.rpc('check_table_exists', {
+      const { data, error } = await supabase.rpc<TableCheckResult>('check_table_exists', {
         table_name: tableName
       });
       
-      if (tablesError || !tablesData) {
-        console.error(`Error checking if table ${tableName} exists:`, tablesError || 'No data returned');
+      if (error || !data) {
+        console.error(`Error checking if table ${tableName} exists:`, error || 'No data returned');
         results[tableName] = { 
           exists: false, 
-          error: tablesError ? tablesError.message : 'Failed to verify table existence' 
+          error: error ? error.message : 'Failed to verify table existence' 
         };
         continue;
       }
       
       // If the table doesn't exist, no need to try counting
-      if (!tablesData.exists) {
+      if (!data.exists) {
         results[tableName] = { exists: false };
         continue;
       }
@@ -93,7 +106,7 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
       // If we got here, the table exists - try to get an approximate count safely
       results[tableName] = { 
         exists: true, 
-        count: tablesData.count || 0
+        count: data.count || 0
       };
     } catch (error) {
       console.error(`Error checking table ${tableName}:`, error);

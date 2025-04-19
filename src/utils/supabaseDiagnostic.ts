@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getSupabaseUrl } from "@/integrations/supabase/helpers";
+import { Tables, ValidTableName, TableCheckResult } from "@/integrations/supabase/supabaseClient";
 
 export interface DiagnosticResult {
   status: "success" | "error";
@@ -52,19 +53,12 @@ export async function testConnection(): Promise<ConnectionInfo> {
   }
 }
 
-// Map of valid table names to their typed versions
-const validTables = {
-  'profiles': 'profiles',
-  'departments': 'departments',
-  'managers': 'managers',
-  'diagnostic_tests': 'diagnostic_tests'
-} as const;
-
 // Check if a table exists
 export async function checkTable(tableName: string): Promise<TableInfo> {
   try {
-    // Check if it's a valid table name
-    if (!(tableName in validTables)) {
+    // Validate against allowed table names
+    const validTableNames = Object.values(Tables);
+    if (!validTableNames.includes(tableName as ValidTableName)) {
       return {
         name: tableName,
         recordCount: null,
@@ -74,7 +68,7 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
     }
 
     // Use a safer approach to check if the table exists
-    const { data, error } = await supabase.rpc('check_table_exists', {
+    const { data, error } = await supabase.rpc<TableCheckResult>('check_table_exists', {
       table_name: tableName
     });
 

@@ -24,5 +24,22 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
+// Type definitions for RPC function returns
+export interface TableCheckResult {
+  exists: boolean;
+  count: number;
+}
+
+// Define valid table names as constants
+export const Tables = {
+  PROFILES: 'profiles',
+  DEPARTMENTS: 'departments', 
+  MANAGERS: 'managers',
+  DIAGNOSTIC_TESTS: 'diagnostic_tests'
+} as const;
+
+// Type for table names (for type safety)
+export type ValidTableName = typeof Tables[keyof typeof Tables];
+
 // Log successful client initialization
 console.log("Supabase client initialized with URL:", SUPABASE_URL);
