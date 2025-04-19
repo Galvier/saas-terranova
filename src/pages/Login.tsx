@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import AppLogo from '@/components/AppLogo';
 import { Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
-import { authService } from '@/services/authService';
-import { testSupabaseConnection } from '@/integrations/supabase/supabaseClient';
+import { authService } from '@/services/auth';
+import { testSupabaseConnection } from '@/integrations/supabase/client';
 
 interface LocationState {
   email?: string;
@@ -28,15 +27,12 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  // Configuração inicial - verifica conexão e sessão
   useEffect(() => {
     const initialize = async () => {
       setIsCheckingConnection(true);
       
       try {
-        // Verifica a conexão com o Supabase
         const connectionResult = await testSupabaseConnection();
-        // Fix: properly set the boolean value rather than the whole object
         setConnectionStatus(connectionResult.success);
         
         if (!connectionResult.success) {
@@ -49,17 +45,14 @@ const Login = () => {
           return;
         }
         
-        // Verifica se há uma sessão ativa
         const { session } = await authService.getSession();
         
         if (session) {
-          // Se já temos uma sessão, redirecionamos para o dashboard
           console.log('Sessão ativa encontrada, redirecionando...');
           navigate('/dashboard');
           return;
         }
         
-        // Finaliza a verificação
         setIsCheckingConnection(false);
       } catch (error) {
         console.error('Erro ao inicializar:', error);
@@ -76,7 +69,6 @@ const Login = () => {
     initialize();
   }, [navigate, toast]);
 
-  // Recupera email da navegação (se vindo de primeiro acesso)
   useEffect(() => {
     const state = location.state as LocationState;
     if (state?.email) {
@@ -97,7 +89,6 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Tenta fazer login usando o serviço de autenticação
       const result = await authService.loginUser({
         email,
         password
@@ -115,13 +106,10 @@ const Login = () => {
       
       setIsLoading(false);
       
-      // Prepara redirecionamento
       const state = location.state as LocationState;
       const redirectTo = state?.from || '/dashboard';
       
-      // Cria navegação shallow para prevenir botão de voltar retornando ao login
       navigate(redirectTo, { replace: true });
-      
     } catch (error: any) {
       setIsLoading(false);
       

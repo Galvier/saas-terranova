@@ -11,10 +11,10 @@ export const authService = {
   ...authRoles
 };
 
+// Re-export types from their respective files
+export type { AuthSession } from './core';
 export type { 
-  AuthSession,
   UserRegistrationData,
   LoginCredentials,
   AuthResult
 } from './credentials';
-

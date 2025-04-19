@@ -41,5 +41,79 @@ export const Tables = {
 // Type for table names (for type safety)
 export type ValidTableName = typeof Tables[keyof typeof Tables];
 
+// Basic connection test function
+export const testSupabaseConnection = async (): Promise<{success: boolean; message: string; responseTime?: number}> => {
+  try {
+    console.log('Testing Supabase connection...');
+    const startTime = performance.now();
+    
+    // Use any simple query to test the connection
+    const { data, error } = await supabase.from('profiles').select('count(*)', { count: 'exact', head: true });
+    
+    const responseTime = Math.round(performance.now() - startTime);
+    
+    if (error) {
+      console.error('Supabase connection error:', error);
+      return {
+        success: false,
+        message: `Connection error: ${error.message}`,
+      };
+    }
+    
+    console.log(`Supabase connection successful (${responseTime}ms)`);
+    return {
+      success: true,
+      message: `Connected successfully in ${responseTime}ms`,
+      responseTime
+    };
+  } catch (error) {
+    console.error('Supabase connection test failed:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown connection error',
+    };
+  }
+};
+
+// Check database tables function
+export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exists: boolean; count?: number; error?: string}}> => {
+  const tablesToCheck = Object.values(Tables);
+  const results: {[tableName: string]: {exists: boolean; count?: number; error?: string}} = {};
+  
+  for (const tableName of tablesToCheck) {
+    try {
+      console.log(`Checking table: ${tableName}`);
+      
+      // Query to check if table exists and get count
+      const { data, error, count } = await supabase
+        .from(tableName)
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) {
+        console.error(`Error checking table ${tableName}:`, error);
+        results[tableName] = { 
+          exists: false, 
+          error: error.message 
+        };
+        continue;
+      }
+      
+      results[tableName] = { 
+        exists: true, 
+        count: count || 0
+      };
+    } catch (error) {
+      console.error(`Error checking table ${tableName}:`, error);
+      results[tableName] = { 
+        exists: false, 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+  
+  console.log('Database tables check results:', results);
+  return results;
+};
+
 // Log successful client initialization
 console.log("Supabase client initialized with URL:", SUPABASE_URL);

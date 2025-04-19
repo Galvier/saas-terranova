@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -7,8 +6,8 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { Shield } from 'lucide-react';
 import { ConnectionStatus } from '@/components/auth/ConnectionStatus';
 import { RegistrationForm } from '@/components/auth/RegistrationForm';
-import { authService, UserRegistrationData } from '@/services/authService';
-import { testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/supabaseClient';
+import { authService, UserRegistrationData } from '@/services/auth';
+import { testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/client';
 
 const FirstAccess = () => {
   const [name, setName] = useState('');
@@ -30,12 +29,10 @@ const FirstAccess = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  // Effect for connection check and user verification
   useEffect(() => {
     checkForExistingUsers();
   }, [navigate, toast]);
 
-  // Effect for email state from navigation
   useEffect(() => {
     const state = location.state as { email?: string };
     if (state?.email) {
@@ -47,7 +44,6 @@ const FirstAccess = () => {
     }
   }, [location.state, toast]);
 
-  // Effect for password strength calculation
   useEffect(() => {
     if (!password) {
       setPasswordStrength(0);

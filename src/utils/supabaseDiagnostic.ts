@@ -1,7 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { getSupabaseUrl } from "@/integrations/supabase/helpers";
-import { Tables, ValidTableName, TableCheckResult } from "@/integrations/supabase/client";
+import { supabase, Tables, ValidTableName, TableCheckResult } from "@/integrations/supabase/client";
 
 export interface DiagnosticResult {
   status: "success" | "error";
@@ -24,14 +22,19 @@ export interface ConnectionInfo {
   timestamp: Date;
 }
 
+// Get Supabase URL (since we can't access it directly from the client)
+export const getSupabaseUrl = (): string => {
+  return "https://zghthguqsravpcvrgahe.supabase.co";
+};
+
 // Test basic connection to Supabase
 export async function testConnection(): Promise<ConnectionInfo> {
   const startTime = performance.now();
   let connected = false;
 
   try {
-    // Use a simple system function that doesn't require table access
-    const { error } = await supabase.rpc('pg_client_encoding');
+    // Simple count query to test connection
+    const { error } = await supabase.from('profiles').select('count(*)', { count: 'exact', head: true });
     
     if (error) throw error;
     
@@ -67,33 +70,24 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
       };
     }
 
-    // Use a safer approach to check if the table exists
-    const { data, error } = await supabase.rpc<TableCheckResult>('check_table_exists', {
-      table_name: tableName
-    });
+    // Check if table exists by trying to query it
+    const { data, error, count } = await supabase
+      .from(tableName as ValidTableName)
+      .select('*', { count: 'exact', head: true });
 
-    if (error || !data) {
+    if (error) {
       return {
         name: tableName,
         recordCount: null,
         status: "error",
-        message: error ? error.message : "Failed to verify table existence"
-      };
-    }
-
-    if (!data.exists) {
-      return {
-        name: tableName,
-        recordCount: null,
-        status: "error",
-        message: "Table does not exist"
+        message: error.message
       };
     }
 
     return {
       name: tableName,
-      recordCount: data.count || 0,
-      status: data.count === 0 ? "empty" : "ok"
+      recordCount: count || 0,
+      status: count === 0 ? "empty" : "ok"
     };
   } catch (error) {
     console.error(`Error checking table ${tableName}:`, error);
@@ -111,12 +105,22 @@ export async function testWriteOperation(): Promise<DiagnosticResult> {
   const testId = `test-${Date.now()}`;
   
   try {
-    // Use an RPC call to safely test write operations
-    const { error } = await supabase.rpc('run_diagnostic_write_test', {
-      test_id: testId
-    });
+    // Insert a test record
+    const { error: insertError } = await supabase
+      .from('diagnostic_tests')
+      .insert({ test_id: testId, test_type: 'connection_test' });
     
-    if (error) throw error;
+    if (insertError) throw insertError;
+    
+    // Clean up by deleting the test record
+    const { error: deleteError } = await supabase
+      .from('diagnostic_tests')
+      .delete()
+      .eq('test_id', testId);
+    
+    if (deleteError) {
+      console.warn('Could not clean up test record:', deleteError);
+    }
 
     return {
       status: "success",

@@ -1,6 +1,7 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { authService } from '@/services/authService';
+import { authService } from '@/services/auth'; // Fixed import path
 import { useToast } from './use-toast';
 
 interface AuthContextType {
