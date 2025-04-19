@@ -29,8 +29,7 @@ export async function testConnection(): Promise<ConnectionInfo> {
   let connected = false;
 
   try {
-    // Simple query to test connection rather than using postgres_version
-    // @ts-ignore - profiles table should exist in most Supabase projects
+    // Simple query to test connection
     const { data, error } = await supabase
       .from('profiles')
       .select('count')
@@ -56,13 +55,33 @@ export async function testConnection(): Promise<ConnectionInfo> {
   }
 }
 
+// Map of valid table names to their typed versions
+const validTables = {
+  'profiles': 'profiles',
+  'departments': 'departments',
+  'managers': 'managers',
+  'diagnostic_tests': 'diagnostic_tests'
+} as const;
+
 // Check if a table exists
 export async function checkTable(tableName: string): Promise<TableInfo> {
   try {
+    // Check if it's a valid table name
+    if (!(tableName in validTables)) {
+      return {
+        name: tableName,
+        recordCount: null,
+        status: "error",
+        message: "Invalid table name"
+      };
+    }
+
+    // Use type assertion for the table name
+    const typedTableName = tableName as keyof typeof validTables;
+    
     // Direct query approach to check if table exists
-    // @ts-ignore - Might not be in type definition
     const { error } = await supabase
-      .from(tableName)
+      .from(validTables[typedTableName])
       .select('count')
       .limit(0);
 
@@ -76,9 +95,8 @@ export async function checkTable(tableName: string): Promise<TableInfo> {
     }
 
     // If no error, table exists. Now count records
-    // @ts-ignore
     const { count, error: countError } = await supabase
-      .from(tableName)
+      .from(validTables[typedTableName])
       .select('*', { count: 'exact', head: true });
 
     if (countError) {
@@ -111,8 +129,7 @@ export async function testWriteOperation(): Promise<DiagnosticResult> {
   const testId = `test-${Date.now()}`;
   
   try {
-    // Attempt to write to a diagnostic_tests table (assuming it exists)
-    // @ts-ignore
+    // Attempt to write to a diagnostic_tests table
     const { error } = await supabase
       .from('diagnostic_tests')
       .insert({

@@ -22,14 +22,16 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
   }
 });
 
+// Define valid table names to use with type safety
+export type ValidTableName = 'profiles' | 'departments' | 'managers' | 'diagnostic_tests';
+
 // Basic connection test function that doesn't rely on postgres_version()
 export const testSupabaseConnection = async (): Promise<{success: boolean; message: string; responseTime?: number}> => {
   try {
     console.log('Testing Supabase connection...');
     const startTime = performance.now();
     
-    // Alternative: Check if we can access a known table (profiles) instead of using postgres_version
-    // @ts-ignore - Using a table that should exist in the schema
+    // Use a direct query to the profiles table instead of dynamic table name
     const { data, error } = await supabase
       .from('profiles')
       .select('count')
@@ -62,15 +64,14 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
 
 // Test database tables
 export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exists: boolean; count?: number; error?: string}}> => {
-  const tablesToCheck = ['profiles', 'departments', 'managers'];
+  const tablesToCheck = ['profiles', 'departments', 'managers'] as const;
   const results: {[tableName: string]: {exists: boolean; count?: number; error?: string}} = {};
   
   for (const tableName of tablesToCheck) {
     try {
       console.log(`Checking table: ${tableName}`);
       
-      // Use direct query approach instead of RPC
-      // @ts-ignore - We know the tableName might not be in the type definition
+      // Use typed tableName directly instead of dynamic string
       const { data, error } = await supabase
         .from(tableName)
         .select('count')
@@ -92,7 +93,6 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
       
       // If we got here, the table exists
       // Now let's count the records
-      // @ts-ignore
       const countResult = await supabase
         .from(tableName)
         .select('*', { count: 'exact', head: true });
