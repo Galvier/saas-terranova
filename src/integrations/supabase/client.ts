@@ -70,3 +70,43 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
     };
   }
 };
+
+// Check database tables function
+export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exists: boolean; count?: number; error?: string}}> => {
+  const tablesToCheck = Object.values(Tables);
+  const results: {[tableName: string]: {exists: boolean; count?: number; error?: string}} = {};
+  
+  for (const tableName of tablesToCheck) {
+    try {
+      console.log(`Checking table: ${tableName}`);
+      
+      // Query to check if table exists and get count
+      const { data, error, count } = await supabase
+        .from(tableName)
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) {
+        console.error(`Error checking table ${tableName}:`, error);
+        results[tableName] = { 
+          exists: false, 
+          error: error.message 
+        };
+        continue;
+      }
+      
+      results[tableName] = { 
+        exists: true, 
+        count: count || 0
+      };
+    } catch (error) {
+      console.error(`Error checking table ${tableName}:`, error);
+      results[tableName] = { 
+        exists: false, 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+  
+  console.log('Database tables check results:', results);
+  return results;
+};

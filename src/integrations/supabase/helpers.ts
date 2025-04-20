@@ -15,6 +15,12 @@ export interface CrudResult<T> {
   message: string;
 }
 
+// Type for RPC function check table results
+export interface TableCheckResult {
+  exists: boolean;
+  count: number;
+}
+
 // Function to standardize CRUD operation results
 export function formatCrudResult<T>(data: T | null, error: any): CrudResult<T> {
   if (error) {
@@ -43,12 +49,6 @@ export interface Manager {
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
-}
-
-// Type for RPC function check table results
-export interface TableCheckResult {
-  exists: boolean;
-  count: number;
 }
 
 // RPC function call helper

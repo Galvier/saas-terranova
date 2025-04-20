@@ -34,7 +34,7 @@ export async function testConnection(): Promise<ConnectionInfo> {
 
   try {
     // Simple query to test connection
-    const { error } = await supabase.rpc('postgres_version');
+    const { data, error } = await supabase.rpc('postgres_version');
     
     if (error) throw error;
     
