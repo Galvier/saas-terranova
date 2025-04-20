@@ -1,4 +1,6 @@
 
+// Removido Supabase: agora login funciona localmente apenas para demonstração.
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,67 +10,32 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import AppLogo from '@/components/AppLogo';
 import { Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
-import { authService } from '@/services/auth';
-import { testSupabaseConnection } from '@/integrations/supabase/client';
 
 interface LocationState {
   email?: string;
   from?: string;
 }
 
+const MOCK_USERS = [
+  { email: 'admin@teste.com', password: 'senha123' },
+  { email: 'usuario@teste.com', password: 'senha123' }
+];
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null);
-  
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<boolean | null>(true); // Sempre true
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
-    const initialize = async () => {
-      setIsCheckingConnection(true);
-      
-      try {
-        const connectionResult = await testSupabaseConnection();
-        setConnectionStatus(connectionResult.success);
-        
-        if (!connectionResult.success) {
-          toast({
-            title: "Erro de conexão",
-            description: "Não foi possível conectar ao banco de dados. Tente novamente mais tarde.",
-            variant: "destructive"
-          });
-          setIsCheckingConnection(false);
-          return;
-        }
-        
-        const { session } = await authService.getSession();
-        
-        if (session) {
-          console.log('Sessão ativa encontrada, redirecionando...');
-          navigate('/dashboard');
-          return;
-        }
-        
-        setIsCheckingConnection(false);
-      } catch (error) {
-        console.error('Erro ao inicializar:', error);
-        setConnectionStatus(false);
-        setIsCheckingConnection(false);
-        toast({
-          title: "Erro de inicialização",
-          description: "Falha ao conectar com o servidor. Verifique sua conexão.",
-          variant: "destructive"
-        });
-      }
-    };
-    
-    initialize();
-  }, [navigate, toast]);
+    // Sem checagem de conexão
+    setIsCheckingConnection(false);
+  }, []);
 
   useEffect(() => {
     const state = location.state as LocationState;
@@ -88,74 +55,36 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    try {
-      const result = await authService.login({
-        email,
-        password
-      });
-      
-      if (result.status === 'error') {
-        setIsLoading(false);
+
+    setTimeout(() => {
+      const found = MOCK_USERS.find(u => u.email === email && u.password === password);
+      setIsLoading(false);
+
+      if (!found) {
         toast({
           title: "Erro no login",
-          description: result.message,
+          description: "E-mail ou senha inválidos (Use admin@teste.com/senha123 ou usuario@teste.com/senha123)",
           variant: "destructive"
         });
         return;
       }
-      
-      setIsLoading(false);
-      
-      const state = location.state as LocationState;
-      const redirectTo = state?.from || '/dashboard';
-      
-      navigate(redirectTo, { replace: true });
-    } catch (error: any) {
-      setIsLoading(false);
-      
+
       toast({
-        title: "Erro no login",
-        description: error.message || "Por favor, verifique suas credenciais",
-        variant: "destructive"
+        title: "Login de demonstração bem-sucedido!",
+        description: `Bem-vindo, ${email}!`
       });
-    }
+
+      navigate('/dashboard', { replace: true });
+    }, 800);
   };
 
-  if (isCheckingConnection) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="flex flex-col items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Verificando conexão...</p>
-      </div>
-    </div>;
-  }
-
-  if (connectionStatus === false) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="flex flex-col items-center max-w-md text-center p-4">
-        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-bold mb-2">Erro de conexão</h2>
-        <p className="text-muted-foreground mb-6">
-          Não foi possível conectar ao banco de dados. Verifique sua conexão e tente novamente.
-        </p>
-        <Button 
-          onClick={() => window.location.reload()}
-          variant="outline"
-        >
-          Tentar novamente
-        </Button>
-      </div>
-    </div>;
-  }
-
+  // Nenhum carregamento ou erro de conexão, apenas renderiza o form sempre!
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <AppLogo />
         </div>
-        
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">Entrar</CardTitle>
@@ -186,7 +115,7 @@ const Login = () => {
                       e.preventDefault();
                       toast({
                         title: "Recuperação de senha",
-                        description: "Funcionalidade em desenvolvimento"
+                        description: "Funcionalidade em demonstração"
                       });
                     }}
                   >
@@ -229,7 +158,6 @@ const Login = () => {
                   </>
                 ) : 'Entrar'}
               </Button>
-              
               <div className="text-center text-sm text-muted-foreground">
                 <span>Primeiro acesso? </span>
                 <a 
@@ -242,9 +170,17 @@ const Login = () => {
             </CardFooter>
           </form>
         </Card>
+        <div className="mt-4 text-xs text-muted-foreground">
+          <b>Usuários de demonstração:</b>
+          <ul>
+            <li>admin@teste.com / senha123</li>
+            <li>usuario@teste.com / senha123</li>
+          </ul>
+        </div>
       </div>
     </div>
   );
 };
 
 export default Login;
+
