@@ -10,6 +10,28 @@ export interface DiagnosticTest {
   created_by?: string;
 }
 
+export interface ConnectionInfo {
+  connected: boolean;
+  responseTime: number;
+  url: string;
+  timestamp: Date;
+  message: string;
+}
+
+export interface TableInfo {
+  name: string;
+  status: 'ok' | 'empty' | 'error';
+  recordCount: number | null;
+  message: string | null;
+}
+
+export interface DiagnosticResult {
+  status: 'success' | 'error' | 'pending';
+  message: string;
+  timestamp: Date;
+  details?: any;
+}
+
 export interface DiagnosticResults {
   connectionTest: {
     success: boolean;
@@ -61,7 +83,7 @@ export const testDatabaseWrite = async (): Promise<CrudResult<DiagnosticTest>> =
     // Try to insert a record using a function to avoid RLS issues
     const { data, error } = await supabase.rpc('run_diagnostic_write_test', { 
       test_id_param: testId 
-    } as any);
+    });
     
     const timeTaken = Math.round(performance.now() - startTime);
     
@@ -83,30 +105,75 @@ export const testDatabaseWrite = async (): Promise<CrudResult<DiagnosticTest>> =
   }
 };
 
-// Run all diagnostic tests
-export const runAllDiagnostics = async (): Promise<DiagnosticResults> => {
-  const connectionTest = await testConnection();
-  const tablesCheck = await testTables();
-  
-  let writeTest = {
-    success: false,
-    message: 'Write test skipped due to connection failure'
+// Run all diagnostic tests - this is the function we need to implement and export
+export const runFullDiagnostic = async (tablesToCheck: string[]): Promise<{
+  connection: ConnectionInfo;
+  tables: TableInfo[];
+  writeTest: DiagnosticResult;
+}> => {
+  // Initialize result objects
+  const connectionResult = await testConnection();
+  const connection: ConnectionInfo = {
+    connected: connectionResult.success,
+    responseTime: connectionResult.responseTime || 0,
+    url: getSupabaseUrl(),
+    timestamp: new Date(),
+    message: connectionResult.message
   };
   
-  if (connectionTest.success) {
-    const writeTestResult = await testDatabaseWrite();
+  const tableResults = await testTables();
+  const tables: TableInfo[] = [];
+  
+  // Process table check results
+  for (const tableName in tableResults) {
+    const tableCheck = tableResults[tableName];
+    tables.push({
+      name: tableName,
+      status: tableCheck.exists 
+        ? (tableCheck.count && tableCheck.count > 0 ? 'ok' : 'empty') 
+        : 'error',
+      recordCount: tableCheck.exists ? (tableCheck.count || 0) : null,
+      message: tableCheck.error || null
+    });
+  }
+  
+  // Add any missing tables from the provided list
+  for (const tableName of tablesToCheck) {
+    if (!tables.some(t => t.name === tableName)) {
+      tables.push({
+        name: tableName,
+        status: 'error',
+        recordCount: null,
+        message: 'Table not found in database'
+      });
+    }
+  }
+  
+  // Only perform write test if connection successful
+  let writeTest: DiagnosticResult = {
+    status: 'pending',
+    message: 'Write test not performed due to connection issues',
+    timestamp: new Date()
+  };
+  
+  if (connection.connected) {
+    const writeResult = await testDatabaseWrite();
     writeTest = {
-      success: writeTestResult.status === 'success',
-      message: writeTestResult.message,
-      timeTaken: writeTestResult.data ? 
-        parseInt(writeTestResult.data.created_at || '0') : undefined,
-      testId: writeTestResult.data?.test_id
+      status: writeResult.status,
+      message: writeResult.message,
+      timestamp: new Date(),
+      details: writeResult.data
     };
   }
   
   return {
-    connectionTest,
-    tablesCheck,
+    connection,
+    tables,
     writeTest
   };
+};
+
+// Helper function to get Supabase URL
+export const getSupabaseUrl = (): string => {
+  return "https://zghthguqsravpcvrgahe.supabase.co";
 };

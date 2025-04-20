@@ -71,19 +71,25 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
   }
 };
 
-// Check database tables function
+// Check database tables function with improved type safety
 export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exists: boolean; count?: number; error?: string}}> => {
-  const tablesToCheck = Object.values(Tables);
+  const tablesToCheck = [
+    Tables.PROFILES,
+    Tables.DEPARTMENTS,
+    Tables.MANAGERS,
+    Tables.DIAGNOSTIC_TESTS
+  ];
+  
   const results: {[tableName: string]: {exists: boolean; count?: number; error?: string}} = {};
   
   for (const tableName of tablesToCheck) {
     try {
       console.log(`Checking table: ${tableName}`);
       
-      // Query to check if table exists and get count
-      const { data, error, count } = await supabase
-        .from(tableName as string)
-        .select('*', { count: 'exact', head: true });
+      // Use the RPC function to check table existence
+      const { data, error } = await supabase.rpc('check_table_exists_and_count', {
+        table_name: tableName
+      });
       
       if (error) {
         console.error(`Error checking table ${tableName}:`, error);
@@ -94,10 +100,17 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
         continue;
       }
       
-      results[tableName] = { 
-        exists: true, 
-        count: count || 0
-      };
+      if (data && typeof data === 'object') {
+        results[tableName] = { 
+          exists: data.exists === true, 
+          count: data.count || 0
+        };
+      } else {
+        results[tableName] = {
+          exists: false,
+          error: 'Invalid response format'
+        };
+      }
     } catch (error) {
       console.error(`Error checking table ${tableName}:`, error);
       results[tableName] = { 

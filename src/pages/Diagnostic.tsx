@@ -7,10 +7,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDown } from 'lucide-react';
-import { runFullDiagnostic, ConnectionInfo, TableInfo, DiagnosticResult } from '@/utils/supabaseDiagnostic';
-import { supabase } from '@/integrations/supabase/client';
+import { 
+  runFullDiagnostic, 
+  ConnectionInfo, 
+  TableInfo, 
+  DiagnosticResult,
+  getSupabaseUrl 
+} from '@/utils/supabaseDiagnostic';
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { getSupabaseUrl } from '@/integrations/supabase/helpers';
 
 const ESSENTIAL_TABLES = [
   'users',

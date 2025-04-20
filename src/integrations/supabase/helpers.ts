@@ -51,14 +51,13 @@ export interface Manager {
   updated_at?: string;
 }
 
-// RPC function call helper
+// RPC function call helper with proper type handling
 export async function callRPC<T>(functionName: string, params?: Record<string, any>): Promise<{data: T | null; error: any}> {
   try {
     if (params) {
-      // Fixed type casting for function name
-      return await supabase.rpc(functionName as string, params);
+      return await supabase.rpc(functionName, params);
     } else {
-      return await supabase.rpc(functionName as string);
+      return await supabase.rpc(functionName);
     }
   } catch (error) {
     console.error(`Error calling RPC function ${functionName}:`, error);
