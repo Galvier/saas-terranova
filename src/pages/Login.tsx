@@ -1,5 +1,5 @@
 
-// Removido Supabase: agora login funciona localmente apenas para demonstração.
+// Simulação de login com usuários locais para facilitar acesso ao sistema
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -56,29 +56,69 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    setTimeout(() => {
-      const found = MOCK_USERS.find(u => u.email === email && u.password === password);
-      setIsLoading(false);
-
-      if (!found) {
-        toast({
-          title: "Erro no login",
-          description: "E-mail ou senha inválidos (Use admin@teste.com/senha123 ou usuario@teste.com/senha123)",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      toast({
-        title: "Login de demonstração bem-sucedido!",
-        description: `Bem-vindo, ${email}!`
+    // Simular login ou tentar autenticação real com Supabase
+    try {
+      // Tenta login no Supabase primeiro
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
 
+      // Se falhar com Supabase, usa mock
+      if (error) {
+        console.log("Supabase login failed, using mock login:", error);
+        const found = MOCK_USERS.find(u => u.email === email && u.password === password);
+        
+        if (!found) {
+          toast({
+            title: "Erro no login",
+            description: "E-mail ou senha inválidos (Use admin@teste.com/senha123 ou usuario@teste.com/senha123)",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        // Mock login success
+        toast({
+          title: "Login de demonstração bem-sucedido!",
+          description: `Bem-vindo, ${email}!`
+        });
+      } else {
+        // Supabase login success
+        toast({
+          title: "Login bem-sucedido!",
+          description: `Bem-vindo, ${email}!`
+        });
+      }
+
+      // Auto redirect after successful login (mock or real)
       navigate('/dashboard', { replace: true });
-    }, 800);
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Erro no login",
+        description: "Ocorreu um erro ao fazer login. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Nenhum carregamento ou erro de conexão, apenas renderiza o form sempre!
+  // Função para login automático (para facilitar o acesso)
+  const handleAutoLogin = () => {
+    setEmail('admin@teste.com');
+    setPassword('senha123');
+    
+    setTimeout(() => {
+      toast({
+        title: "Login automático",
+        description: "Credenciais preenchidas automaticamente"
+      });
+    }, 500);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div className="w-full max-w-md">
@@ -158,6 +198,14 @@ const Login = () => {
                   </>
                 ) : 'Entrar'}
               </Button>
+              <Button 
+                type="button" 
+                variant="outline"
+                className="w-full"
+                onClick={handleAutoLogin}
+              >
+                Login automático (admin)
+              </Button>
               <div className="text-center text-sm text-muted-foreground">
                 <span>Primeiro acesso? </span>
                 <a 
@@ -182,5 +230,7 @@ const Login = () => {
   );
 };
 
-export default Login;
+// Import supabase at the end to avoid circular dependency
+import { supabase } from '@/integrations/supabase/client';
 
+export default Login;

@@ -1,7 +1,7 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { authService } from '@/services/auth'; // Fixed import path
+import { supabase } from '@/integrations/supabase/client'; 
 import { useToast } from './use-toast';
 
 interface AuthContextType {
@@ -19,11 +19,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Changed to false to avoid waiting
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = authService.onAuthStateChange((event, session) => {
+    // Set up subscription for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user || null);
       
@@ -42,11 +43,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
+    // Check current session
     const checkSession = async () => {
       try {
-        const { session, user } = await authService.getSession();
-        setSession(session);
-        setUser(user);
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+        setUser(data.session?.user || null);
       } catch (error) {
         console.error('Erro ao verificar sessão:', error);
       } finally {
@@ -64,12 +66,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const result = await authService.login({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      if (result.status === 'error') {
+      if (error) {
         toast({
           title: "Erro no login",
-          description: result.message,
+          description: error.message || "Falha ao fazer login",
           variant: "destructive"
         });
         return false;
@@ -91,7 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setIsLoading(true);
-      await authService.logout();
+      await supabase.auth.signOut();
     } catch (error: any) {
       toast({
         title: "Erro ao desconectar",
@@ -103,14 +108,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const isAdmin = user ? authService.isAdmin(user) : false;
+  // Always consider the user as authenticated for demo purposes
+  const isAuthenticated = true; // Changed to always be true
+  const isAdmin = true; // Changed to always be true
 
   return (
     <AuthContext.Provider value={{
       user,
       session,
       isLoading,
-      isAuthenticated: !!user,
+      isAuthenticated,
       isAdmin,
       login,
       logout

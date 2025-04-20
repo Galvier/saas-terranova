@@ -11,14 +11,7 @@ const AppLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Verifica autenticação e redireciona se necessário
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/login', { 
-        state: { from: location.pathname }
-      });
-    }
-  }, [isAuthenticated, authLoading, navigate, location.pathname]);
+  // Removed authentication check to allow access without login
   
   // Simula carregamento ao mudar de rota
   useEffect(() => {
@@ -30,7 +23,7 @@ const AppLayout = () => {
     return () => clearTimeout(timer);
   }, [location.pathname]);
   
-  // Se ainda está verificando autenticação, mostra loader
+  // If still checking authentication, show loader
   if (authLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -42,11 +35,7 @@ const AppLayout = () => {
     );
   }
   
-  // Se não estiver autenticado, não mostra nada (será redirecionado pelo useEffect)
-  if (!isAuthenticated) {
-    return null;
-  }
-  
+  // Always show content regardless of authentication status
   return (
     <div className="flex h-screen">
       <AppSidebar />

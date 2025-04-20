@@ -1,3 +1,4 @@
+
 // Helper functions for Supabase client
 import { supabase } from "./client";
 
@@ -54,10 +55,10 @@ export interface Manager {
 export async function callRPC<T>(functionName: string, params?: Record<string, any>): Promise<{data: T | null; error: any}> {
   try {
     if (params) {
-      // Corrigindo para cast correto dos nomes de função!
-      return await supabase.rpc(functionName as any, params);
+      // Fixed type casting for function name
+      return await supabase.rpc(functionName as string, params);
     } else {
-      return await supabase.rpc(functionName as any);
+      return await supabase.rpc(functionName as string);
     }
   } catch (error) {
     console.error(`Error calling RPC function ${functionName}:`, error);

@@ -1,169 +1,112 @@
 
-import { supabase, Tables, ValidTableName } from "@/integrations/supabase/client";
+import { supabase, testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/client';
+import { CrudResult, formatCrudResult } from '@/integrations/supabase/helpers';
 
-export interface DiagnosticResult {
-  status: "success" | "error";
-  message: string;
-  details?: any;
-  timestamp: Date;
+export interface DiagnosticTest {
+  id: string;
+  test_id: string;
+  test_type?: string;
+  created_at?: string;
+  created_by?: string;
 }
 
-export interface TableInfo {
-  name: string;
-  recordCount: number | null;
-  status: "ok" | "error" | "empty";
-  message?: string;
-}
-
-export interface ConnectionInfo {
-  url: string;
-  responseTime: number;
-  connected: boolean;
-  timestamp: Date;
-}
-
-// Get Supabase URL (since we can't access it directly from the client)
-export const getSupabaseUrl = (): string => {
-  return "https://zghthguqsravpcvrgahe.supabase.co";
-};
-
-// Test basic connection to Supabase
-export async function testConnection(): Promise<ConnectionInfo> {
-  const startTime = performance.now();
-  let connected = false;
-
-  try {
-    // Simple query to test connection
-    // Corrigido para cast correto de string
-    const { data, error } = await supabase.rpc('postgres_version' as any);
-    
-    if (error) throw error;
-    
-    connected = true;
-    return {
-      url: getSupabaseUrl(),
-      responseTime: Math.round(performance.now() - startTime),
-      connected,
-      timestamp: new Date()
+export interface DiagnosticResults {
+  connectionTest: {
+    success: boolean;
+    message: string;
+    responseTime?: number;
+  };
+  tablesCheck: {
+    [tableName: string]: {
+      exists: boolean;
+      count?: number;
+      error?: string;
     };
-  } catch (error) {
-    console.error('Connection test failed:', error);
-    return {
-      url: getSupabaseUrl(),
-      responseTime: Math.round(performance.now() - startTime),
-      connected: false,
-      timestamp: new Date()
-    };
-  }
-}
-
-// Check if a table exists
-export async function checkTable(tableName: string): Promise<TableInfo> {
-  try {
-    // Validate against allowed table names
-    const validTableNames = Object.values(Tables);
-    if (!validTableNames.includes(tableName as ValidTableName)) {
-      return {
-        name: tableName,
-        recordCount: null,
-        status: "error",
-        message: "Invalid table name"
-      };
-    }
-
-    // Check if table exists by trying to query it
-    const { data, error, count } = await supabase
-      .from(tableName as ValidTableName)
-      .select('*', { count: 'exact', head: true });
-
-    if (error) {
-      return {
-        name: tableName,
-        recordCount: null,
-        status: "error",
-        message: error.message
-      };
-    }
-
-    return {
-      name: tableName,
-      recordCount: count || 0,
-      status: count === 0 ? "empty" : "ok"
-    };
-  } catch (error) {
-    console.error(`Error checking table ${tableName}:`, error);
-    return {
-      name: tableName,
-      recordCount: null,
-      status: "error",
-      message: error instanceof Error ? error.message : String(error)
-    };
-  }
-}
-
-// Run a basic write test on a test table
-export async function testWriteOperation(): Promise<DiagnosticResult> {
-  const testId = `test-${Date.now()}`;
-  
-  try {
-    // Insert a test record
-    const { error: insertError } = await supabase
-      .from('diagnostic_tests')
-      .insert({ test_id: testId, test_type: 'connection_test' });
-    
-    if (insertError) throw insertError;
-    
-    // Clean up by deleting the test record
-    const { error: deleteError } = await supabase
-      .from('diagnostic_tests')
-      .delete()
-      .eq('test_id', testId);
-    
-    if (deleteError) {
-      console.warn('Could not clean up test record:', deleteError);
-    }
-
-    return {
-      status: "success",
-      message: "Write test completed successfully",
-      timestamp: new Date()
-    };
-  } catch (error) {
-    console.error('Write test failed:', error);
-    return {
-      status: "error",
-      message: error instanceof Error ? error.message : String(error),
-      details: error,
-      timestamp: new Date()
-    };
-  }
-}
-
-// Check all essential tables
-export async function checkAllTables(tableNames: string[]): Promise<TableInfo[]> {
-  const results: TableInfo[] = [];
-  
-  for (const tableName of tableNames) {
-    const result = await checkTable(tableName);
-    results.push(result);
-  }
-  
-  return results;
-}
-
-// Get overall diagnostic summary
-export async function runFullDiagnostic(tableNames: string[]): Promise<{
-  connection: ConnectionInfo;
-  tables: TableInfo[];
-  writeTest: DiagnosticResult;
-}> {
-  const connection = await testConnection();
-  const tables = await checkAllTables(tableNames);
-  const writeTest = await testWriteOperation();
-  
-  return {
-    connection,
-    tables,
-    writeTest
+  };
+  writeTest: {
+    success: boolean;
+    message: string;
+    timeTaken?: number;
+    testId?: string;
   };
 }
+
+// Tests the connection to Supabase
+export const testConnection = async (): Promise<{success: boolean; message: string; responseTime?: number}> => {
+  return await testSupabaseConnection();
+};
+
+// Tests if the tables exist and returns their row counts
+export const testTables = async (): Promise<{[tableName: string]: {exists: boolean; count?: number; error?: string}}> => {
+  return await checkDatabaseTables();
+};
+
+// Tests writing to the database by creating a diagnostic_test record
+export const testDatabaseWrite = async (): Promise<CrudResult<DiagnosticTest>> => {
+  try {
+    const startTime = performance.now();
+    console.log('Testing database write...');
+
+    // First try to create the table if it doesn't exist
+    const { error: rpcError } = await supabase.rpc('create_diagnostic_table_if_not_exists');
+    
+    if (rpcError) {
+      console.error('Error creating diagnostic table:', rpcError);
+      return formatCrudResult(null, rpcError);
+    }
+    
+    // Generate a test ID
+    const testId = `test_${Date.now()}`;
+    
+    // Try to insert a record using a function to avoid RLS issues
+    const { data, error } = await supabase.rpc('run_diagnostic_write_test', { 
+      test_id_param: testId 
+    } as any);
+    
+    const timeTaken = Math.round(performance.now() - startTime);
+    
+    if (error) {
+      console.error('Error in write test:', error);
+      return formatCrudResult(null, error);
+    }
+    
+    console.log(`Write test successful (${timeTaken}ms)`);
+    return formatCrudResult({
+      id: data?.id || 'unknown',
+      test_id: testId,
+      test_type: 'write_test',
+    }, null);
+    
+  } catch (error) {
+    console.error('Unexpected error in write test:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Run all diagnostic tests
+export const runAllDiagnostics = async (): Promise<DiagnosticResults> => {
+  const connectionTest = await testConnection();
+  const tablesCheck = await testTables();
+  
+  let writeTest = {
+    success: false,
+    message: 'Write test skipped due to connection failure'
+  };
+  
+  if (connectionTest.success) {
+    const writeTestResult = await testDatabaseWrite();
+    writeTest = {
+      success: writeTestResult.status === 'success',
+      message: writeTestResult.message,
+      timeTaken: writeTestResult.data ? 
+        parseInt(writeTestResult.data.created_at || '0') : undefined,
+      testId: writeTestResult.data?.test_id
+    };
+  }
+  
+  return {
+    connectionTest,
+    tablesCheck,
+    writeTest
+  };
+};
