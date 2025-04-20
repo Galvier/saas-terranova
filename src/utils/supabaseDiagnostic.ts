@@ -1,5 +1,5 @@
 
-import { supabase, Tables, ValidTableName, TableCheckResult } from "@/integrations/supabase/client";
+import { supabase, Tables, ValidTableName } from "@/integrations/supabase/client";
 
 export interface DiagnosticResult {
   status: "success" | "error";
@@ -33,8 +33,8 @@ export async function testConnection(): Promise<ConnectionInfo> {
   let connected = false;
 
   try {
-    // Simple count query to test connection
-    const { error } = await supabase.from('profiles').select('count(*)', { count: 'exact', head: true });
+    // Simple query to test connection
+    const { error } = await supabase.rpc('postgres_version');
     
     if (error) throw error;
     
