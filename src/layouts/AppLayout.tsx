@@ -1,19 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import AppSidebar from '@/components/AppSidebar';
-import { useAuth } from '@/hooks/useAuth';
 
 const AppLayout = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   
-  // Removed authentication check to allow access without login
-  
-  // Simula carregamento ao mudar de rota
+  // Simulate loading when changing routes
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
@@ -22,18 +17,6 @@ const AppLayout = () => {
     
     return () => clearTimeout(timer);
   }, [location.pathname]);
-  
-  // If still checking authentication, show loader
-  if (authLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <span className="text-sm text-muted-foreground animate-pulse">Verificando autenticação...</span>
-        </div>
-      </div>
-    );
-  }
   
   // Always show content regardless of authentication status
   return (

@@ -1,9 +1,10 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, ClipboardList, Home, LogOut, Settings, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppLogo from './AppLogo';
+import { useAuth } from '@/hooks/useAuth';
 
 type SidebarItem = {
   title: string;
@@ -21,10 +22,18 @@ const navItems: SidebarItem[] = [
 
 const AppSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   
-  const handleLogout = () => {
-    // We'll implement this with actual auth later
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Redirect to login even if there's an error
+      navigate('/login');
+    }
   };
 
   return (

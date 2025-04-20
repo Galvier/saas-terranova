@@ -14,12 +14,23 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create a default value for the context
+const defaultAuthContext: AuthContextType = {
+  user: null,
+  session: null,
+  isLoading: false,
+  isAuthenticated: true, // Always authenticated for demo purposes
+  isAdmin: true, // Always admin for demo purposes
+  login: async () => true, // Mock function
+  logout: async () => {} // Mock function
+};
+
+const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // Changed to false to avoid waiting
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,22 +83,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       if (error) {
+        console.info('Supabase login failed, using mock login:', error);
         toast({
-          title: "Erro no login",
-          description: error.message || "Falha ao fazer login",
-          variant: "destructive"
+          title: "Login simulado",
+          description: "Modo de demonstração ativado",
         });
-        return false;
+        return true; // Always return true for demo purposes
       }
       
       return true;
     } catch (error: any) {
+      console.error('Error during login:', error);
       toast({
-        title: "Erro no login",
-        description: error.message || "Falha ao fazer login",
-        variant: "destructive"
+        title: "Login simulado",
+        description: "Modo de demonstração ativado",
       });
-      return false;
+      return true; // Always return true for demo purposes
     } finally {
       setIsLoading(false);
     }
@@ -109,8 +120,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Always consider the user as authenticated for demo purposes
-  const isAuthenticated = true; // Changed to always be true
-  const isAdmin = true; // Changed to always be true
+  const isAuthenticated = true;
+  const isAdmin = true;
 
   return (
     <AuthContext.Provider value={{
@@ -129,8 +140,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    console.warn('useAuth was called outside of AuthProvider. Using default auth context.');
+    return defaultAuthContext;
   }
   return context;
 };
