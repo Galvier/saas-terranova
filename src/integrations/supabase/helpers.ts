@@ -33,3 +33,34 @@ export function formatCrudResult<T>(data: T | null, error: any): CrudResult<T> {
     message: 'Operação realizada com sucesso'
   };
 }
+
+// Manager interface for typing
+export interface Manager {
+  id: string;
+  name: string;
+  email: string;
+  department_id: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Type for RPC function check table results
+export interface TableCheckResult {
+  exists: boolean;
+  count: number;
+}
+
+// RPC function call helper
+export async function callRPC<T>(functionName: string, params?: Record<string, any>): Promise<{data: T | null; error: any}> {
+  try {
+    if (params) {
+      return await supabase.rpc(functionName, params);
+    } else {
+      return await supabase.rpc(functionName);
+    }
+  } catch (error) {
+    console.error(`Error calling RPC function ${functionName}:`, error);
+    return { data: null, error };
+  }
+}

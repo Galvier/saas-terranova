@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -214,7 +215,7 @@ const FirstAccess = () => {
     try {
       console.log("Iniciando registro de usuário admin:", email);
       
-      const result = await authService.registerUser(userData);
+      const result = await authService.register(userData);
       
       console.log("Resultado do registro:", result);
       

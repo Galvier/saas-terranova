@@ -1,6 +1,6 @@
 
 import { callRPC, formatCrudResult, CrudResult, TableCheckResult } from '@/integrations/supabase/helpers';
-import { supabase } from '@/integrations/supabase/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { getSupabaseUrl } from '@/integrations/supabase/helpers';
 
 export interface DiagnosticResult {
