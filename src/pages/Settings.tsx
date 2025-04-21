@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -32,8 +33,8 @@ const Settings = () => {
   const { preferences, updatePreferences } = useInterfacePreferences();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [theme, setTheme] = useState(preferences.theme);
-  const [density, setDensity] = useState(preferences.density);
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(preferences.theme);
+  const [density, setDensity] = useState<'compact' | 'default' | 'comfortable'>(preferences.density);
   const [animationsEnabled, setAnimationsEnabled] = useState(preferences.animationsEnabled);
   const navigate = useNavigate();
   
@@ -46,6 +47,21 @@ const Settings = () => {
   const [fullName, setFullName] = useState('Administrador');
   const [displayName, setDisplayName] = useState('Admin');
   const [email, setEmail] = useState('admin@empresa.com');
+  const [autoBackup, setAutoBackup] = useState(false);
+  
+  // General save settings function for all tabs except interface
+  const handleSaveSettings = () => {
+    setIsLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoading(false);
+      toast({
+        title: "Configurações salvas",
+        description: "Suas configurações foram atualizadas com sucesso",
+      });
+    }, 1000);
+  };
   
   // Handle saving interface settings with visual feedback
   const handleSaveInterfaceSettings = () => {
@@ -237,7 +253,11 @@ const Settings = () => {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>Tema</Label>
-                      <RadioGroup value={theme} onValueChange={setTheme} className="flex gap-4">
+                      <RadioGroup 
+                        value={theme} 
+                        onValueChange={(value: 'light' | 'dark' | 'system') => setTheme(value)} 
+                        className="flex gap-4"
+                      >
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="light" id="theme-light" />
                           <Label htmlFor="theme-light" className="flex items-center gap-2">
@@ -264,7 +284,11 @@ const Settings = () => {
                     
                     <div className="space-y-2">
                       <Label>Densidade de Informações</Label>
-                      <RadioGroup value={density} onValueChange={setDensity} className="flex gap-4">
+                      <RadioGroup 
+                        value={density} 
+                        onValueChange={(value: 'compact' | 'default' | 'comfortable') => setDensity(value)} 
+                        className="flex gap-4"
+                      >
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="compact" id="density-compact" />
                           <Label htmlFor="density-compact">Compacto</Label>
