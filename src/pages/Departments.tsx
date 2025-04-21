@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,51 +11,73 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-
-// Simulated data
-const initialDepartments = [
-  { id: 1, name: 'Vendas', description: 'Departamento de vendas', manager: 'Carlos Oliveira', employees: 12, status: 'active' },
-  { id: 2, name: 'Marketing', description: 'Departamento de marketing', manager: 'Ana Silva', employees: 8, status: 'active' },
-  { id: 3, name: 'Financeiro', description: 'Departamento financeiro', manager: 'Roberto Santos', employees: 5, status: 'active' },
-  { id: 4, name: 'RH', description: 'Recursos Humanos', manager: 'Juliana Martins', employees: 4, status: 'active' },
-  { id: 5, name: 'TI', description: 'Tecnologia da Informação', manager: 'Fernando Costa', employees: 10, status: 'inactive' },
-];
+import { Department, createDepartment, getAllDepartments } from '@/integrations/supabase/helpers';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Departments = () => {
-  const [departments, setDepartments] = useState(initialDepartments);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newDepartment, setNewDepartment] = useState({
     name: '',
     description: '',
-    manager: '',
     status: 'active'
   });
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Carregar departamentos do Supabase
+  const { data: departmentsData, isLoading, error } = useQuery({
+    queryKey: ['departments'],
+    queryFn: async () => {
+      const result = await getAllDepartments();
+      if (result.error) {
+        throw new Error(result.message);
+      }
+      return result.data || [];
+    }
+  });
+
+  // Mutation para criar novo departamento
+  const createDepartmentMutation = useMutation({
+    mutationFn: async (departmentData: { name: string; description: string; is_active: boolean }) => {
+      const result = await createDepartment(departmentData);
+      if (result.error) {
+        throw new Error(result.message);
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
+      setIsDialogOpen(false);
+      
+      toast({
+        title: "Departamento criado",
+        description: `${newDepartment.name} foi adicionado com sucesso`,
+      });
+      
+      // Reset form
+      setNewDepartment({
+        name: '',
+        description: '',
+        status: 'active'
+      });
+    },
+    onError: (error) => {
+      console.error('Erro ao criar departamento:', error);
+      toast({
+        title: "Erro ao criar departamento",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao salvar o departamento",
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const id = departments.length + 1;
-    const departmentToAdd = {
-      ...newDepartment,
-      id,
-      employees: 0
-    };
-    
-    setDepartments([...departments, departmentToAdd]);
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Departamento criado",
-      description: `${newDepartment.name} foi adicionado com sucesso`,
-    });
-    
-    // Reset form
-    setNewDepartment({
-      name: '',
-      description: '',
-      manager: '',
-      status: 'active'
+    createDepartmentMutation.mutate({
+      name: newDepartment.name,
+      description: newDepartment.description,
+      is_active: newDepartment.status === 'active'
     });
   };
 
@@ -98,14 +120,6 @@ const Departments = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="manager">Gestor Responsável</Label>
-                  <Input 
-                    id="manager" 
-                    value={newDepartment.manager}
-                    onChange={e => setNewDepartment({...newDepartment, manager: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select 
                     defaultValue={newDepartment.status}
@@ -122,41 +136,53 @@ const Departments = () => {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Salvar</Button>
+                <Button type="submit" disabled={createDepartmentMutation.isPending}>
+                  {createDepartmentMutation.isPending ? 'Salvando...' : 'Salvar'}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
       </div>
       
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Departamento</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Gestor</TableHead>
-              <TableHead className="text-center">Funcionários</TableHead>
-              <TableHead className="text-center">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {departments.map((dept) => (
-              <TableRow key={dept.id}>
-                <TableCell className="font-medium">{dept.name}</TableCell>
-                <TableCell>{dept.description}</TableCell>
-                <TableCell>{dept.manager}</TableCell>
-                <TableCell className="text-center">{dept.employees}</TableCell>
-                <TableCell className="text-center">
-                  <Badge variant={dept.status === 'active' ? 'default' : 'secondary'}>
-                    {dept.status === 'active' ? 'Ativo' : 'Inativo'}
-                  </Badge>
-                </TableCell>
+      {isLoading ? (
+        <div className="flex justify-center p-8">Carregando departamentos...</div>
+      ) : error ? (
+        <div className="text-center p-8 text-red-500">Erro ao carregar departamentos</div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Departamento</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead className="text-center">Status</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {departmentsData && departmentsData.length > 0 ? (
+                departmentsData.map((dept) => (
+                  <TableRow key={dept.id}>
+                    <TableCell className="font-medium">{dept.name}</TableCell>
+                    <TableCell>{dept.description || '-'}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={dept.is_active ? 'default' : 'secondary'}>
+                        {dept.is_active ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-6">
+                    Nenhum departamento encontrado
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };

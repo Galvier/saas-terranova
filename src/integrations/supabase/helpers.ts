@@ -51,6 +51,16 @@ export interface Manager {
   updated_at?: string;
 }
 
+// Department interface for typing
+export interface Department {
+  id: string;
+  name: string;
+  description?: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // Define return types for RPC functions
 export interface RPCReturns {
   postgres_version: string;
@@ -60,6 +70,7 @@ export interface RPCReturns {
   get_all_departments: { id: string; name: string }[];
   get_manager_by_id: Manager;
   update_manager: null;
+  create_department: { id: string };
 }
 
 // Supported RPC function names and their parameter types
@@ -76,6 +87,11 @@ export interface RPCFunctions {
     manager_email: string;
     manager_department_id: string;
     manager_is_active: boolean;
+  };
+  create_department: {
+    department_name: string;
+    department_description: string;
+    department_is_active: boolean;
   };
 }
 
@@ -95,5 +111,44 @@ export async function callRPC<
   } catch (error) {
     console.error(`Error calling RPC function ${functionName}:`, error);
     return { data: null, error };
+  }
+}
+
+// Direct department creation function (alternative to RPC)
+export async function createDepartment(department: {
+  name: string;
+  description?: string;
+  is_active: boolean;
+}): Promise<CrudResult<Department>> {
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .insert({
+        name: department.name,
+        description: department.description || null,
+        is_active: department.is_active
+      })
+      .select()
+      .single();
+    
+    return formatCrudResult<Department>(data, error);
+  } catch (error) {
+    console.error('Error creating department:', error);
+    return formatCrudResult<Department>(null, error);
+  }
+}
+
+// Get all departments function (alternative to RPC)
+export async function getAllDepartments(): Promise<CrudResult<Department[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*')
+      .order('name');
+    
+    return formatCrudResult<Department[]>(data, error);
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    return formatCrudResult<Department[]>(null, error);
   }
 }
