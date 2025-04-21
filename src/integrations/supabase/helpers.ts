@@ -51,8 +51,25 @@ export interface Manager {
   updated_at?: string;
 }
 
-// RPC function call helper with proper type handling
-export async function callRPC<T>(functionName: string, params?: Record<string, any>): Promise<{data: T | null; error: any}> {
+// Supported RPC function names and their parameter types
+interface RPCFunctions {
+  'postgres_version': Record<string, never>;
+  'check_table_exists_and_count': { table_name: string };
+  'create_diagnostic_table_if_not_exists': Record<string, never>;
+  'run_diagnostic_write_test': { test_id_param: string };
+  'get_all_departments': Record<string, never>;
+  'get_manager_by_id': { manager_id: string };
+  'update_manager': { manager_data: Partial<Manager> & { id: string } };
+}
+
+// Type-safe RPC function call helper
+export async function callRPC<
+  T extends keyof RPCFunctions,
+  R = any
+>(
+  functionName: T,
+  params?: RPCFunctions[T]
+): Promise<{data: R | null; error: any}> {
   try {
     if (params) {
       return await supabase.rpc(functionName, params);
