@@ -3,11 +3,7 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-
-interface Department {
-  id: string;
-  name: string;
-}
+import { Department } from '@/integrations/supabase/helpers';
 
 interface DepartmentsSelectProps {
   departments: Department[];
@@ -18,6 +14,7 @@ interface DepartmentsSelectProps {
   form?: ReturnType<typeof useForm>;
   name?: string;
   required?: boolean;
+  error?: string;
 }
 
 export const DepartmentsSelect: React.FC<DepartmentsSelectProps> = ({
@@ -29,14 +26,15 @@ export const DepartmentsSelect: React.FC<DepartmentsSelectProps> = ({
   form,
   name = "department_id",
   required = false,
+  error,
 }) => {
   // If used as a standalone component
   if (!form || !name) {
     return (
       <div className="space-y-2">
-        <label className="text-sm font-medium">{label}</label>
+        <label className="text-sm font-medium">{label}{required && <span className="text-destructive ml-1">*</span>}</label>
         <Select value={value} onValueChange={onChange}>
-          <SelectTrigger>
+          <SelectTrigger className={error ? "border-destructive" : ""}>
             <SelectValue placeholder="Selecione um departamento" />
           </SelectTrigger>
           <SelectContent>
@@ -46,6 +44,7 @@ export const DepartmentsSelect: React.FC<DepartmentsSelectProps> = ({
           </SelectContent>
         </Select>
         {description && <p className="text-xs text-muted-foreground">{description}</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
     );
   }
@@ -79,3 +78,5 @@ export const DepartmentsSelect: React.FC<DepartmentsSelectProps> = ({
     />
   );
 };
+
+export default DepartmentsSelect;

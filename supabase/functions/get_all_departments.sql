@@ -1,18 +1,8 @@
 
 -- Function to get all departments
 create or replace function get_all_departments()
-returns json as $$
-declare
-  result json;
+returns setof departments as $$
 begin
-  select json_agg(
-    json_build_object(
-      'id', id,
-      'name', name
-    )
-  ) into result
-  from departments;
-  
-  return result;
+  return query select * from departments order by name;
 end;
 $$ language plpgsql security definer;

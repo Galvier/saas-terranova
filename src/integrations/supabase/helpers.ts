@@ -67,7 +67,7 @@ export interface RPCReturns {
   check_table_exists_and_count: TableCheckResult;
   create_diagnostic_table_if_not_exists: null;
   run_diagnostic_write_test: { id: string };
-  get_all_departments: { id: string; name: string }[];
+  get_all_departments: Department[];
   get_manager_by_id: Manager;
   update_manager: null;
   create_department: { id: string };
