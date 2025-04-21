@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -38,6 +38,13 @@ const Settings = () => {
   const [animationsEnabled, setAnimationsEnabled] = useState(preferences.animationsEnabled);
   const navigate = useNavigate();
   
+  // Synchronize state with preferences when preferences change
+  useEffect(() => {
+    setTheme(preferences.theme);
+    setDensity(preferences.density);
+    setAnimationsEnabled(preferences.animationsEnabled);
+  }, [preferences]);
+  
   // Form states
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [systemNotifications, setSystemNotifications] = useState(true);
@@ -74,18 +81,20 @@ const Settings = () => {
         animationsEnabled
       });
       
-      toast({
-        title: "Configurações salvas",
-        description: "Suas preferências de interface foram atualizadas com sucesso",
-      });
+      setTimeout(() => {
+        setIsLoading(false);
+        toast({
+          title: "Preferências de interface salvas",
+          description: "Suas preferências de interface foram atualizadas com sucesso",
+        });
+      }, 800);
     } catch (error) {
+      setIsLoading(false);
       toast({
         title: "Erro ao salvar",
         description: "Ocorreu um erro ao salvar suas preferências",
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
   
