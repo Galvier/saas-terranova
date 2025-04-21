@@ -1,6 +1,6 @@
 
 import { supabase, testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/client';
-import { CrudResult, formatCrudResult, TableCheckResult } from '@/integrations/supabase/helpers';
+import { CrudResult, formatCrudResult, TableCheckResult, callRPC } from '@/integrations/supabase/helpers';
 
 export interface DiagnosticTest {
   id: string;
@@ -70,7 +70,7 @@ export const testDatabaseWrite = async (): Promise<CrudResult<DiagnosticTest>> =
     console.log('Testing database write...');
 
     // First try to create the table if it doesn't exist
-    const { error: rpcError } = await supabase.rpc('create_diagnostic_table_if_not_exists');
+    const { error: rpcError } = await callRPC('create_diagnostic_table_if_not_exists');
     
     if (rpcError) {
       console.error('Error creating diagnostic table:', rpcError);
@@ -81,7 +81,7 @@ export const testDatabaseWrite = async (): Promise<CrudResult<DiagnosticTest>> =
     const testId = `test_${Date.now()}`;
     
     // Try to insert a record using a function to avoid RLS issues
-    const { data, error } = await supabase.rpc<any>('run_diagnostic_write_test', { 
+    const { data, error } = await callRPC('run_diagnostic_write_test', { 
       test_id_param: testId 
     });
     

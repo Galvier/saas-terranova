@@ -51,25 +51,41 @@ export interface Manager {
   updated_at?: string;
 }
 
+// Define return types for RPC functions
+export interface RPCReturns {
+  postgres_version: string;
+  check_table_exists_and_count: TableCheckResult;
+  create_diagnostic_table_if_not_exists: null;
+  run_diagnostic_write_test: { id: string };
+  get_all_departments: { id: string; name: string }[];
+  get_manager_by_id: Manager;
+  update_manager: null;
+}
+
 // Supported RPC function names and their parameter types
-interface RPCFunctions {
-  'postgres_version': Record<string, never>;
-  'check_table_exists_and_count': { table_name: string };
-  'create_diagnostic_table_if_not_exists': Record<string, never>;
-  'run_diagnostic_write_test': { test_id_param: string };
-  'get_all_departments': Record<string, never>;
-  'get_manager_by_id': { manager_id: string };
-  'update_manager': { manager_data: Partial<Manager> & { id: string } };
+export interface RPCFunctions {
+  postgres_version: Record<string, never>;
+  check_table_exists_and_count: { table_name: string };
+  create_diagnostic_table_if_not_exists: Record<string, never>;
+  run_diagnostic_write_test: { test_id_param: string };
+  get_all_departments: Record<string, never>;
+  get_manager_by_id: { manager_id: string };
+  update_manager: { 
+    manager_id: string;
+    manager_name: string;
+    manager_email: string;
+    manager_department_id: string;
+    manager_is_active: boolean;
+  };
 }
 
 // Type-safe RPC function call helper
 export async function callRPC<
-  T extends keyof RPCFunctions,
-  R = any
+  FnName extends keyof RPCFunctions
 >(
-  functionName: T,
-  params?: RPCFunctions[T]
-): Promise<{data: R | null; error: any}> {
+  functionName: FnName,
+  params?: RPCFunctions[FnName]
+): Promise<{data: RPCReturns[FnName] | null; error: any}> {
   try {
     if (params) {
       return await supabase.rpc(functionName, params);

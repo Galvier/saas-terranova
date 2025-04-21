@@ -74,7 +74,7 @@ const ManagersUpdate = () => {
   const fetchManager = async (managerId: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await callRPC<Manager>('get_manager_by_id', { 
+      const { data, error } = await callRPC('get_manager_by_id', { 
         manager_id: managerId 
       });
 
@@ -102,7 +102,7 @@ const ManagersUpdate = () => {
 
   const fetchDepartments = async () => {
     try {
-      const { data, error } = await callRPC<Department[]>('get_all_departments');
+      const { data, error } = await callRPC('get_all_departments');
 
       if (error) {
         throw error;
@@ -124,7 +124,7 @@ const ManagersUpdate = () => {
     setIsSaving(true);
     try {
       const { error } = await callRPC('update_manager', {
-        manager_id: id,
+        manager_id: id!,
         manager_name: values.name,
         manager_email: values.email,
         manager_department_id: values.department_id,
@@ -449,7 +449,7 @@ const CredentialsSection: React.FC<CredentialsSectionProps> = ({ isEdit, email }
               fill="currentColor"
               className="w-4 h-4"
             >
-              <path d="M3.53 2.47a1.25 1.25 0 0 1 0 1.77l1.1 1.1c.16.16.25.38.25.61v1.54c0 .23-.09.45-.25.61l-1.1 1.1a1.25 1.25 0 0 1 0 1.77l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45-.09.61-.25l1.1-1.1a1.25 1.25 0 0 1 1.77 0l2.82 2.83a3.75 3.75 0 0 1 0 5.3l-.88.87c-.11.11-.27.18-.44.18H4.88c-.17 0-.33-.07-.44-.18l-.88-.87a3.75 3.75 0 0 1 0-5.3l2.83-2.82a1.25 1.25 0 0 1 1.77 0l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45.09.61.25l1.1 1.1a1.25 1.25 0 0 1 1.77 0l2.83-2.82a3.75 3.75 0 0 1 5.3 0l-2.83-2.82a1.25 1.25 0 0 1 1.77 0l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45-.09.61-.25l1.1-1.1a1.25 1.25 0 0 1 0-1.77l-1.1-1.1c-.16-.16-.25-.38-.25-.61V9.52c0-.23-.09-.45-.25-.61l-1.1-1.1a1.25 1.25 0 0 1 0-1.77l1.1-1.1c-.16-.16-.25-.38-.25-.61V3.52c0-.23-.09-.45-.25-.61l1.1-1.1a1.25 1.25 0 0 1 1.77 0Z" />
+              <path d="M3.53 2.47a1.25 1.25 0 0 1 0 1.77l1.1 1.1c.16.16.25.38.25.61v1.54c0 .23-.09.45-.25.61l-1.1 1.1a1.25 1.25 0 0 1 0 1.77l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45-.09.61-.25l1.1-1.1a1.25 1.25 0 0 1 1.77 0l2.82 2.83a3.75 3.75 0 0 1 0 5.3l-.88.87c-.11.11-.27.18-.44.18H4.88c-.17 0-.33-.07-.44-.18l-.88-.87a3.75 3.75 0 0 1 0-5.3l2.83-2.82a1.25 1.25 0 0 1 1.77 0l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45.09.61-.25l1.1 1.1a1.25 1.25 0 0 1 1.77 0l2.83-2.82a3.75 3.75 0 0 1 5.3 0l-2.83-2.82a1.25 1.25 0 0 1 1.77 0l1.1 1.1c.16.16.38.25.61.25h1.54c.23 0 .45-.09.61-.25l1.1-1.1a1.25 1.25 0 0 1 0-1.77l-1.1-1.1c-.16-.16-.25-.38-.25-.61V9.52c0-.23-.09-.45-.25-.61l-1.1-1.1a1.25 1.25 0 0 1 0-1.77l1.1-1.1c-.16-.16-.25-.38-.25-.61V3.52c0-.23-.09-.45-.25-.61l1.1-1.1a1.25 1.25 0 0 1 1.77 0Z" />
             </svg> : <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"

@@ -1,3 +1,4 @@
+
 import { formatCrudResult, CrudResult, TableCheckResult, callRPC } from '@/integrations/supabase/helpers';
 import { supabase } from '@/integrations/supabase/client';
 import { getSupabaseUrl } from '@/integrations/supabase/helpers';
@@ -31,7 +32,7 @@ export const diagnosticService = {
 
     try {
       // Consulta simples para testar conexão
-      const { data, error } = await callRPC<string>('postgres_version');
+      const { data, error } = await callRPC('postgres_version');
       
       if (error) throw error;
       
@@ -57,7 +58,7 @@ export const diagnosticService = {
   async checkTable(tableName: string): Promise<TableInfo> {
     try {
       // Cria uma consulta SQL para verificar se a tabela existe e contar linhas
-      const { data, error } = await callRPC<TableCheckResult>('check_table_exists_and_count', {
+      const { data, error } = await callRPC('check_table_exists_and_count', {
         table_name: tableName
       });
 
@@ -114,8 +115,8 @@ export const diagnosticService = {
       await callRPC('create_diagnostic_table_if_not_exists');
       
       // Usa um procedimento armazenado para o teste
-      const { data, error } = await callRPC<boolean>('run_diagnostic_write_test', {
-        test_id: testId
+      const { data, error } = await callRPC('run_diagnostic_write_test', {
+        test_id_param: testId
       });
       
       if (error) throw error;
