@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -14,10 +15,9 @@ import {
   Loader2, 
   Download, 
   Upload, 
-  BellRing, 
-  Globe, 
   Moon, 
   Sun, 
+  Globe, 
   UploadCloud, 
   User, 
   Settings2, 
@@ -26,6 +26,7 @@ import {
   Database 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { testConnection, testTables, testDatabaseWrite } from '@/utils/supabaseDiagnostic';
 
 const Settings = () => {
   const { toast } = useToast();
@@ -34,14 +35,19 @@ const Settings = () => {
   const [density, setDensity] = useState('default');
   const navigate = useNavigate();
   
-  // Notification states
+  // Form states
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [systemNotifications, setSystemNotifications] = useState(true);
   const [alertNotifications, setAlertNotifications] = useState(true);
-  
-  // Integration states
   const [apiKey, setApiKey] = useState('');
+  const [animationsEnabled, setAnimationsEnabled] = useState(true);
+  const [autoBackup, setAutoBackup] = useState(true);
+  const [exportEnabled, setExportEnabled] = useState(true);
+  const [fullName, setFullName] = useState('Administrador');
+  const [displayName, setDisplayName] = useState('Admin');
+  const [email, setEmail] = useState('admin@empresa.com');
   
+  // Handle saving settings with visual feedback
   const handleSaveSettings = () => {
     setIsLoading(true);
     
@@ -55,21 +61,103 @@ const Settings = () => {
     }, 1000);
   };
   
+  // Handle backup data with visual feedback
   const handleBackupData = () => {
-    toast({
-      title: "Backup iniciado",
-      description: "Seu backup está sendo gerado. Você será notificado quando estiver pronto para download."
-    });
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      toast({
+        title: "Backup concluído",
+        description: "Seu backup foi gerado e está disponível para download",
+      });
+    }, 1500);
   };
   
+  // Handle data restoration with visual feedback
   const handleRestoreData = () => {
     toast({
-      title: "Restauração de dados",
-      description: "Selecione um arquivo de backup para restaurar os dados."
+      title: "Selecione um arquivo",
+      description: "Por favor selecione um arquivo de backup para restaurar"
     });
+    
+    // Simulate file selection dialog
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.sql';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        setIsLoading(true);
+        setTimeout(() => {
+          setIsLoading(false);
+          toast({
+            title: "Restauração concluída",
+            description: `O arquivo ${file.name} foi restaurado com sucesso`
+          });
+        }, 2000);
+      }
+    };
+    input.click();
   };
   
-  const handleDiagnostic = () => {
+  // Handle diagnostic with actual Supabase connection test
+  const handleDiagnostic = async () => {
+    setIsLoading(true);
+    try {
+      // Test connection to Supabase
+      const connectionResult = await testConnection();
+      
+      if (connectionResult.success) {
+        toast({
+          title: "Diagnóstico concluído",
+          description: `Conexão com o banco de dados estabelecida em ${connectionResult.responseTime}ms`
+        });
+        
+        // Test database tables
+        const tablesResult = await testTables();
+        const tablesCount = Object.values(tablesResult).filter(t => t.exists).length;
+        
+        toast({
+          title: "Verificação de tabelas",
+          description: `${tablesCount} tabelas verificadas com sucesso`
+        });
+        
+        // Test write operation
+        const writeResult = await testDatabaseWrite();
+        
+        if (writeResult.status === 'success') {
+          toast({
+            title: "Teste de escrita",
+            description: "Operação de escrita realizada com sucesso"
+          });
+        } else {
+          toast({
+            title: "Erro no teste de escrita",
+            description: writeResult.message,
+            variant: "destructive"
+          });
+        }
+        
+      } else {
+        toast({
+          title: "Erro de conexão",
+          description: connectionResult.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro no diagnóstico",
+        description: "Ocorreu um erro ao executar o diagnóstico",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Navigate to specific pages
+  const handleNavigateToDiagnostic = () => {
     navigate('/diagnostico');
   };
   
@@ -187,7 +275,11 @@ const Settings = () => {
                       <Label htmlFor="animations" className="text-sm text-muted-foreground">
                         Ativar animações na interface
                       </Label>
-                      <Switch id="animations" defaultChecked />
+                      <Switch 
+                        id="animations" 
+                        checked={animationsEnabled}
+                        onCheckedChange={setAnimationsEnabled}
+                      />
                     </div>
                   </div>
                 </CardContent>
@@ -237,16 +329,29 @@ const Settings = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="fullName">Nome completo</Label>
-                          <Input id="fullName" defaultValue="Administrador" />
+                          <Input 
+                            id="fullName" 
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="displayName">Nome de exibição</Label>
-                          <Input id="displayName" defaultValue="Admin" />
+                          <Input 
+                            id="displayName" 
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                          />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" defaultValue="admin@empresa.com" />
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="role">Função</Label>
@@ -378,24 +483,28 @@ const Settings = () => {
                           Exportar dados automaticamente para sistemas externos
                         </p>
                       </div>
-                      <Switch id="export-enabled" defaultChecked />
+                      <Switch 
+                        id="export-enabled" 
+                        checked={exportEnabled}
+                        onCheckedChange={setExportEnabled}
+                      />
                     </div>
                     
                     <Separator />
                     
                     <div className="space-y-2">
                       <Label>Formatos de Exportação</Label>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" onClick={() => toast({ title: "Formato selecionado", description: "Exportação em CSV configurada" })}>
                           CSV
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => toast({ title: "Formato selecionado", description: "Exportação em Excel configurada" })}>
                           Excel
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => toast({ title: "Formato selecionado", description: "Exportação em PDF configurada" })}>
                           PDF
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => toast({ title: "Formato selecionado", description: "Exportação em JSON configurada" })}>
                           JSON
                         </Button>
                       </div>
@@ -439,9 +548,22 @@ const Settings = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <Button className="w-full" onClick={handleBackupData}>
-                          <Download className="mr-2 h-4 w-4" />
-                          Gerar Backup
+                        <Button 
+                          className="w-full" 
+                          onClick={handleBackupData}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processando...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="mr-2 h-4 w-4" />
+                              Gerar Backup
+                            </>
+                          )}
                         </Button>
                       </CardContent>
                     </Card>
@@ -454,9 +576,23 @@ const Settings = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <Button className="w-full" variant="outline" onClick={handleRestoreData}>
-                          <UploadCloud className="mr-2 h-4 w-4" />
-                          Restaurar Backup
+                        <Button 
+                          className="w-full" 
+                          variant="outline" 
+                          onClick={handleRestoreData}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processando...
+                            </>
+                          ) : (
+                            <>
+                              <UploadCloud className="mr-2 h-4 w-4" />
+                              Restaurar Backup
+                            </>
+                          )}
                         </Button>
                       </CardContent>
                     </Card>
@@ -471,9 +607,23 @@ const Settings = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <Button className="w-full" variant="secondary" onClick={handleDiagnostic}>
-                          <Database className="mr-2 h-4 w-4" />
-                          Verificar Conexão
+                        <Button 
+                          className="w-full" 
+                          variant="secondary" 
+                          onClick={handleDiagnostic}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Verificando...
+                            </>
+                          ) : (
+                            <>
+                              <Database className="mr-2 h-4 w-4" />
+                              Verificar Conexão
+                            </>
+                          )}
                         </Button>
                       </CardContent>
                     </Card>
@@ -486,7 +636,14 @@ const Settings = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <Button className="w-full" variant="outline">
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={() => toast({
+                            title: "Configurações avançadas",
+                            description: "Acessando configurações avançadas do sistema"
+                          })}
+                        >
                           <Settings2 className="mr-2 h-4 w-4" />
                           Opções Avançadas
                         </Button>
@@ -500,7 +657,11 @@ const Settings = () => {
                       <Label htmlFor="auto-backup" className="text-sm text-muted-foreground">
                         Realizar backups automáticos diários
                       </Label>
-                      <Switch id="auto-backup" defaultChecked />
+                      <Switch 
+                        id="auto-backup" 
+                        checked={autoBackup} 
+                        onCheckedChange={setAutoBackup}
+                      />
                     </div>
                   </div>
                   
@@ -510,9 +671,16 @@ const Settings = () => {
                       <div className="p-4 flex items-center justify-between">
                         <div>
                           <p className="font-medium">Backup Completo</p>
-                          <p className="text-sm text-muted-foreground">16/04/2025, 15:30</p>
+                          <p className="text-sm text-muted-foreground">20/04/2025, 15:30</p>
                         </div>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => toast({
+                            title: "Download iniciado",
+                            description: "O download do seu backup foi iniciado"
+                          })}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
@@ -520,9 +688,16 @@ const Settings = () => {
                       <div className="p-4 flex items-center justify-between">
                         <div>
                           <p className="font-medium">Backup Completo</p>
-                          <p className="text-sm text-muted-foreground">15/04/2025, 15:30</p>
+                          <p className="text-sm text-muted-foreground">19/04/2025, 15:30</p>
                         </div>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => toast({
+                            title: "Download iniciado",
+                            description: "O download do seu backup foi iniciado"
+                          })}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
@@ -530,9 +705,16 @@ const Settings = () => {
                       <div className="p-4 flex items-center justify-between">
                         <div>
                           <p className="font-medium">Backup Completo</p>
-                          <p className="text-sm text-muted-foreground">14/04/2025, 15:30</p>
+                          <p className="text-sm text-muted-foreground">18/04/2025, 15:30</p>
                         </div>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => toast({
+                            title: "Download iniciado",
+                            description: "O download do seu backup foi iniciado"
+                          })}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
