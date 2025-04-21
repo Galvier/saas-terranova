@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -27,12 +26,15 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { testConnection, testTables, testDatabaseWrite } from '@/utils/supabaseDiagnostic';
+import { useInterfacePreferences } from '@/hooks/useInterfacePreferences';
 
 const Settings = () => {
+  const { preferences, updatePreferences } = useInterfacePreferences();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [theme, setTheme] = useState('light');
-  const [density, setDensity] = useState('default');
+  const [theme, setTheme] = useState(preferences.theme);
+  const [density, setDensity] = useState(preferences.density);
+  const [animationsEnabled, setAnimationsEnabled] = useState(preferences.animationsEnabled);
   const navigate = useNavigate();
   
   // Form states
@@ -40,25 +42,35 @@ const Settings = () => {
   const [systemNotifications, setSystemNotifications] = useState(true);
   const [alertNotifications, setAlertNotifications] = useState(true);
   const [apiKey, setApiKey] = useState('');
-  const [animationsEnabled, setAnimationsEnabled] = useState(true);
-  const [autoBackup, setAutoBackup] = useState(true);
   const [exportEnabled, setExportEnabled] = useState(true);
   const [fullName, setFullName] = useState('Administrador');
   const [displayName, setDisplayName] = useState('Admin');
   const [email, setEmail] = useState('admin@empresa.com');
   
-  // Handle saving settings with visual feedback
-  const handleSaveSettings = () => {
+  // Handle saving interface settings with visual feedback
+  const handleSaveInterfaceSettings = () => {
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      updatePreferences({
+        theme,
+        density,
+        animationsEnabled
+      });
+      
       toast({
         title: "Configurações salvas",
-        description: "Suas configurações foram atualizadas com sucesso",
+        description: "Suas preferências de interface foram atualizadas com sucesso",
       });
-    }, 1000);
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar suas preferências",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // Handle backup data with visual feedback
@@ -284,7 +296,7 @@ const Settings = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="border-t bg-muted/50 px-6 py-4">
-                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                  <Button onClick={handleSaveInterfaceSettings} disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -1,4 +1,3 @@
-
 // Helper functions for Supabase client
 import { supabase } from "./client";
 
@@ -100,10 +99,10 @@ export async function callRPC<
   FnName extends keyof RPCFunctions
 >(
   functionName: FnName,
-  params?: RPCFunctions[FnName]
+  params: RPCFunctions[FnName]
 ): Promise<{data: RPCReturns[FnName] | null; error: any}> {
   try {
-    if (params) {
+    if (params && Object.keys(params).length > 0) {
       return await supabase.rpc(functionName, params);
     } else {
       return await supabase.rpc(functionName);
