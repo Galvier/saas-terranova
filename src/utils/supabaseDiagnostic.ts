@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/client';
 import { CrudResult, formatCrudResult, callRPC } from '@/integrations/supabase/helpers';
+import { getSupabaseUrl } from '@/integrations/supabase/helpers';
 
 export interface DiagnosticTest {
   id: string;
@@ -82,7 +83,7 @@ export const testDatabaseWrite = async (): Promise<CrudResult<DiagnosticTest>> =
     const testId = `test_${Date.now()}`;
     
     // Try to insert a record using a function to avoid RLS issues
-    const { data, error } = await callRPC('run_diagnostic_write_test', { 
+    const { data, error } = await callRPC<{id: string}>('run_diagnostic_write_test', { 
       test_id_param: testId 
     });
     

@@ -58,7 +58,7 @@ export const diagnosticService = {
   async checkTable(tableName: string): Promise<TableInfo> {
     try {
       // Cria uma consulta SQL para verificar se a tabela existe e contar linhas
-      const { data, error } = await callRPC('check_table_exists_and_count', {
+      const { data, error } = await callRPC<{exists: boolean; count: number}>('check_table_exists_and_count', {
         table_name: tableName
       });
 
@@ -176,9 +176,11 @@ export const diagnosticService = {
       }
       
       // Since we cannot query profiles directly due to type limitations,
-      // we'll use a more generic approach
+      // we'll use a more generic approach with proper typing
       try {
-        const { data, error } = await supabase.rpc('check_user_profile', { user_id: user.id });
+        const { data, error } = await callRPC<boolean>('check_user_profile', { 
+          user_id: user.id 
+        });
         
         if (error) {
           return formatCrudResult(false, error);

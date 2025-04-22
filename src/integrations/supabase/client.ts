@@ -15,8 +15,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 export const testSupabaseConnection = async (): Promise<{success: boolean; message: string; responseTime?: number}> => {
   const startTime = performance.now();
   try {
-    // Use a simple query to test connection
-    const { data, error } = await supabase.rpc('postgres_version');
+    // Use a simple query to test connection - bypass typing issues with casting
+    const { data, error } = await supabase.rpc('postgres_version') as {
+      data: any;
+      error: any;
+    };
     
     if (error) throw error;
     
@@ -41,11 +44,13 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
   
   // Get list of all tables
   try {
-    // Since we don't have proper types yet, we'll use a more generic approach
-    const { data: tables, error } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_schema', 'public') as any;
+    // We need to bypass the type system for this query since our Database type doesn't define these tables
+    const response = await supabase.from('information_schema.tables').select('table_name').eq('table_schema', 'public') as unknown as {
+      data: Array<{table_name: string}> | null;
+      error: any;
+    };
+    
+    const { data: tables, error } = response;
     
     if (error) {
       console.error('Error fetching tables:', error);
@@ -58,7 +63,10 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
         // Call the function to check if table exists and get count
         const { data, error } = await supabase.rpc('check_table_exists_and_count', { 
           table_name: table.table_name 
-        }) as any;
+        }) as unknown as {
+          data: { exists: boolean; count: number } | null;
+          error: any;
+        };
         
         if (error) {
           result[table.table_name] = { exists: false, error: error.message };
