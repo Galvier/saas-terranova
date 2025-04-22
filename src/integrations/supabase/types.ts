@@ -247,11 +247,18 @@ export type Database = {
         Returns: Json
       }
       create_department: {
-        Args: {
-          department_name: string
-          department_description: string
-          department_is_active: boolean
-        }
+        Args:
+          | {
+              department_name: string
+              department_description: string
+              department_is_active: boolean
+            }
+          | {
+              department_name: string
+              department_description: string
+              department_is_active: boolean
+              department_manager_id?: string
+            }
         Returns: Json
       }
       create_diagnostic_table_if_not_exists: {
@@ -266,6 +273,18 @@ export type Database = {
           id: string
           is_active: boolean | null
           manager_id: string | null
+          name: string
+          updated_at: string | null
+        }[]
+      }
+      get_all_managers: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string | null
+          department_id: string | null
+          email: string
+          id: string
+          is_active: boolean | null
           name: string
           updated_at: string | null
         }[]

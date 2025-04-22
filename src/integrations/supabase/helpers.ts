@@ -78,8 +78,21 @@ export const callRPC = async <T = any, F extends RpcFunctionName = RpcFunctionNa
   params: RpcParams[F] = {} as any
 ): Promise<{ data: T | null; error: any }> => {
   try {
+    // Only allow the functionName if it is a valid RPC function
+    const allowedFunctionNames: RpcFunctionName[] = [
+      'check_table_exists_and_count',
+      'create_department',
+      'create_diagnostic_table_if_not_exists',
+      'get_all_departments',
+      'postgres_version',
+      'run_diagnostic_write_test',
+      'get_all_managers'
+    ];
+    if (!allowedFunctionNames.includes(functionName)) {
+      throw new Error(`Invalid RPC function name: ${functionName}`);
+    }
+
     const { data, error } = await supabase.rpc(functionName, params);
-    // If the result is a JSON string, parse it
     let parsedData = data;
     if (data && typeof data === "string") {
       try {
@@ -133,7 +146,7 @@ export const getAllDepartments = async (): Promise<CrudResult<Department[]>> => 
   }
 };
 
-// Function to get all active managers
+// Function to get all active managers (now uses RPC)
 export const getAllManagers = async (): Promise<CrudResult<Manager[]>> => {
   try {
     const { data, error } = await callRPC<Manager[]>('get_all_managers');
@@ -158,7 +171,7 @@ export const createDepartment = async (
       department_name: department.name,
       department_description: department.description,
       department_is_active: department.is_active,
-      department_manager_id: department.manager_id
+      department_manager_id: department.manager_id ?? null
     });
 
     if (error) throw error;

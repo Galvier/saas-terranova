@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Department, Manager, createDepartment, getAllDepartments } from '@/integrations/supabase/helpers';
+import { Department, Manager, createDepartment, getAllDepartments, getAllManagers } from '@/integrations/supabase/helpers';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DepartmentsSelect from '@/components/DepartmentsSelect'; // We'll modify this component
 import { CustomBadge } from '@/components/ui/custom-badge';
@@ -22,7 +22,7 @@ const Departments = () => {
     name: '',
     description: '',
     status: 'active',
-    managerId: '' // New field for manager selection
+    managerId: ''
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -45,7 +45,7 @@ const Departments = () => {
       name: string; 
       description: string; 
       is_active: boolean;
-      manager_id?: string; // Optional manager ID
+      manager_id?: string;
     }) => {
       const result = await createDepartment(departmentData);
       if (result.error) {
@@ -56,13 +56,10 @@ const Departments = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       setIsDialogOpen(false);
-      
       toast({
         title: "Departamento criado",
         description: `${newDepartment.name} foi adicionado com sucesso`,
       });
-      
-      // Reset form
       setNewDepartment({
         name: '',
         description: '',
@@ -80,31 +77,31 @@ const Departments = () => {
     }
   });
 
-  // Query to load managers
+  // Query to load ACTIVE managers (uses actual RPC)
   const { data: managersData } = useQuery({
     queryKey: ['managers'],
     queryFn: async () => {
-      // You'll need to implement this function to get all active managers
-      // For now, this is a placeholder
-      return [] as Manager[];
+      const result = await getAllManagers();
+      if (result.error) {
+        throw new Error(result.message);
+      }
+      return result.data || [];
     }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     createDepartmentMutation.mutate({
       name: newDepartment.name,
       description: newDepartment.description,
       is_active: newDepartment.status === 'active',
-      manager_id: newDepartment.managerId || undefined // Optional manager ID
+      manager_id: newDepartment.managerId || undefined
     });
   };
 
   return (
     <div className="animate-fade-in">
       <PageHeader title="Departamentos" subtitle="Gerencie os departamentos da empresa" />
-      
       <div className="flex justify-end mb-6">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -164,11 +161,15 @@ const Departments = () => {
                       <SelectValue placeholder="Selecione um gestor" />
                     </SelectTrigger>
                     <SelectContent>
-                      {managersData?.map((manager) => (
-                        <SelectItem key={manager.id} value={manager.id}>
-                          {manager.name}
-                        </SelectItem>
-                      ))}
+                      {(managersData || []).length === 0 ? (
+                        <SelectItem value="" disabled>Nenhum gestor encontrado</SelectItem>
+                      ) : (
+                        managersData?.map((manager) => (
+                          <SelectItem key={manager.id} value={manager.id}>
+                            {manager.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -182,7 +183,6 @@ const Departments = () => {
           </DialogContent>
         </Dialog>
       </div>
-      
       {isLoading ? (
         <div className="flex justify-center p-8">Carregando departamentos...</div>
       ) : error ? (
@@ -228,3 +228,4 @@ const Departments = () => {
 };
 
 export default Departments;
+
