@@ -41,9 +41,11 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
   
   // Get list of all tables
   try {
-    const { data: tables, error } = await supabase.from('information_schema.tables')
+    // Since we don't have proper types yet, we'll use a more generic approach
+    const { data: tables, error } = await supabase
+      .from('information_schema.tables')
       .select('table_name')
-      .eq('table_schema', 'public');
+      .eq('table_schema', 'public') as any;
     
     if (error) {
       console.error('Error fetching tables:', error);
@@ -56,7 +58,7 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
         // Call the function to check if table exists and get count
         const { data, error } = await supabase.rpc('check_table_exists_and_count', { 
           table_name: table.table_name 
-        });
+        }) as any;
         
         if (error) {
           result[table.table_name] = { exists: false, error: error.message };

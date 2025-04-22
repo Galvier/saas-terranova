@@ -53,3 +53,68 @@ export const callRPC = async <T = any>(
 export const getSupabaseUrl = (): string => {
   return "https://wjuzzjitpkhjjxujxftm.supabase.co";
 };
+
+// Define Department type
+export interface Department {
+  id: string;
+  name: string;
+  description?: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Define Manager type (needed for ManagersUpdate.tsx)
+export interface Manager {
+  id: string;
+  name: string;
+  email: string;
+  department_id?: string;
+  department_name?: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Function to get all departments
+export const getAllDepartments = async (): Promise<CrudResult<Department[]>> => {
+  try {
+    const { data, error } = await callRPC<Department[]>('get_all_departments');
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Function to create a new department
+export const createDepartment = async (
+  department: { 
+    name: string; 
+    description: string; 
+    is_active: boolean 
+  }
+): Promise<CrudResult<Department>> => {
+  try {
+    const { data, error } = await callRPC<{id: string}>('create_department', {
+      department_name: department.name,
+      department_description: department.description,
+      department_is_active: department.is_active
+    });
+
+    if (error) throw error;
+
+    // Return the newly created department with basic info
+    const newDepartment: Department = {
+      id: data?.id || '',
+      name: department.name,
+      description: department.description,
+      is_active: department.is_active
+    };
+
+    return formatCrudResult(newDepartment, null);
+  } catch (error) {
+    console.error('Error creating department:', error);
+    return formatCrudResult(null, error);
+  }
+};

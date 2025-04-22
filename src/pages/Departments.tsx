@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -24,7 +23,7 @@ const Departments = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Carregar departamentos do Supabase
+  // Query to load departments from Supabase
   const { data: departmentsData, isLoading, error } = useQuery({
     queryKey: ['departments'],
     queryFn: async () => {
@@ -36,7 +35,7 @@ const Departments = () => {
     }
   });
 
-  // Mutation para criar novo departamento
+  // Mutation to create a new department
   const createDepartmentMutation = useMutation({
     mutationFn: async (departmentData: { name: string; description: string; is_active: boolean }) => {
       const result = await createDepartment(departmentData);
