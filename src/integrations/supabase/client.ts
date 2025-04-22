@@ -16,7 +16,7 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
   const startTime = performance.now();
   try {
     // Use a simple query to test connection - bypass typing issues with casting
-    const { data, error } = await (supabase.rpc('postgres_version') as any);
+    const { data, error } = await (supabase.rpc as any)('postgres_version');
     
     if (error) throw error;
     
@@ -43,9 +43,9 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
   try {
     // We need to bypass the type system for this query since our Database type doesn't define these tables
     const response = await (supabase
-      .from('information_schema.tables')
+      .from as any)('information_schema.tables')
       .select('table_name')
-      .eq('table_schema', 'public') as any);
+      .eq('table_schema', 'public');
     
     const { data: tables, error } = response;
     
@@ -58,9 +58,9 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
     for (const table of tables || []) {
       try {
         // Call the function to check if table exists and get count
-        const { data, error } = await (supabase.rpc('check_table_exists_and_count', { 
+        const { data, error } = await (supabase.rpc as any)('check_table_exists_and_count', { 
           table_name: table.table_name 
-        }) as any);
+        });
         
         if (error) {
           result[table.table_name] = { exists: false, error: error.message };
