@@ -43,9 +43,6 @@ export type RpcFunctionName =
   | 'get_all_departments'
   | 'postgres_version'
   | 'run_diagnostic_write_test'
-  | 'get_manager_by_id'
-  | 'update_manager'
-  | 'check_user_profile'
   | 'get_all_managers';
 
 // Define parameter types for each RPC function
@@ -54,21 +51,13 @@ export type RpcParams = {
   'create_department': { 
     department_name: string; 
     department_description: string; 
-    department_is_active: boolean 
+    department_is_active: boolean; 
+    department_manager_id?: string | null;
   };
   'create_diagnostic_table_if_not_exists': Record<string, never>;
   'get_all_departments': Record<string, never>;
   'postgres_version': Record<string, never>;
   'run_diagnostic_write_test': { test_id_param: string };
-  'get_manager_by_id': { manager_id: string };
-  'update_manager': { 
-    manager_id: string;
-    manager_name: string;
-    manager_email: string;
-    manager_department_id: string;
-    manager_is_active: boolean
-  };
-  'check_user_profile': { user_id: string };
   'get_all_managers': Record<string, never>;
 };
 
