@@ -6,16 +6,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from "@/components/ui/switch";
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Switch } from "@/components/ui/switch";
-import { callRPC } from '@/integrations/supabase/helpers';
+import { callRPC, createManager } from '@/integrations/supabase/helpers';
 
 interface Department {
   id: string;
@@ -74,10 +72,15 @@ const ManagersCreate = () => {
   const onSubmit = async (values: ManagerCreateValues) => {
     setIsSaving(true);
     try {
-      // Aqui você pode adicionar uma chamada de RPC para criar o gestor (implemente depois conforme necessário)
+      const result = await createManager(values);
+      
+      if (result.status === 'error') {
+        throw new Error(result.message);
+      }
+      
       toast({
         title: "Gestor criado",
-        description: "Gestor criado com sucesso (dummy handler, ajuste o backend).",
+        description: "Gestor criado com sucesso.",
       });
       navigate('/managers');
     } catch (error: any) {

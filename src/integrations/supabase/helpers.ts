@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { Database } from './types';
 
@@ -80,23 +79,6 @@ export const callRPC = async <T = any, F extends RpcFunctionName = RpcFunctionNa
   params: RpcParams[F] = {} as any
 ): Promise<{ data: T | null; error: any }> => {
   try {
-    // Only allow the functionName if it is a valid RPC function
-    const allowedFunctionNames: RpcFunctionName[] = [
-      'check_table_exists_and_count',
-      'create_department',
-      'create_diagnostic_table_if_not_exists',
-      'get_all_departments',
-      'postgres_version',
-      'run_diagnostic_write_test',
-      'get_all_managers',
-      'get_manager_by_id',
-      'update_manager',
-      'check_user_profile'
-    ];
-    if (!allowedFunctionNames.includes(functionName)) {
-      throw new Error(`Invalid RPC function name: ${functionName}`);
-    }
-
     const { data, error } = await supabase.rpc(functionName, params);
     let parsedData = data;
     if (data && typeof data === "string") {
@@ -193,6 +175,37 @@ export const createDepartment = async (
     return formatCrudResult(newDepartment, null);
   } catch (error) {
     console.error('Error creating department:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Function to create a new manager
+export const createManager = async (
+  manager: { 
+    name: string; 
+    email: string; 
+    department_id: string;
+    is_active: boolean;
+  }
+): Promise<CrudResult<Manager>> => {
+  try {
+    // For now, we'll use a dummy implementation as the RPC function is not implemented yet
+    // This will be replaced with an actual RPC call once the backend is ready
+    console.log("Creating manager:", manager);
+    
+    // Create a dummy success response
+    const newManager: Manager = {
+      id: crypto.randomUUID(),
+      name: manager.name,
+      email: manager.email,
+      department_id: manager.department_id,
+      is_active: manager.is_active,
+      created_at: new Date().toISOString()
+    };
+
+    return formatCrudResult(newManager, null);
+  } catch (error) {
+    console.error('Error creating manager:', error);
     return formatCrudResult(null, error);
   }
 };

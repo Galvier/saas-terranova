@@ -10,6 +10,8 @@ import FirstAccess from "./pages/FirstAccess";
 import Dashboard from "./pages/Dashboard";
 import Departments from "./pages/Departments";
 import Managers from "./pages/Managers";
+import ManagersCreate from "./pages/ManagersCreate";
+import ManagersUpdate from "./pages/ManagersUpdate";
 import Metrics from "./pages/Metrics";
 import Settings from "./pages/Settings";
 import Diagnostic from "./pages/Diagnostic";
@@ -41,6 +43,8 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/departments" element={<Departments />} />
               <Route path="/managers" element={<Managers />} />
+              <Route path="/managers/new" element={<ManagersCreate />} />
+              <Route path="/managers/edit/:id" element={<ManagersUpdate />} />
               <Route path="/metrics" element={<Metrics />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/diagnostico" element={<Diagnostic />} />
