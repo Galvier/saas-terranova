@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { Database } from './types';
 
@@ -43,7 +44,10 @@ export type RpcFunctionName =
   | 'get_all_departments'
   | 'postgres_version'
   | 'run_diagnostic_write_test'
-  | 'get_all_managers';
+  | 'get_all_managers'
+  | 'get_manager_by_id'
+  | 'update_manager'
+  | 'check_user_profile';
 
 // Define parameter types for each RPC function
 export type RpcParams = {
@@ -59,6 +63,15 @@ export type RpcParams = {
   'postgres_version': Record<string, never>;
   'run_diagnostic_write_test': { test_id_param: string };
   'get_all_managers': Record<string, never>;
+  'get_manager_by_id': { manager_id: string };
+  'update_manager': { 
+    manager_id: string;
+    manager_name: string;
+    manager_email: string;
+    manager_department_id: string;
+    manager_is_active: boolean 
+  };
+  'check_user_profile': { user_id: string };
 };
 
 // Function to call RPC methods with proper typing
@@ -75,7 +88,10 @@ export const callRPC = async <T = any, F extends RpcFunctionName = RpcFunctionNa
       'get_all_departments',
       'postgres_version',
       'run_diagnostic_write_test',
-      'get_all_managers'
+      'get_all_managers',
+      'get_manager_by_id',
+      'update_manager',
+      'check_user_profile'
     ];
     if (!allowedFunctionNames.includes(functionName)) {
       throw new Error(`Invalid RPC function name: ${functionName}`);
