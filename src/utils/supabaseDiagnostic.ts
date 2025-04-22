@@ -1,6 +1,7 @@
 
-import { supabase, testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/client';
-import { CrudResult, formatCrudResult, TableCheckResult, callRPC } from '@/integrations/supabase/helpers';
+import { supabase } from '@/integrations/supabase/client';
+import { testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/client';
+import { CrudResult, formatCrudResult, callRPC } from '@/integrations/supabase/helpers';
 
 export interface DiagnosticTest {
   id: string;
@@ -70,7 +71,7 @@ export const testDatabaseWrite = async (): Promise<CrudResult<DiagnosticTest>> =
     console.log('Testing database write...');
 
     // First try to create the table if it doesn't exist
-    const { error: rpcError } = await callRPC('create_diagnostic_table_if_not_exists');
+    const { error: rpcError } = await callRPC('create_diagnostic_table_if_not_exists', {});
     
     if (rpcError) {
       console.error('Error creating diagnostic table:', rpcError);
@@ -159,7 +160,7 @@ export const runFullDiagnostic = async (tablesToCheck: string[]): Promise<{
   if (connection.connected) {
     const writeResult = await testDatabaseWrite();
     writeTest = {
-      status: writeResult.status,
+      status: writeResult.status === 'success' ? 'success' : 'error',
       message: writeResult.message,
       timestamp: new Date(),
       details: writeResult.data
@@ -175,5 +176,5 @@ export const runFullDiagnostic = async (tablesToCheck: string[]): Promise<{
 
 // Helper function to get Supabase URL
 export const getSupabaseUrl = (): string => {
-  return "https://zghthguqsravpcvrgahe.supabase.co";
+  return "https://wjuzzjitpkhjjxujxftm.supabase.co";
 };

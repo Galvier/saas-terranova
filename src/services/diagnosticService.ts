@@ -1,5 +1,5 @@
 
-import { formatCrudResult, CrudResult, TableCheckResult, callRPC } from '@/integrations/supabase/helpers';
+import { CrudResult, formatCrudResult, callRPC } from '@/integrations/supabase/helpers';
 import { supabase } from '@/integrations/supabase/client';
 import { getSupabaseUrl } from '@/integrations/supabase/helpers';
 
@@ -32,7 +32,7 @@ export const diagnosticService = {
 
     try {
       // Consulta simples para testar conexão
-      const { data, error } = await callRPC('postgres_version');
+      const { data, error } = await callRPC('postgres_version', {});
       
       if (error) throw error;
       
@@ -112,7 +112,7 @@ export const diagnosticService = {
     
     try {
       // Cria tabela de diagnóstico se não existir
-      await callRPC('create_diagnostic_table_if_not_exists');
+      await callRPC('create_diagnostic_table_if_not_exists', {});
       
       // Usa um procedimento armazenado para o teste
       const { data, error } = await callRPC('run_diagnostic_write_test', {
@@ -175,23 +175,19 @@ export const diagnosticService = {
         return formatCrudResult(false, { message: "Usuário não autenticado" });
       }
       
-      // Verifica se existe um perfil para o usuário atual
-      // @ts-ignore - Bypass TypeScript's complaints about the table name
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (error) {
+      // Since we cannot query profiles directly due to type limitations,
+      // we'll use a more generic approach
+      try {
+        const { data, error } = await supabase.rpc('check_user_profile', { user_id: user.id });
+        
+        if (error) {
+          return formatCrudResult(false, error);
+        }
+        
+        return formatCrudResult(Boolean(data), null);
+      } catch (error) {
         return formatCrudResult(false, error);
       }
-      
-      if (!data) {
-        return formatCrudResult(false, { message: "Perfil de usuário não encontrado" });
-      }
-      
-      return formatCrudResult(true, null);
     } catch (error) {
       return formatCrudResult(false, error);
     }
