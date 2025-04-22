@@ -16,7 +16,7 @@ export const testSupabaseConnection = async (): Promise<{success: boolean; messa
   const startTime = performance.now();
   try {
     // Use a simple query to test connection - bypass typing issues with casting
-    const { data, error } = await supabase.rpc('postgres_version') as {
+    const { data, error } = await supabase.rpc('postgres_version') as unknown as {
       data: any;
       error: any;
     };

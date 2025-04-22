@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/client';
 import { CrudResult, formatCrudResult, callRPC } from '@/integrations/supabase/helpers';
-import { getSupabaseUrl } from '@/integrations/supabase/helpers';
+import { getSupabaseUrl as getSbUrl } from '@/integrations/supabase/helpers';
 
 export interface DiagnosticTest {
   id: string;
@@ -118,7 +118,7 @@ export const runFullDiagnostic = async (tablesToCheck: string[]): Promise<{
   const connection: ConnectionInfo = {
     connected: connectionResult.success,
     responseTime: connectionResult.responseTime || 0,
-    url: getSupabaseUrl(),
+    url: getSbUrl(),
     timestamp: new Date(),
     message: connectionResult.message
   };
@@ -175,7 +175,7 @@ export const runFullDiagnostic = async (tablesToCheck: string[]): Promise<{
   };
 };
 
-// Helper function to get Supabase URL
-export const getSupabaseUrl = (): string => {
-  return "https://wjuzzjitpkhjjxujxftm.supabase.co";
+// Helper function to get Supabase URL - renamed to avoid conflict
+export const getSupabaseUrlUtil = (): string => {
+  return getSbUrl();
 };
