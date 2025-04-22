@@ -43,12 +43,38 @@ export type RpcFunctionName =
   | 'create_diagnostic_table_if_not_exists'
   | 'get_all_departments'
   | 'postgres_version'
-  | 'run_diagnostic_write_test';
+  | 'run_diagnostic_write_test'
+  | 'get_manager_by_id'
+  | 'update_manager'
+  | 'check_user_profile';
+
+// Define parameter types for each RPC function
+export type RpcParams = {
+  'check_table_exists_and_count': { table_name: string };
+  'create_department': { 
+    department_name: string; 
+    department_description: string; 
+    department_is_active: boolean 
+  };
+  'create_diagnostic_table_if_not_exists': Record<string, never>;
+  'get_all_departments': Record<string, never>;
+  'postgres_version': Record<string, never>;
+  'run_diagnostic_write_test': { test_id_param: string };
+  'get_manager_by_id': { manager_id: string };
+  'update_manager': { 
+    manager_id: string;
+    manager_name: string;
+    manager_email: string;
+    manager_department_id: string;
+    manager_is_active: boolean
+  };
+  'check_user_profile': { user_id: string };
+};
 
 // Function to call RPC methods with proper typing
-export const callRPC = async <T = any>(
-  functionName: RpcFunctionName,
-  params: Record<string, any> = {}
+export const callRPC = async <T = any, F extends RpcFunctionName = RpcFunctionName>(
+  functionName: F,
+  params: RpcParams[F] = {} as any
 ): Promise<{ data: T | null; error: any }> => {
   try {
     const { data, error } = await supabase.rpc(functionName, params);
