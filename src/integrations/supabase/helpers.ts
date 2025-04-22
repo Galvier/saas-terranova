@@ -42,10 +42,7 @@ export const callRPC = async <T = any>(
 ): Promise<{ data: T | null; error: any }> => {
   try {
     // Bypass type system with casting since Database types don't match
-    const response = await supabase.rpc(functionName, params) as unknown as {
-      data: T | null;
-      error: any;
-    };
+    const response = await (supabase.rpc(functionName, params) as any);
     return response;
   } catch (error) {
     console.error(`Error calling RPC function ${functionName}:`, error);

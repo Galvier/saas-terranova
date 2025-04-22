@@ -12,7 +12,7 @@ import {
   ConnectionInfo, 
   TableInfo, 
   DiagnosticResult,
-  getSupabaseUrl 
+  getSupabaseUrlUtil 
 } from '@/utils/supabaseDiagnostic';
 import { CustomBadge } from '@/components/ui/custom-badge';
 
@@ -72,7 +72,7 @@ const Diagnostic = () => {
       connection,
       tables,
       writeTest,
-      supabaseUrl: getSupabaseUrl()
+      supabaseUrl: getSupabaseUrlUtil()
     };
     
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
