@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { Database } from './types';
 
@@ -46,7 +45,8 @@ export type RpcFunctionName =
   | 'run_diagnostic_write_test'
   | 'get_manager_by_id'
   | 'update_manager'
-  | 'check_user_profile';
+  | 'check_user_profile'
+  | 'get_all_managers';
 
 // Define parameter types for each RPC function
 export type RpcParams = {
@@ -69,6 +69,7 @@ export type RpcParams = {
     manager_is_active: boolean
   };
   'check_user_profile': { user_id: string };
+  'get_all_managers': Record<string, never>;
 };
 
 // Function to call RPC methods with proper typing
@@ -105,6 +106,8 @@ export interface Department {
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
+  manager_id?: string;
+  manager_name?: string;
 }
 
 // Define Manager type (needed for ManagersUpdate.tsx)
@@ -130,19 +133,32 @@ export const getAllDepartments = async (): Promise<CrudResult<Department[]>> => 
   }
 };
 
+// Function to get all active managers
+export const getAllManagers = async (): Promise<CrudResult<Manager[]>> => {
+  try {
+    const { data, error } = await callRPC<Manager[]>('get_all_managers');
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error fetching managers:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
 // Function to create a new department
 export const createDepartment = async (
   department: { 
     name: string; 
     description: string; 
-    is_active: boolean 
+    is_active: boolean;
+    manager_id?: string;
   }
 ): Promise<CrudResult<Department>> => {
   try {
     const { data, error } = await callRPC<{id: string}>('create_department', {
       department_name: department.name,
       department_description: department.description,
-      department_is_active: department.is_active
+      department_is_active: department.is_active,
+      department_manager_id: department.manager_id
     });
 
     if (error) throw error;
@@ -152,7 +168,8 @@ export const createDepartment = async (
       id: data?.id || '',
       name: department.name,
       description: department.description,
-      is_active: department.is_active
+      is_active: department.is_active,
+      manager_id: department.manager_id
     };
 
     return formatCrudResult(newDepartment, null);

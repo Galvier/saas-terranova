@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -10,15 +11,18 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Department, createDepartment, getAllDepartments } from '@/integrations/supabase/helpers';
+import { Department, Manager, createDepartment, getAllDepartments } from '@/integrations/supabase/helpers';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import DepartmentsSelect from '@/components/DepartmentsSelect'; // We'll modify this component
+import { CustomBadge } from '@/components/ui/custom-badge';
 
 const Departments = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newDepartment, setNewDepartment] = useState({
     name: '',
     description: '',
-    status: 'active'
+    status: 'active',
+    managerId: '' // New field for manager selection
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -37,7 +41,12 @@ const Departments = () => {
 
   // Mutation to create a new department
   const createDepartmentMutation = useMutation({
-    mutationFn: async (departmentData: { name: string; description: string; is_active: boolean }) => {
+    mutationFn: async (departmentData: { 
+      name: string; 
+      description: string; 
+      is_active: boolean;
+      manager_id?: string; // Optional manager ID
+    }) => {
       const result = await createDepartment(departmentData);
       if (result.error) {
         throw new Error(result.message);
@@ -57,7 +66,8 @@ const Departments = () => {
       setNewDepartment({
         name: '',
         description: '',
-        status: 'active'
+        status: 'active',
+        managerId: ''
       });
     },
     onError: (error) => {
@@ -70,13 +80,24 @@ const Departments = () => {
     }
   });
 
+  // Query to load managers
+  const { data: managersData } = useQuery({
+    queryKey: ['managers'],
+    queryFn: async () => {
+      // You'll need to implement this function to get all active managers
+      // For now, this is a placeholder
+      return [] as Manager[];
+    }
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     createDepartmentMutation.mutate({
       name: newDepartment.name,
       description: newDepartment.description,
-      is_active: newDepartment.status === 'active'
+      is_active: newDepartment.status === 'active',
+      manager_id: newDepartment.managerId || undefined // Optional manager ID
     });
   };
 
@@ -133,6 +154,24 @@ const Departments = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manager">Gestor Responsável</Label>
+                  <Select
+                    value={newDepartment.managerId}
+                    onValueChange={value => setNewDepartment({...newDepartment, managerId: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um gestor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {managersData?.map((manager) => (
+                        <SelectItem key={manager.id} value={manager.id}>
+                          {manager.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={createDepartmentMutation.isPending}>
@@ -155,6 +194,7 @@ const Departments = () => {
               <TableRow>
                 <TableHead>Departamento</TableHead>
                 <TableHead>Descrição</TableHead>
+                <TableHead>Gestor Responsável</TableHead>
                 <TableHead className="text-center">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -164,16 +204,17 @@ const Departments = () => {
                   <TableRow key={dept.id}>
                     <TableCell className="font-medium">{dept.name}</TableCell>
                     <TableCell>{dept.description || '-'}</TableCell>
+                    <TableCell>{dept.manager_name || '-'}</TableCell>
                     <TableCell className="text-center">
-                      <Badge variant={dept.is_active ? 'default' : 'secondary'}>
+                      <CustomBadge variant={dept.is_active ? 'success' : 'secondary'}>
                         {dept.is_active ? 'Ativo' : 'Inativo'}
-                      </Badge>
+                      </CustomBadge>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-6">
+                  <TableCell colSpan={4} className="text-center py-6">
                     Nenhum departamento encontrado
                   </TableCell>
                 </TableRow>

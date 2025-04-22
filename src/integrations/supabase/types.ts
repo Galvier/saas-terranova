@@ -15,6 +15,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          manager_id: string | null
           name: string
           updated_at: string | null
         }
@@ -23,6 +24,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          manager_id?: string | null
           name: string
           updated_at?: string | null
         }
@@ -31,10 +33,19 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          manager_id?: string | null
           name?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "departments_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "managers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       diagnostic_tests: {
         Row: {
@@ -254,6 +265,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          manager_id: string | null
           name: string
           updated_at: string | null
         }[]
