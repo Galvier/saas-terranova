@@ -1,5 +1,5 @@
 
-import { CrudResult, formatCrudResult, callRPC } from '@/integrations/supabase/helpers';
+import { CrudResult, formatCrudResult, callRPC, RpcFunctionName } from '@/integrations/supabase/helpers';
 import { supabase } from '@/integrations/supabase/client';
 import { getSupabaseUrl } from '@/integrations/supabase/helpers';
 

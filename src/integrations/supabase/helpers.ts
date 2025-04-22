@@ -1,5 +1,6 @@
 
 import { supabase } from './client';
+import { Database } from './types';
 
 // Simple type to represent CRUD operation results
 export interface CrudResult<T> {
@@ -35,9 +36,18 @@ export interface TableCheckResult {
   error?: string;
 }
 
+// Define the valid RPC function names
+export type RpcFunctionName = 
+  | 'check_table_exists_and_count'
+  | 'create_department'
+  | 'create_diagnostic_table_if_not_exists'
+  | 'get_all_departments'
+  | 'postgres_version'
+  | 'run_diagnostic_write_test';
+
 // Function to call RPC methods with proper typing
 export const callRPC = async <T = any>(
-  functionName: string,
+  functionName: RpcFunctionName,
   params: Record<string, any> = {}
 ): Promise<{ data: T | null; error: any }> => {
   try {
@@ -49,7 +59,7 @@ export const callRPC = async <T = any>(
         parsedData = JSON.parse(data);
       } catch {}
     }
-    return { data: parsedData, error };
+    return { data: parsedData as T, error };
   } catch (error) {
     console.error(`Error calling RPC function ${functionName}:`, error);
     return { data: null, error };

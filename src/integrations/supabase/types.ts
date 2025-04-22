@@ -36,6 +36,24 @@ export type Database = {
         }
         Relationships: []
       }
+      diagnostic_tests: {
+        Row: {
+          created_at: string | null
+          id: string
+          test_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          test_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          test_id?: string
+        }
+        Relationships: []
+      }
       logs: {
         Row: {
           created_at: string | null

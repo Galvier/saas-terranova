@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/client';
-import { CrudResult, formatCrudResult, callRPC } from '@/integrations/supabase/helpers';
+import { CrudResult, formatCrudResult, callRPC, RpcFunctionName } from '@/integrations/supabase/helpers';
 import { getSupabaseUrl as getSbUrl } from '@/integrations/supabase/helpers';
 
 export interface DiagnosticTest {
