@@ -12,6 +12,7 @@ interface MetricCardProps {
 
 const MetricCard: React.FC<MetricCardProps> = ({ metric, onClick }) => {
   const progress = (metric.current / metric.target) * 100;
+  const isCurrencyUnit = metric.unit === 'R$';
   
   return (
     <Card className="hover:bg-accent/5 cursor-pointer transition-colors" onClick={onClick}>
@@ -22,7 +23,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ metric, onClick }) => {
             <p className="text-sm text-muted-foreground">{metric.department_name || 'Sem departamento'}</p>
           </div>
           {metric.trend !== 'neutral' && (
-            <div className={metric.status === 'success' ? 'text-success' : 'text-danger'}>
+            <div className={metric.status === 'success' ? 'text-success' : 'text-destructive'}>
               {metric.trend === 'up' ? (
                 <ArrowUp className="h-4 w-4" />
               ) : (
@@ -35,8 +36,10 @@ const MetricCard: React.FC<MetricCardProps> = ({ metric, onClick }) => {
       <CardContent>
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span>{metric.current} {metric.unit}</span>
-            <span className="text-muted-foreground">Meta: {metric.target} {metric.unit}</span>
+            <span>{isCurrencyUnit ? `R$ ${metric.current}` : `${metric.current} ${metric.unit}`}</span>
+            <span className="text-muted-foreground">
+              Meta: {isCurrencyUnit ? `R$ ${metric.target}` : `${metric.target} ${metric.unit}`}
+            </span>
           </div>
           <Progress
             value={Math.min(progress, 100)}
@@ -45,7 +48,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ metric, onClick }) => {
                 ? 'bg-success/20 [&>[data-progress]]:bg-success'
                 : metric.status === 'warning'
                 ? 'bg-warning/20 [&>[data-progress]]:bg-warning'
-                : 'bg-danger/20 [&>[data-progress]]:bg-danger'
+                : 'bg-destructive/20 [&>[data-progress]]:bg-destructive'
             }
           />
         </div>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +11,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Department, MetricDefinition, createMetricDefinition, updateMetricDefinition } from '@/integrations/supabase';
-import { IconSelect, type MetricIcon } from './IconSelect';
 import { UnitSelect, type MetricUnit } from './UnitSelect';
 
 const formSchema = z.object({
@@ -20,8 +20,7 @@ const formSchema = z.object({
   target: z.coerce.number().positive('Meta deve ser um número positivo'),
   department_id: z.string().uuid('Departamento é obrigatório'),
   frequency: z.string(),
-  is_active: z.boolean(),
-  icon_name: z.string()
+  is_active: z.boolean()
 });
 
 interface MetricFormProps {
@@ -39,12 +38,11 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
     defaultValues: {
       name: metric?.name || '',
       description: metric?.description || '',
-      unit: metric?.unit || '%',
+      unit: metric?.unit || 'R$',
       target: metric?.target || 0,
       department_id: metric?.department_id || '',
       frequency: metric?.frequency || 'monthly',
-      is_active: metric?.is_active ?? true,
-      icon_name: metric?.icon_name || 'chart-line'
+      is_active: metric?.is_active ?? true
     }
   });
 
@@ -61,7 +59,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
           department_id: values.department_id,
           frequency: values.frequency,
           is_active: values.is_active,
-          icon_name: values.icon_name
+          icon_name: 'chart-line' // Default icon
         });
       } else {
         result = await createMetricDefinition({
@@ -72,7 +70,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
           department_id: values.department_id,
           frequency: values.frequency,
           is_active: values.is_active,
-          icon_name: values.icon_name
+          icon_name: 'chart-line' // Default icon
         });
       }
 
@@ -94,6 +92,8 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
       });
     }
   };
+
+  const isCurrencyUnit = form.watch('unit') === 'R$';
 
   return (
     <Form {...form}>
@@ -126,23 +126,6 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="icon_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Ícone</FormLabel>
-              <FormControl>
-                <IconSelect 
-                  value={field.value as MetricIcon} 
-                  onChange={(value) => field.onChange(value)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -165,6 +148,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
               <FormItem>
                 <FormLabel>Meta</FormLabel>
                 <div className="flex items-center gap-2">
+                  {isCurrencyUnit && <span className="text-muted-foreground">R$</span>}
                   <FormControl>
                     <Input
                       {...field}
@@ -173,7 +157,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
                       onChange={e => field.onChange(parseFloat(e.target.value))}
                     />
                   </FormControl>
-                  <span className="text-muted-foreground">{form.watch('unit')}</span>
+                  {!isCurrencyUnit && <span className="text-muted-foreground">{form.watch('unit')}</span>}
                 </div>
                 <FormMessage />
               </FormItem>

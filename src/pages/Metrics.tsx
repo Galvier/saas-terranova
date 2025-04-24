@@ -2,10 +2,8 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { 
-  Plus, ChartLine, Gauge, Thermometer, Activity, TrendingUp, TrendingDown, 
-  CircleArrowUp, CircleArrowDown, Pencil, Trash2
-} from 'lucide-react';
+import { Plus, ChartLine, Gauge, Thermometer, Activity, TrendingUp, TrendingDown, 
+         CircleArrowUp, CircleArrowDown, Pencil, Trash2, BarChartHorizontal } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
@@ -21,6 +19,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Department, MetricDefinition, getAllDepartments, getMetricsByDepartment, updateMetricDefinition, deleteMetricDefinition } from '@/integrations/supabase';
 import MetricForm from '@/components/metrics/MetricForm';
+import MetricValueForm from '@/components/metrics/MetricValueForm';
 import { 
   Table,
   TableBody, 
@@ -34,10 +33,10 @@ import { CustomBadge } from '@/components/ui/custom-badge';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
-import { IconSelect, MetricIcon } from '@/components/metrics/IconSelect';
 
 const icons = [
   { name: 'chart-line', component: ChartLine },
+  { name: 'bar-chart', component: BarChartHorizontal },
   { name: 'gauge', component: Gauge },
   { name: 'thermometer', component: Thermometer },
   { name: 'activity', component: Activity },
@@ -50,6 +49,7 @@ const icons = [
 const Metrics = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isValueDialogOpen, setIsValueDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [selectedMetric, setSelectedMetric] = useState<MetricDefinition | null>(null);
@@ -78,6 +78,16 @@ const Metrics = () => {
     setIsCreateDialogOpen(false);
     setIsEditDialogOpen(false);
     queryClient.invalidateQueries({ queryKey: ['metrics'] });
+  };
+
+  const handleValueSuccess = () => {
+    setIsValueDialogOpen(false);
+    queryClient.invalidateQueries({ queryKey: ['metrics'] });
+  };
+
+  const handleAddValueClick = (metric: MetricDefinition) => {
+    setSelectedMetric(metric);
+    setIsValueDialogOpen(true);
   };
 
   const handleEditClick = (metric: MetricDefinition) => {
@@ -215,9 +225,8 @@ const Metrics = () => {
             </TableHeader>
             <TableBody>
               {metrics.map((metric) => {
-                const Icon = metric.icon_name ? 
-                  icons.find(i => i.name === metric.icon_name)?.component || ChartLine :
-                  ChartLine;
+                const Icon = ChartLine; // Default icon
+                const isCurrencyUnit = metric.unit === 'R$';
 
                 return (
                   <TableRow key={metric.id} className="hover:bg-muted/50">
@@ -228,12 +237,16 @@ const Metrics = () => {
                       </div>
                     </TableCell>
                     <TableCell>{metric.department_name || 'Sem departamento'}</TableCell>
-                    <TableCell>{metric.target} {metric.unit}</TableCell>
-                    <TableCell>{metric.current} {metric.unit}</TableCell>
+                    <TableCell>
+                      {isCurrencyUnit ? `R$ ${metric.target}` : `${metric.target} ${metric.unit}`}
+                    </TableCell>
+                    <TableCell>
+                      {isCurrencyUnit ? `R$ ${metric.current}` : `${metric.current} ${metric.unit}`}
+                    </TableCell>
                     <TableCell className="text-center">
                       {metric.trend !== 'neutral' ? (
                         <div className={`inline-flex ${
-                          metric.status === 'success' ? 'text-success' : 'text-danger'
+                          metric.trend === 'up' ? 'text-success' : 'text-destructive'
                         }`}>
                           {metric.trend === 'up' ? (
                             <ArrowUp className="h-4 w-4" />
@@ -254,6 +267,24 @@ const Metrics = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7"
+                                onClick={() => handleAddValueClick(metric)}
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Registrar valor</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -313,6 +344,24 @@ const Metrics = () => {
               departments={departments}
               onSuccess={handleMetricSuccess}
               metric={selectedMetric}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Value Dialog */}
+      <Dialog open={isValueDialogOpen} onOpenChange={setIsValueDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Valor</DialogTitle>
+            <DialogDescription>
+              Adicione um novo valor para a métrica {selectedMetric?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedMetric && (
+            <MetricValueForm
+              metric={selectedMetric}
+              onSuccess={handleValueSuccess}
             />
           )}
         </DialogContent>

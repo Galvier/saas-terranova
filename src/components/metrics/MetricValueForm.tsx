@@ -25,6 +25,7 @@ interface MetricValueFormProps {
 
 const MetricValueForm: React.FC<MetricValueFormProps> = ({ metric, onSuccess }) => {
   const { toast } = useToast();
+  const isCurrencyUnit = metric.unit === 'R$';
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,7 +49,7 @@ const MetricValueForm: React.FC<MetricValueFormProps> = ({ metric, onSuccess }) 
 
       toast({
         title: 'Valor registrado',
-        description: `Valor ${values.value} ${metric.unit} registrado para ${format(new Date(values.date), 'dd/MM/yyyy', { locale: ptBR })}`
+        description: `Valor ${isCurrencyUnit ? 'R$ ' + values.value : values.value + ' ' + metric.unit} registrado para ${format(new Date(values.date), 'dd/MM/yyyy', { locale: ptBR })}`
       });
 
       onSuccess();
@@ -71,6 +72,7 @@ const MetricValueForm: React.FC<MetricValueFormProps> = ({ metric, onSuccess }) 
             <FormItem>
               <FormLabel>Valor</FormLabel>
               <div className="flex items-center gap-2">
+                {isCurrencyUnit && <span className="text-muted-foreground">R$</span>}
                 <FormControl>
                   <Input
                     {...field}
@@ -79,7 +81,7 @@ const MetricValueForm: React.FC<MetricValueFormProps> = ({ metric, onSuccess }) 
                     onChange={e => field.onChange(parseFloat(e.target.value))}
                   />
                 </FormControl>
-                <span className="text-muted-foreground">{metric.unit}</span>
+                {!isCurrencyUnit && <span className="text-muted-foreground">{metric.unit}</span>}
               </div>
               <FormMessage />
             </FormItem>
