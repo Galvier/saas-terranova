@@ -54,7 +54,8 @@ const Metrics = () => {
             <SelectValue placeholder="Todos os departamentos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={undefined}>Todos os departamentos</SelectItem>
+            {/* Fix: Change to use "all" as value instead of undefined */}
+            <SelectItem value="all">Todos os departamentos</SelectItem>
             {departments.map((dept) => (
               <SelectItem key={dept.id} value={dept.id}>
                 {dept.name}

@@ -16,7 +16,7 @@ const formSchema = z.object({
   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   description: z.string().optional(),
   unit: z.string().min(1, 'Unidade é obrigatória'),
-  target: z.string().transform(Number),
+  target: z.coerce.number().positive('Meta deve ser um número positivo'),
   department_id: z.string().uuid('Departamento é obrigatório'),
   frequency: z.string(),
   is_active: z.boolean()
@@ -35,7 +35,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess }) => {
       name: '',
       description: '',
       unit: '',
-      target: '',
+      target: 0,
       frequency: 'monthly',
       is_active: true
     }
@@ -44,8 +44,13 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess }) => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       const result = await createMetricDefinition({
-        ...values,
-        target: Number(values.target)
+        name: values.name,
+        description: values.description || '',
+        unit: values.unit,
+        target: values.target,
+        department_id: values.department_id,
+        frequency: values.frequency,
+        is_active: values.is_active
       });
 
       if (result.error) {
@@ -120,7 +125,12 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess }) => {
               <FormItem>
                 <FormLabel>Meta</FormLabel>
                 <FormControl>
-                  <Input {...field} type="number" step="0.01" />
+                  <Input
+                    {...field}
+                    type="number"
+                    step="0.01"
+                    onChange={e => field.onChange(parseFloat(e.target.value))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

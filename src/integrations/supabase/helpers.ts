@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { Database } from './types';
 
@@ -97,12 +98,12 @@ export type RpcParams = {
 };
 
 // Function to call RPC methods with proper typing
-export const callRPC = async <T = any, F extends RpcFunctionName = RpcFunctionName>(
+export const callRPC = async <T = any, F extends keyof RpcParams = keyof RpcParams>(
   functionName: F,
   params: RpcParams[F] = {} as any
 ): Promise<{ data: T | null; error: any }> => {
   try {
-    const { data, error } = await supabase.rpc(functionName, params);
+    const { data, error } = await supabase.rpc(functionName as string, params);
     let parsedData = data;
     if (data && typeof data === "string") {
       try {
@@ -257,8 +258,11 @@ export interface MetricHistory {
 // Add new function to get metrics by department
 export const getMetricsByDepartment = async (departmentId?: string): Promise<CrudResult<MetricDefinition[]>> => {
   try {
+    // If departmentId is "all", pass null to get all metrics
+    const actualDepartmentId = departmentId === "all" ? undefined : departmentId;
+    
     const { data, error } = await callRPC<MetricDefinition[]>('get_metrics_by_department', {
-      department_id_param: departmentId
+      department_id_param: actualDepartmentId
     });
     return formatCrudResult(data, error);
   } catch (error) {
