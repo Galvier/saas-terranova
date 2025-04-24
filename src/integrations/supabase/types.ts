@@ -174,6 +174,7 @@ export type Database = {
           icon_name: string | null
           id: string
           is_active: boolean | null
+          lower_is_better: boolean
           name: string
           target: number
           unit: string
@@ -187,6 +188,7 @@ export type Database = {
           icon_name?: string | null
           id?: string
           is_active?: boolean | null
+          lower_is_better?: boolean
           name: string
           target: number
           unit: string
@@ -200,6 +202,7 @@ export type Database = {
           icon_name?: string | null
           id?: string
           is_active?: boolean | null
+          lower_is_better?: boolean
           name?: string
           target?: number
           unit?: string
@@ -348,16 +351,28 @@ export type Database = {
         Returns: undefined
       }
       create_metric_definition: {
-        Args: {
-          metric_name: string
-          metric_description: string
-          metric_unit: string
-          metric_target: number
-          metric_department_id: string
-          metric_frequency?: string
-          metric_is_active?: boolean
-          metric_icon_name?: string
-        }
+        Args:
+          | {
+              metric_name: string
+              metric_description: string
+              metric_unit: string
+              metric_target: number
+              metric_department_id: string
+              metric_frequency?: string
+              metric_is_active?: boolean
+              metric_icon_name?: string
+            }
+          | {
+              metric_name: string
+              metric_description: string
+              metric_unit: string
+              metric_target: number
+              metric_department_id: string
+              metric_frequency?: string
+              metric_is_active?: boolean
+              metric_icon_name?: string
+              metric_lower_is_better?: boolean
+            }
         Returns: string
       }
       delete_metric_definition: {
@@ -411,6 +426,7 @@ export type Database = {
           status: string
           is_active: boolean
           icon_name: string
+          lower_is_better: boolean
         }[]
       }
       postgres_version: {
@@ -426,17 +442,30 @@ export type Database = {
         Returns: Json
       }
       update_metric_definition: {
-        Args: {
-          metric_id: string
-          metric_name: string
-          metric_description: string
-          metric_unit: string
-          metric_target: number
-          metric_department_id: string
-          metric_frequency?: string
-          metric_is_active?: boolean
-          metric_icon_name?: string
-        }
+        Args:
+          | {
+              metric_id: string
+              metric_name: string
+              metric_description: string
+              metric_unit: string
+              metric_target: number
+              metric_department_id: string
+              metric_frequency?: string
+              metric_is_active?: boolean
+              metric_icon_name?: string
+            }
+          | {
+              metric_id: string
+              metric_name: string
+              metric_description: string
+              metric_unit: string
+              metric_target: number
+              metric_department_id: string
+              metric_frequency?: string
+              metric_is_active?: boolean
+              metric_icon_name?: string
+              metric_lower_is_better?: boolean
+            }
         Returns: string
       }
       validate_metric_value_date: {

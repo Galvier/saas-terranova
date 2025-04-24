@@ -12,6 +12,7 @@ export interface MetricDefinition {
   status: 'success' | 'warning' | 'danger';
   is_active: boolean;
   icon_name: string | null;
+  lower_is_better: boolean;
 }
 
 export interface MetricHistory {

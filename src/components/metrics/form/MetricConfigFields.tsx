@@ -68,6 +68,27 @@ const MetricConfigFields: React.FC<MetricConfigFieldsProps> = ({ form, departmen
 
       <FormField
         control={form.control}
+        name="lower_is_better"
+        render={({ field }) => (
+          <FormItem className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <FormLabel>Valores menores são melhores</FormLabel>
+              <FormDescription>
+                Ative quando o objetivo é manter esta métrica abaixo da meta (ex: rotatividade, reclamações)
+              </FormDescription>
+            </div>
+            <FormControl>
+              <Switch
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
         name="is_active"
         render={({ field }) => (
           <FormItem className="flex items-center justify-between">

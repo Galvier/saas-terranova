@@ -31,7 +31,8 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
       target: metric?.target || 0,
       department_id: metric?.department_id || '',
       frequency: metric?.frequency || 'monthly',
-      is_active: metric?.is_active ?? true
+      is_active: metric?.is_active ?? true,
+      lower_is_better: metric?.lower_is_better ?? false
     }
   });
 
@@ -48,6 +49,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
           department_id: values.department_id,
           frequency: values.frequency,
           is_active: values.is_active,
+          lower_is_better: values.lower_is_better,
           icon_name: 'chart-line' // Default icon
         });
       } else {
@@ -59,6 +61,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
           department_id: values.department_id,
           frequency: values.frequency,
           is_active: values.is_active,
+          lower_is_better: values.lower_is_better,
           icon_name: 'chart-line' // Default icon
         });
       }

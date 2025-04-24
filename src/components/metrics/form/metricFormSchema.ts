@@ -8,5 +8,6 @@ export const formSchema = z.object({
   target: z.coerce.number().positive('Meta deve ser um número positivo'),
   department_id: z.string().uuid('Departamento é obrigatório'),
   frequency: z.string(),
-  is_active: z.boolean()
+  is_active: z.boolean(),
+  lower_is_better: z.boolean().default(false)
 });

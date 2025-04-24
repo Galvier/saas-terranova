@@ -1,4 +1,3 @@
-
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { MetricDefinition, MetricHistory } from './types/metric';
 
@@ -28,6 +27,7 @@ export const createMetricDefinition = async (metric: {
   frequency?: string;
   is_active?: boolean;
   icon_name?: string;
+  lower_is_better?: boolean;
 }): Promise<CrudResult<string>> => {
   try {
     const { data, error } = await callRPC<string>('create_metric_definition', {
@@ -38,7 +38,8 @@ export const createMetricDefinition = async (metric: {
       metric_department_id: metric.department_id,
       metric_frequency: metric.frequency,
       metric_is_active: metric.is_active,
-      metric_icon_name: metric.icon_name
+      metric_icon_name: metric.icon_name,
+      metric_lower_is_better: metric.lower_is_better
     });
     return formatCrudResult(data, error);
   } catch (error) {
@@ -57,6 +58,7 @@ export const updateMetricDefinition = async (metricId: string, metric: {
   frequency?: string;
   is_active?: boolean;
   icon_name?: string;
+  lower_is_better?: boolean;
 }): Promise<CrudResult<string>> => {
   try {
     const { data, error } = await callRPC<string>('update_metric_definition', {
@@ -68,7 +70,8 @@ export const updateMetricDefinition = async (metricId: string, metric: {
       metric_department_id: metric.department_id,
       metric_frequency: metric.frequency,
       metric_is_active: metric.is_active,
-      metric_icon_name: metric.icon_name
+      metric_icon_name: metric.icon_name,
+      metric_lower_is_better: metric.lower_is_better
     });
     return formatCrudResult(data, error);
   } catch (error) {
