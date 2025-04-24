@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -31,7 +30,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { Edit, MoreHorizontal, Plus, Search, Trash2, UserPlus } from 'lucide-react';
-import { getAllManagers } from '@/integrations/supabase';
+import { deleteManager, getAllManagers } from '@/integrations/supabase';
 import { CustomBadge } from '@/components/ui/custom-badge';
 
 const Managers = () => {
@@ -40,6 +39,7 @@ const Managers = () => {
   const [managerToDelete, setManagerToDelete] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch managers using react-query
   const { data: managersData, isLoading, error } = useQuery({
@@ -66,13 +66,27 @@ const Managers = () => {
     navigate(`/managers/edit/${id}`);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (managerToDelete) {
-      // TODO: Implement delete functionality when backend is ready
-      toast({
-        title: "Gestor removido",
-        description: `${managerToDelete.name} foi removido com sucesso.`
-      });
+      try {
+        const result = await deleteManager(managerToDelete.id);
+        if (result.error) {
+          throw new Error(result.message);
+        }
+        
+        toast({
+          title: "Gestor removido",
+          description: `${managerToDelete.name} foi removido com sucesso.`
+        });
+        
+        queryClient.invalidateQueries({queryKey: ['managers']});
+      } catch (error: any) {
+        toast({
+          title: "Erro ao remover gestor",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
       
       setManagerToDelete(null);
       setIsDeleteDialogOpen(false);

@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Simple type to represent CRUD operation results
@@ -60,6 +61,7 @@ export type RpcParams = {
     metric_frequency?: string;
     metric_is_active?: boolean;
     metric_icon_name?: string;
+    metric_lower_is_better?: boolean;
   };
   'record_metric_value': {
     metric_id: string;
@@ -80,6 +82,7 @@ export type RpcParams = {
     metric_frequency?: string;
     metric_is_active?: boolean;
     metric_icon_name?: string;
+    metric_lower_is_better?: boolean;
   };
   'delete_metric_definition': {
     metric_id: string;
@@ -126,14 +129,4 @@ export const getSupabaseUrl = (): string => {
   return "https://wjuzzjitpkhjjxujxftm.supabase.co";
 };
 
-export interface Manager {
-  id: string;
-  name: string;
-  email: string;
-  department_id?: string;
-  department_name?: string;
-  is_active: boolean;
-  role?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+// We will remove this duplicate interface since it's already defined in types/manager.ts
