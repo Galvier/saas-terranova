@@ -439,6 +439,10 @@ export type Database = {
         }
         Returns: string
       }
+      validate_metric_value_date: {
+        Args: { metric_id: string; value_date: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

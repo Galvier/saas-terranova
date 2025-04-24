@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Department, MetricDefinition, createMetricDefinition, updateMetricDefinition } from '@/integrations/supabase';
 import { IconSelect, type MetricIcon } from './IconSelect';
-import { UnitSelect, units, type MetricUnit } from './UnitSelect';
+import { UnitSelect, type MetricUnit } from './UnitSelect';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
@@ -165,14 +164,17 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Meta</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="number"
-                    step="0.01"
-                    onChange={e => field.onChange(parseFloat(e.target.value))}
-                  />
-                </FormControl>
+                <div className="flex items-center gap-2">
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      step="0.01"
+                      onChange={e => field.onChange(parseFloat(e.target.value))}
+                    />
+                  </FormControl>
+                  <span className="text-muted-foreground">{form.watch('unit')}</span>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
