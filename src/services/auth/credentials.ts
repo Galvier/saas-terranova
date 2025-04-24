@@ -1,114 +1,68 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrudResult } from '@/integrations/supabase/helpers';
-import { User, Session } from '@supabase/supabase-js';
-
-export interface UserRegistrationData {
-  email: string;
-  password: string;
-  name: string;
-  role?: 'admin' | 'manager' | 'user';
-}
+import { User } from '@supabase/supabase-js';
+import { CrudResult, formatCrudResult } from '@/integrations/supabase';
 
 export interface LoginCredentials {
   email: string;
   password: string;
 }
 
-export interface AuthResult extends CrudResult<{user: User | null, session: Session | null}> {}
+export interface SignUpCredentials extends LoginCredentials {
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+}
 
 export const authCredentials = {
-  register: async (userData: UserRegistrationData): Promise<AuthResult> => {
+  login: async ({ email, password }: LoginCredentials): Promise<CrudResult<User | null>> => {
     try {
-      console.log('[AuthCredentials] Iniciando processo de registro para:', userData.email);
+      console.log('[AuthCredentials] Iniciando login para:', email);
       
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        console.error('[AuthCredentials] Erro no login:', error);
+        return formatCrudResult(null, error);
+      }
+      
+      console.log('[AuthCredentials] Login bem-sucedido para:', data.user?.email);
+      return formatCrudResult(data.user, null);
+    } catch (error) {
+      console.error('[AuthCredentials] Erro não tratado no login:', error);
+      return formatCrudResult(null, error);
+    }
+  },
+  
+  signUp: async (credentials: SignUpCredentials): Promise<CrudResult<User | null>> => {
+    try {
+      console.log('[AuthCredentials] Iniciando registro para:', credentials.email);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
         options: {
           data: {
-            name: userData.name,
-            role: userData.role || 'user'
+            first_name: credentials.firstName || credentials.name?.split(' ')[0] || '',
+            last_name: credentials.lastName || 
+              (credentials.name ? credentials.name.split(' ').slice(1).join(' ') : '')
           }
         }
       });
       
-      if (authError) {
-        console.error('[AuthCredentials] Erro ao criar usuário:', authError);
-        
-        let errorMessage = 'Erro ao criar usuário';
-        if (authError.message.includes('already registered')) {
-          errorMessage = 'Este email já está registrado';
-        } else if (authError.message.includes('password')) {
-          errorMessage = 'A senha não atende aos critérios de segurança';
-        }
-        
-        return {
-          data: null,
-          error: authError,
-          status: 'error',
-          message: errorMessage
-        };
+      if (error) {
+        console.error('[AuthCredentials] Erro no registro:', error);
+        return formatCrudResult(null, error);
       }
       
-      return {
-        data: { user: authData.user, session: authData.session },
-        error: null,
-        status: 'success',
-        message: 'Usuário registrado com sucesso'
-      };
-    } catch (error: any) {
+      console.log('[AuthCredentials] Registro bem-sucedido para:', data.user?.email);
+      return formatCrudResult(data.user, null);
+    } catch (error) {
       console.error('[AuthCredentials] Erro não tratado no registro:', error);
-      return {
-        data: null,
-        error,
-        status: 'error',
-        message: error.message || 'Ocorreu um erro inesperado no registro'
-      };
-    }
-  },
-
-  login: async ({ email, password }: LoginCredentials): Promise<AuthResult> => {
-    try {
-      console.log('[AuthCredentials] Iniciando processo de login para:', email);
-      
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (authError) {
-        console.error('[AuthCredentials] Erro ao realizar login:', authError);
-        
-        let errorMessage = 'Falha no login';
-        if (authError.message.includes('Invalid login')) {
-          errorMessage = 'Email ou senha inválidos';
-        } else if (authError.message.includes('Email not confirmed')) {
-          errorMessage = 'Email não confirmado. Verifique sua caixa de entrada';
-        }
-        
-        return {
-          data: null,
-          error: authError,
-          status: 'error',
-          message: errorMessage
-        };
-      }
-      
-      return {
-        data: { user: authData.user, session: authData.session },
-        error: null,
-        status: 'success',
-        message: 'Login realizado com sucesso'
-      };
-    } catch (error: any) {
-      console.error('[AuthCredentials] Erro não tratado no login:', error);
-      return {
-        data: null,
-        error,
-        status: 'error',
-        message: error.message || 'Ocorreu um erro inesperado no login'
-      };
+      return formatCrudResult(null, error);
     }
   }
 };

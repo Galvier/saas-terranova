@@ -73,12 +73,12 @@ export type RpcParams = {
 };
 
 // Function to call RPC methods with proper typing
-export const callRPC = async <T = any, F extends keyof RpcParams = keyof RpcParams>(
-  functionName: F,
-  params: RpcParams[F] = {} as any
+export const callRPC = async <T = any>(
+  functionName: keyof RpcParams,
+  params: any = {}
 ): Promise<{ data: T | null; error: any }> => {
   try {
-    const { data, error } = await supabase.rpc(functionName, params);
+    const { data, error } = await supabase.rpc(functionName as string, params);
     let parsedData = data;
     if (data && typeof data === "string") {
       try {
