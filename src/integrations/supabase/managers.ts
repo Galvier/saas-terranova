@@ -19,6 +19,7 @@ export const createManager = async (
     department_id: string;
     is_active: boolean;
     password?: string;
+    role?: string;
   }
 ): Promise<CrudResult<Manager>> => {
   try {
@@ -27,7 +28,8 @@ export const createManager = async (
       manager_email: manager.email,
       manager_department_id: manager.department_id,
       manager_is_active: manager.is_active,
-      manager_password: manager.password
+      manager_password: manager.password,
+      manager_role: manager.role
     });
     return formatCrudResult(data, error);
   } catch (error) {

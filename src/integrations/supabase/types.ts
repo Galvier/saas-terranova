@@ -351,13 +351,22 @@ export type Database = {
         Returns: undefined
       }
       create_manager: {
-        Args: {
-          manager_name: string
-          manager_email: string
-          manager_department_id: string
-          manager_is_active: boolean
-          manager_password?: string
-        }
+        Args:
+          | {
+              manager_name: string
+              manager_email: string
+              manager_department_id: string
+              manager_is_active: boolean
+              manager_password?: string
+            }
+          | {
+              manager_name: string
+              manager_email: string
+              manager_department_id: string
+              manager_is_active: boolean
+              manager_password?: string
+              manager_role?: string
+            }
         Returns: Json
       }
       create_metric_definition: {
@@ -408,13 +417,15 @@ export type Database = {
       get_all_managers: {
         Args: Record<PropertyKey, never>
         Returns: {
-          created_at: string | null
-          department_id: string | null
-          email: string
           id: string
-          is_active: boolean | null
           name: string
-          updated_at: string | null
+          email: string
+          department_id: string
+          department_name: string
+          is_active: boolean
+          role: string
+          created_at: string
+          updated_at: string
         }[]
       }
       get_manager_by_id: {

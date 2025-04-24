@@ -96,17 +96,7 @@ export type RpcParams = {
     manager_password?: string;
     manager_role?: string;
   };
-  'update_manager': {
-    manager_id: string;
-    manager_name: string;
-    manager_email: string;
-    manager_department_id: string;
-    manager_is_active: boolean;
-  };
   'delete_manager': {
-    manager_id: string;
-  };
-  'get_manager_by_id': {
     manager_id: string;
   };
 };
