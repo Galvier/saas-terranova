@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Department, MetricDefinition, createMetricDefinition, updateMetricDefinition } from '@/integrations/supabase';
 import { IconSelect, type MetricIcon } from './IconSelect';
+import { UnitSelect, units, type MetricUnit } from './UnitSelect';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
@@ -21,7 +22,7 @@ const formSchema = z.object({
   department_id: z.string().uuid('Departamento é obrigatório'),
   frequency: z.string(),
   is_active: z.boolean(),
-  icon_name: z.string().optional()
+  icon_name: z.string()
 });
 
 interface MetricFormProps {
@@ -39,7 +40,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
     defaultValues: {
       name: metric?.name || '',
       description: metric?.description || '',
-      unit: metric?.unit || '',
+      unit: metric?.unit || '%',
       target: metric?.target || 0,
       department_id: metric?.department_id || '',
       frequency: metric?.frequency || 'monthly',
@@ -135,7 +136,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
               <FormControl>
                 <IconSelect 
                   value={field.value as MetricIcon} 
-                  onChange={field.onChange}
+                  onChange={(value) => field.onChange(value)}
                 />
               </FormControl>
               <FormMessage />
@@ -151,7 +152,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
               <FormItem>
                 <FormLabel>Unidade</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <UnitSelect {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

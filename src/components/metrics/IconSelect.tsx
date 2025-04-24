@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,14 +60,14 @@ const icons: IconDefinition[] = [
 export type MetricIcon = typeof icons[number]['name'];
 
 interface IconSelectProps {
-  value?: MetricIcon;
+  value: MetricIcon;
   onChange: (value: MetricIcon) => void;
 }
 
 export const IconSelect: React.FC<IconSelectProps> = ({ value, onChange }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const selectedIcon = icons.find(icon => icon.name === value);
-  const IconComponent = selectedIcon?.component || ChartLine;
+  const selectedIcon = icons.find(icon => icon.name === value) || icons[0];
+  const IconComponent = selectedIcon.component;
   
   const filteredIcons = searchQuery
     ? icons.filter(icon => 
