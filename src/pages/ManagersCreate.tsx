@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -21,7 +20,7 @@ import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import DepartmentsSelect from '@/components/DepartmentsSelect';
-import { createManager, getAllDepartments } from '@/integrations/supabase/helpers';
+import { createManager, getAllDepartments } from '@/integrations/supabase';
 
 // Define form validation schema
 const formSchema = z.object({

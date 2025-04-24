@@ -3,7 +3,7 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Department } from '@/integrations/supabase/helpers';
+import { Department } from '@/integrations/supabase';
 
 interface DepartmentsSelectProps {
   departments: Department[];

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Plus } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Department, getAllDepartments, getMetricsByDepartment } from '@/integrations/supabase/helpers';
+import { Department, getAllDepartments, getMetricsByDepartment } from '@/integrations/supabase';
 import MetricForm from '@/components/metrics/MetricForm';
 import MetricCard from '@/components/metrics/MetricCard';
 

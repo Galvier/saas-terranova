@@ -16,7 +16,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Progress } from '@/components/ui/custom-progress';
-import { callRPC, Manager } from '@/integrations/supabase/helpers';
+import { callRPC, Manager } from '@/integrations/supabase';
 
 interface Department {
   id: string;

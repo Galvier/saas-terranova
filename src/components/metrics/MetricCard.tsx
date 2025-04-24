@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { MetricDefinition } from '@/integrations/supabase/helpers';
+import { MetricDefinition } from '@/integrations/supabase';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 
 interface MetricCardProps {

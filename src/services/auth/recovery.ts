@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { CrudResult } from '@/integrations/supabase/helpers';
+import { CrudResult } from '@/integrations/supabase';
 
 export const authRecovery = {
   resetPassword: async (email: string): Promise<CrudResult<null>> => {

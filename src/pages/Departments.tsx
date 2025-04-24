@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Department, Manager, createDepartment, getAllDepartments, getAllManagers } from '@/integrations/supabase/helpers';
+import { Department, Manager, createDepartment, getAllDepartments, getAllManagers } from '@/integrations/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CustomBadge } from '@/components/ui/custom-badge';
 
