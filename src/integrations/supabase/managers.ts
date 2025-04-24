@@ -1,4 +1,3 @@
-
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { Manager } from './types/manager';
 
@@ -45,6 +44,7 @@ export const updateManager = async (
     email: string; 
     department_id: string;
     is_active: boolean;
+    role?: string;
   }
 ): Promise<CrudResult<Manager>> => {
   try {
@@ -53,7 +53,8 @@ export const updateManager = async (
       manager_name: manager.name,
       manager_email: manager.email,
       manager_department_id: manager.department_id,
-      manager_is_active: manager.is_active
+      manager_is_active: manager.is_active,
+      manager_role: manager.role
     });
     return formatCrudResult(data, error);
   } catch (error) {

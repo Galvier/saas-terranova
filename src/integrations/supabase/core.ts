@@ -107,10 +107,10 @@ export type RpcParams = {
 // Function to call RPC methods with proper typing
 export const callRPC = async <T = any>(
   functionName: keyof RpcParams, 
-  params: RpcParams[keyof RpcParams] = {}
+  params: RpcParams[typeof functionName]
 ): Promise<{ data: T | null; error: any }> => {
   try {
-    const { data, error } = await supabase.rpc(functionName as string, params);
+    const { data, error } = await supabase.rpc(functionName, params);
     let parsedData = data;
     if (data && typeof data === "string") {
       try {
@@ -128,5 +128,3 @@ export const callRPC = async <T = any>(
 export const getSupabaseUrl = (): string => {
   return "https://wjuzzjitpkhjjxujxftm.supabase.co";
 };
-
-// We will remove this duplicate interface since it's already defined in types/manager.ts
