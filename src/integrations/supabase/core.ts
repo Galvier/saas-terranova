@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Simple type to represent CRUD operation results
@@ -48,7 +47,8 @@ export type RpcParams = {
     manager_name: string;
     manager_email: string;
     manager_department_id: string;
-    manager_is_active: boolean 
+    manager_is_active: boolean;
+    manager_role?: string;
   };
   'check_user_profile': { user_id: string };
   'get_metrics_by_department': { department_id_param?: string };
@@ -106,8 +106,8 @@ export type RpcParams = {
 
 // Function to call RPC methods with proper typing
 export const callRPC = async <T = any>(
-  functionName: keyof RpcParams,
-  params: any = {}
+  functionName: keyof RpcParams, 
+  params: RpcParams[keyof RpcParams] = {}
 ): Promise<{ data: T | null; error: any }> => {
   try {
     const { data, error } = await supabase.rpc(functionName as string, params);
