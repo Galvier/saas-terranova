@@ -2,7 +2,6 @@
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { Manager } from './types/manager';
 
-// Function to get all active managers
 export const getAllManagers = async (): Promise<CrudResult<Manager[]>> => {
   try {
     const { data, error } = await callRPC<Manager[]>('get_all_managers');
@@ -13,17 +12,23 @@ export const getAllManagers = async (): Promise<CrudResult<Manager[]>> => {
   }
 };
 
-// Function to create a new manager
 export const createManager = async (
   manager: { 
     name: string; 
     email: string; 
     department_id: string;
     is_active: boolean;
+    password?: string;
   }
 ): Promise<CrudResult<Manager>> => {
   try {
-    const { data, error } = await callRPC<Manager>('create_manager', manager);
+    const { data, error } = await callRPC<Manager>('create_manager', {
+      manager_name: manager.name,
+      manager_email: manager.email,
+      manager_department_id: manager.department_id,
+      manager_is_active: manager.is_active,
+      manager_password: manager.password
+    });
     return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error creating manager:', error);
@@ -31,7 +36,6 @@ export const createManager = async (
   }
 };
 
-// Function to update a manager
 export const updateManager = async (
   id: string,
   manager: { 
@@ -44,7 +48,10 @@ export const updateManager = async (
   try {
     const { data, error } = await callRPC<Manager>('update_manager', {
       manager_id: id,
-      ...manager
+      manager_name: manager.name,
+      manager_email: manager.email,
+      manager_department_id: manager.department_id,
+      manager_is_active: manager.is_active
     });
     return formatCrudResult(data, error);
   } catch (error) {
@@ -53,13 +60,26 @@ export const updateManager = async (
   }
 };
 
-// Function to delete a manager
 export const deleteManager = async (id: string): Promise<CrudResult<Manager>> => {
   try {
-    const { data, error } = await callRPC<Manager>('delete_manager', { manager_id: id });
+    const { data, error } = await callRPC<Manager>('delete_manager', {
+      manager_id: id
+    });
     return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error deleting manager:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+export const getManagerById = async (id: string): Promise<CrudResult<Manager>> => {
+  try {
+    const { data, error } = await callRPC<Manager>('get_manager_by_id', {
+      manager_id: id
+    });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error fetching manager:', error);
     return formatCrudResult(null, error);
   }
 };

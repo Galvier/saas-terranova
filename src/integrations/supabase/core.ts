@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Simple type to represent CRUD operation results
@@ -88,6 +87,26 @@ export type RpcParams = {
   'validate_metric_value_date': { 
     metric_id: string;
     value_date: string;
+  };
+  'create_manager': { 
+    manager_name: string; 
+    manager_email: string;
+    manager_department_id: string;
+    manager_is_active: boolean;
+    manager_password?: string;
+  };
+  'update_manager': {
+    manager_id: string;
+    manager_name: string;
+    manager_email: string;
+    manager_department_id: string;
+    manager_is_active: boolean;
+  };
+  'delete_manager': {
+    manager_id: string;
+  };
+  'get_manager_by_id': {
+    manager_id: string;
   };
 };
 

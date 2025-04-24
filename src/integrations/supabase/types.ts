@@ -350,6 +350,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_manager: {
+        Args: {
+          manager_name: string
+          manager_email: string
+          manager_department_id: string
+          manager_is_active: boolean
+          manager_password?: string
+        }
+        Returns: Json
+      }
       create_metric_definition: {
         Args:
           | {
@@ -375,6 +385,10 @@ export type Database = {
             }
         Returns: string
       }
+      delete_manager: {
+        Args: { manager_id: string }
+        Returns: Json
+      }
       delete_metric_definition: {
         Args: { metric_id: string }
         Returns: string
@@ -393,6 +407,18 @@ export type Database = {
       }
       get_all_managers: {
         Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string | null
+          department_id: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }[]
+      }
+      get_manager_by_id: {
+        Args: { manager_id: string }
         Returns: {
           created_at: string | null
           department_id: string | null
@@ -439,6 +465,16 @@ export type Database = {
       }
       run_diagnostic_write_test: {
         Args: { test_id_param: string }
+        Returns: Json
+      }
+      update_manager: {
+        Args: {
+          manager_id: string
+          manager_name: string
+          manager_email: string
+          manager_department_id: string
+          manager_is_active: boolean
+        }
         Returns: Json
       }
       update_metric_definition: {
