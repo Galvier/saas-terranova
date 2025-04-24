@@ -79,11 +79,15 @@ export const deleteManager = async (id: string): Promise<CrudResult<Manager>> =>
 export const getManagerById = async (id: string): Promise<CrudResult<Manager>> => {
   try {
     console.log("Fetching manager with ID:", id);
-    const { data, error } = await callRPC<Manager>('get_manager_by_id', {
+    const { data, error } = await callRPC<Manager[]>('get_manager_by_id', {
       manager_id: id
     });
-    console.log("Manager data received:", data);
-    return formatCrudResult(data, error);
+    
+    // Since the function returns a table (array) but we only need one manager
+    const manager = Array.isArray(data) && data.length > 0 ? data[0] : null;
+    console.log("Manager data received:", manager);
+    
+    return formatCrudResult(manager, error);
   } catch (error) {
     console.error('Error fetching manager:', error);
     return formatCrudResult(null, error);

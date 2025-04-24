@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Simple type to represent CRUD operation results
