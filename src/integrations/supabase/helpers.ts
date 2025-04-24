@@ -258,7 +258,7 @@ export interface MetricHistory {
 // Add new function to get metrics by department
 export const getMetricsByDepartment = async (departmentId?: string): Promise<CrudResult<MetricDefinition[]>> => {
   try {
-    // If departmentId is "all", pass null to get all metrics
+    // If departmentId is "all", pass undefined to get all metrics
     const actualDepartmentId = departmentId === "all" ? undefined : departmentId;
     
     const { data, error } = await callRPC<MetricDefinition[]>('get_metrics_by_department', {

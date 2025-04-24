@@ -12,7 +12,7 @@ import MetricCard from '@/components/metrics/MetricCard';
 
 const Metrics = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<string | undefined>();
+  const [selectedDepartment, setSelectedDepartment] = useState<string | undefined>("all");
 
   const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
     queryKey: ['departments'],
@@ -54,7 +54,6 @@ const Metrics = () => {
             <SelectValue placeholder="Todos os departamentos" />
           </SelectTrigger>
           <SelectContent>
-            {/* Fix: Change to use "all" as value instead of undefined */}
             <SelectItem value="all">Todos os departamentos</SelectItem>
             {departments.map((dept) => (
               <SelectItem key={dept.id} value={dept.id}>
