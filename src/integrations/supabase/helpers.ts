@@ -46,7 +46,11 @@ export type RpcFunctionName =
   | 'get_all_managers'
   | 'get_manager_by_id'
   | 'update_manager'
-  | 'check_user_profile';
+  | 'check_user_profile'
+  | 'get_metrics_by_department'
+  | 'create_metric_definition'
+  | 'record_metric_value'
+  | 'get_metric_history';
 
 // Define parameter types for each RPC function
 export type RpcParams = {
@@ -71,6 +75,25 @@ export type RpcParams = {
     manager_is_active: boolean 
   };
   'check_user_profile': { user_id: string };
+  'get_metrics_by_department': { department_id_param?: string };
+  'create_metric_definition': {
+    metric_name: string;
+    metric_description: string;
+    metric_unit: string;
+    metric_target: number;
+    metric_department_id: string;
+    metric_frequency?: string;
+    metric_is_active?: boolean;
+  };
+  'record_metric_value': {
+    metric_id: string;
+    metric_value: number;
+    metric_date?: string;
+  };
+  'get_metric_history': {
+    metric_id_param: string;
+    limit_param?: number;
+  };
 };
 
 // Function to call RPC methods with proper typing
@@ -206,6 +229,103 @@ export const createManager = async (
     return formatCrudResult(newManager, null);
   } catch (error) {
     console.error('Error creating manager:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Add new interfaces for metrics
+export interface MetricDefinition {
+  id: string;
+  name: string;
+  description: string | null;
+  unit: string;
+  target: number;
+  current: number;
+  department_id: string | null;
+  department_name: string | null;
+  frequency: string;
+  trend: 'up' | 'down' | 'neutral';
+  status: 'success' | 'warning' | 'danger';
+  is_active: boolean;
+}
+
+export interface MetricHistory {
+  date: string;
+  value: number;
+}
+
+// Add new function to get metrics by department
+export const getMetricsByDepartment = async (departmentId?: string): Promise<CrudResult<MetricDefinition[]>> => {
+  try {
+    const { data, error } = await callRPC<MetricDefinition[]>('get_metrics_by_department', {
+      department_id_param: departmentId
+    });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error fetching metrics:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Add function to create a new metric
+export const createMetricDefinition = async (metric: {
+  name: string;
+  description: string;
+  unit: string;
+  target: number;
+  department_id: string;
+  frequency?: string;
+  is_active?: boolean;
+}): Promise<CrudResult<string>> => {
+  try {
+    const { data, error } = await callRPC<string>('create_metric_definition', {
+      metric_name: metric.name,
+      metric_description: metric.description,
+      metric_unit: metric.unit,
+      metric_target: metric.target,
+      metric_department_id: metric.department_id,
+      metric_frequency: metric.frequency,
+      metric_is_active: metric.is_active
+    });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error creating metric:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Add function to record a metric value
+export const recordMetricValue = async (
+  metricId: string,
+  value: number,
+  date?: string
+): Promise<CrudResult<string>> => {
+  try {
+    const { data, error } = await callRPC<string>('record_metric_value', {
+      metric_id: metricId,
+      metric_value: value,
+      metric_date: date
+    });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error recording metric value:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Add function to get metric history
+export const getMetricHistory = async (
+  metricId: string,
+  limit?: number
+): Promise<CrudResult<MetricHistory[]>> => {
+  try {
+    const { data, error } = await callRPC<MetricHistory[]>('get_metric_history', {
+      metric_id_param: metricId,
+      limit_param: limit
+    });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error fetching metric history:', error);
     return formatCrudResult(null, error);
   }
 };

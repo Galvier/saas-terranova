@@ -165,6 +165,85 @@ export type Database = {
           },
         ]
       }
+      metrics_definition: {
+        Row: {
+          created_at: string | null
+          department_id: string | null
+          description: string | null
+          frequency: string
+          id: string
+          is_active: boolean | null
+          name: string
+          target: number
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department_id?: string | null
+          description?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          target: number
+          unit: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department_id?: string | null
+          description?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          target?: number
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metrics_definition_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metrics_values: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          metrics_definition_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          metrics_definition_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          metrics_definition_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metrics_values_metrics_definition_id_fkey"
+            columns: ["metrics_definition_id"]
+            isOneToOne: false
+            referencedRelation: "metrics_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -265,6 +344,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_metric_definition: {
+        Args: {
+          metric_name: string
+          metric_description: string
+          metric_unit: string
+          metric_target: number
+          metric_department_id: string
+          metric_frequency?: string
+          metric_is_active?: boolean
+        }
+        Returns: string
+      }
       get_all_departments: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -289,8 +380,36 @@ export type Database = {
           updated_at: string | null
         }[]
       }
+      get_metric_history: {
+        Args: { metric_id_param: string; limit_param?: number }
+        Returns: {
+          date: string
+          value: number
+        }[]
+      }
+      get_metrics_by_department: {
+        Args: { department_id_param?: string }
+        Returns: {
+          id: string
+          name: string
+          description: string
+          unit: string
+          target: number
+          current: number
+          department_id: string
+          department_name: string
+          frequency: string
+          trend: string
+          status: string
+          is_active: boolean
+        }[]
+      }
       postgres_version: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      record_metric_value: {
+        Args: { metric_id: string; metric_value: number; metric_date?: string }
         Returns: string
       }
       run_diagnostic_write_test: {
