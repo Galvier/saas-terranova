@@ -1,6 +1,4 @@
-
 import { supabase } from './client';
-import { Database } from './types';
 
 // Simple type to represent CRUD operation results
 export interface CrudResult<T> {
@@ -36,7 +34,7 @@ export interface TableCheckResult {
   error?: string;
 }
 
-// Define the valid RPC function names
+// Define the valid RPC function names as string literals
 export type RpcFunctionName = 
   | 'check_table_exists_and_count'
   | 'create_department'
@@ -103,7 +101,7 @@ export const callRPC = async <T = any, F extends RpcFunctionName = RpcFunctionNa
   params: RpcParams[F] = {} as any
 ): Promise<{ data: T | null; error: any }> => {
   try {
-    const { data, error } = await supabase.rpc(functionName, params);
+    const { data, error } = await supabase.rpc(functionName as string, params);
     let parsedData = data;
     if (data && typeof data === "string") {
       try {

@@ -1,9 +1,7 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import PageHeader from '@/components/PageHeader';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -13,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Department, Manager, createDepartment, getAllDepartments, getAllManagers } from '@/integrations/supabase/helpers';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import DepartmentsSelect from '@/components/DepartmentsSelect'; // We'll modify this component
 import { CustomBadge } from '@/components/ui/custom-badge';
 
 const Departments = () => {
@@ -27,7 +24,6 @@ const Departments = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Query to load departments from Supabase
   const { data: departmentsData, isLoading, error } = useQuery({
     queryKey: ['departments'],
     queryFn: async () => {
@@ -39,7 +35,6 @@ const Departments = () => {
     }
   });
 
-  // Mutation to create a new department
   const createDepartmentMutation = useMutation({
     mutationFn: async (departmentData: { 
       name: string; 
@@ -77,7 +72,6 @@ const Departments = () => {
     }
   });
 
-  // Query to load ACTIVE managers (uses actual RPC)
   const { data: managersData } = useQuery({
     queryKey: ['managers'],
     queryFn: async () => {
@@ -162,7 +156,7 @@ const Departments = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {(managersData || []).length === 0 ? (
-                        <SelectItem value="" disabled>Nenhum gestor encontrado</SelectItem>
+                        <SelectItem value="no-manager">Nenhum gestor encontrado</SelectItem>
                       ) : (
                         managersData?.map((manager) => (
                           <SelectItem key={manager.id} value={manager.id}>
@@ -228,4 +222,3 @@ const Departments = () => {
 };
 
 export default Departments;
-
