@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Simple type to represent CRUD operation results
@@ -101,7 +102,7 @@ export const callRPC = async <T = any, F extends RpcFunctionName = RpcFunctionNa
   params: RpcParams[F] = {} as any
 ): Promise<{ data: T | null; error: any }> => {
   try {
-    const { data, error } = await supabase.rpc(functionName as string, params);
+    const { data, error } = await supabase.rpc(functionName, params);
     let parsedData = data;
     if (data && typeof data === "string") {
       try {

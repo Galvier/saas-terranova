@@ -91,10 +91,11 @@ const ManagersCreate = () => {
       <PageHeader
         title="Novo Gestor"
         subtitle="Adicione um novo gestor ao sistema"
-        backButton={{
-          to: '/managers',
-          label: 'Voltar'
-        }}
+        backButton={
+          <Button variant="outline" size="sm" onClick={() => navigate('/managers')}>
+            Voltar
+          </Button>
+        }
       />
 
       <Card className="max-w-2xl mx-auto">
