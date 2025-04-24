@@ -171,6 +171,7 @@ export type Database = {
           department_id: string | null
           description: string | null
           frequency: string
+          icon_name: string | null
           id: string
           is_active: boolean | null
           name: string
@@ -183,6 +184,7 @@ export type Database = {
           department_id?: string | null
           description?: string | null
           frequency?: string
+          icon_name?: string | null
           id?: string
           is_active?: boolean | null
           name: string
@@ -195,6 +197,7 @@ export type Database = {
           department_id?: string | null
           description?: string | null
           frequency?: string
+          icon_name?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
@@ -353,6 +356,7 @@ export type Database = {
           metric_department_id: string
           metric_frequency?: string
           metric_is_active?: boolean
+          metric_icon_name?: string
         }
         Returns: string
       }
@@ -402,6 +406,7 @@ export type Database = {
           trend: string
           status: string
           is_active: boolean
+          icon_name: string
         }[]
       }
       postgres_version: {

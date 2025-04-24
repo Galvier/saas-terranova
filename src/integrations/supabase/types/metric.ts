@@ -1,4 +1,3 @@
-
 export interface MetricDefinition {
   id: string;
   name: string;
@@ -12,6 +11,7 @@ export interface MetricDefinition {
   trend: 'up' | 'down' | 'neutral';
   status: 'success' | 'warning' | 'danger';
   is_active: boolean;
+  icon_name: string | null;
 }
 
 export interface MetricHistory {

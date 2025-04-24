@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, ChartLine, Gauge, Thermometer, Activity, TrendingUp, TrendingDown, CircleArrowUp, CircleArrowDown } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,6 +18,17 @@ import {
 } from '@/components/ui/table';
 import { CustomBadge } from '@/components/ui/custom-badge';
 import { ArrowDown, ArrowUp } from 'lucide-react';
+
+const icons = [
+  { name: 'chart-line', component: ChartLine },
+  { name: 'gauge', component: Gauge },
+  { name: 'thermometer', component: Thermometer },
+  { name: 'activity', component: Activity },
+  { name: 'trending-up', component: TrendingUp },
+  { name: 'trending-down', component: TrendingDown },
+  { name: 'circle-arrow-up', component: CircleArrowUp },
+  { name: 'circle-arrow-down', component: CircleArrowDown },
+] as const;
 
 const Metrics = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -136,36 +146,47 @@ const Metrics = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {metrics.map((metric) => (
-                <TableRow key={metric.id} className="hover:bg-muted/50 cursor-pointer">
-                  <TableCell className="font-medium">{metric.name}</TableCell>
-                  <TableCell>{metric.department_name || 'Sem departamento'}</TableCell>
-                  <TableCell>{metric.target} {metric.unit}</TableCell>
-                  <TableCell>{metric.current} {metric.unit}</TableCell>
-                  <TableCell className="text-center">
-                    {metric.trend !== 'neutral' ? (
-                      <div className={`inline-flex ${
-                        metric.status === 'success' ? 'text-success' : 'text-danger'
-                      }`}>
-                        {metric.trend === 'up' ? (
-                          <ArrowUp className="h-4 w-4" />
-                        ) : (
-                          <ArrowDown className="h-4 w-4" />
-                        )}
+              {metrics.map((metric) => {
+                const Icon = metric.icon_name ? 
+                  icons.find(i => i.name === metric.icon_name)?.component || ChartLine :
+                  ChartLine;
+
+                return (
+                  <TableRow key={metric.id} className="hover:bg-muted/50 cursor-pointer">
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4" />
+                        {metric.name}
                       </div>
-                    ) : (
-                      <span>—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{getFrequencyLabel(metric.frequency)}</TableCell>
-                  <TableCell className="text-center">
-                    <CustomBadge variant={getStatusVariant(metric.status)}>
-                      {metric.status === 'success' ? 'Ótimo' : 
-                       metric.status === 'warning' ? 'Atenção' : 'Crítico'}
-                    </CustomBadge>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>{metric.department_name || 'Sem departamento'}</TableCell>
+                    <TableCell>{metric.target} {metric.unit}</TableCell>
+                    <TableCell>{metric.current} {metric.unit}</TableCell>
+                    <TableCell className="text-center">
+                      {metric.trend !== 'neutral' ? (
+                        <div className={`inline-flex ${
+                          metric.status === 'success' ? 'text-success' : 'text-danger'
+                        }`}>
+                          {metric.trend === 'up' ? (
+                            <ArrowUp className="h-4 w-4" />
+                          ) : (
+                            <ArrowDown className="h-4 w-4" />
+                          )}
+                        </div>
+                      ) : (
+                        <span>—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{getFrequencyLabel(metric.frequency)}</TableCell>
+                    <TableCell className="text-center">
+                      <CustomBadge variant={getStatusVariant(metric.status)}>
+                        {metric.status === 'success' ? 'Ótimo' : 
+                         metric.status === 'warning' ? 'Atenção' : 'Crítico'}
+                      </CustomBadge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

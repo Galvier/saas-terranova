@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Department, createMetricDefinition } from '@/integrations/supabase';
+import { IconSelect, type MetricIcon } from './IconSelect';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
@@ -18,7 +20,8 @@ const formSchema = z.object({
   target: z.coerce.number().positive('Meta deve ser um número positivo'),
   department_id: z.string().uuid('Departamento é obrigatório'),
   frequency: z.string(),
-  is_active: z.boolean()
+  is_active: z.boolean(),
+  icon_name: z.string().optional()
 });
 
 interface MetricFormProps {
@@ -36,7 +39,8 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess }) => {
       unit: '',
       target: 0,
       frequency: 'monthly',
-      is_active: true
+      is_active: true,
+      icon_name: 'chart-line'
     }
   });
 
@@ -49,7 +53,8 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess }) => {
         target: values.target,
         department_id: values.department_id,
         frequency: values.frequency,
-        is_active: values.is_active
+        is_active: values.is_active,
+        icon_name: values.icon_name
       });
 
       if (result.error) {
@@ -96,6 +101,23 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess }) => {
               <FormLabel>Descrição</FormLabel>
               <FormControl>
                 <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="icon_name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Ícone</FormLabel>
+              <FormControl>
+                <IconSelect 
+                  value={field.value as MetricIcon} 
+                  onChange={field.onChange}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
