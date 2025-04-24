@@ -16,7 +16,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Progress } from '@/components/ui/custom-progress';
-import { callRPC, Manager } from '@/integrations/supabase';
+import { callRPC } from '@/integrations/supabase/core';
+import { getManagerById, updateManager } from '@/integrations/supabase/managers';
+import { getAllDepartments } from '@/integrations/supabase/departments';
+import type { Manager } from '@/integrations/supabase/types/manager';
 
 interface Department {
   id: string;
@@ -74,22 +77,29 @@ const ManagersUpdate = () => {
   const fetchManager = async (managerId: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await callRPC('get_manager_by_id', { 
-        manager_id: managerId 
-      });
-
-      if (error) {
-        throw error;
+      console.log("Fetching manager with ID:", managerId);
+      const result = await getManagerById(managerId);
+      
+      if (result.error) {
+        throw new Error(result.message || "Error fetching manager data");
       }
 
-      if (data) {
-        setManager(data);
-        form.setValue("name", data.name);
-        form.setValue("email", data.email);
-        form.setValue("department_id", data.department_id);
-        form.setValue("is_active", data.is_active);
+      if (result.data) {
+        console.log("Manager data received:", result.data);
+        setManager(result.data);
+        form.setValue("name", result.data.name);
+        form.setValue("email", result.data.email);
+        form.setValue("department_id", result.data.department_id || "");
+        form.setValue("is_active", result.data.is_active);
+      } else {
+        toast({
+          title: "Erro",
+          description: "Gestor não encontrado",
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
+      console.error("Error fetching manager:", error);
       toast({
         title: "Erro ao carregar gerente",
         description: error.message,
@@ -102,14 +112,14 @@ const ManagersUpdate = () => {
 
   const fetchDepartments = async () => {
     try {
-      const { data, error } = await callRPC('get_all_departments');
+      const result = await getAllDepartments();
 
-      if (error) {
-        throw error;
+      if (result.error) {
+        throw new Error(result.message || "Error fetching departments");
       }
 
-      if (data) {
-        setDepartments(data);
+      if (result.data) {
+        setDepartments(result.data);
       }
     } catch (error: any) {
       toast({
@@ -120,19 +130,20 @@ const ManagersUpdate = () => {
     }
   };
 
-  const updateManager = async (values: ManagerUpdateValues) => {
+  const handleUpdateManager = async (values: ManagerUpdateValues) => {
+    if (!id) return;
+    
     setIsSaving(true);
     try {
-      const { error } = await callRPC('update_manager', {
-        manager_id: id!,
-        manager_name: values.name,
-        manager_email: values.email,
-        manager_department_id: values.department_id,
-        manager_is_active: values.is_active
+      const result = await updateManager(id, {
+        name: values.name,
+        email: values.email,
+        department_id: values.department_id,
+        is_active: values.is_active
       });
 
-      if (error) {
-        throw error;
+      if (result.error) {
+        throw new Error(result.message || "Error updating manager");
       }
 
       toast({
@@ -152,7 +163,7 @@ const ManagersUpdate = () => {
   };
 
   const onSubmit = async (values: ManagerUpdateValues) => {
-    updateManager(values);
+    handleUpdateManager(values);
   }
 
   const handleNewUserToggle = () => {

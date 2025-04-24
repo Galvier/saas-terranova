@@ -10,6 +10,7 @@ import { ManagerSearch } from '@/components/managers/ManagerSearch';
 import { ManagerActions } from '@/components/managers/ManagerActions';
 import { ManagersTable } from '@/components/managers/ManagersTable';
 import { DeleteManagerDialog } from '@/components/managers/DeleteManagerDialog';
+import { useNavigate } from 'react-router-dom';
 import type { Manager } from '@/integrations/supabase';
 
 const Managers = () => {
@@ -18,6 +19,7 @@ const Managers = () => {
   const [managerToDelete, setManagerToDelete] = useState<Manager | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: managersData, isLoading, error } = useQuery({
     queryKey: ['managers'],

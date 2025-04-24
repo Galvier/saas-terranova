@@ -1,11 +1,9 @@
-
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { Department } from './types/department';
 
-// Function to get all departments
 export const getAllDepartments = async (): Promise<CrudResult<Department[]>> => {
   try {
-    const { data, error } = await callRPC<Department[]>('get_all_departments');
+    const { data, error } = await callRPC<Department[]>('get_all_departments', {});
     return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error fetching departments:', error);
@@ -13,7 +11,6 @@ export const getAllDepartments = async (): Promise<CrudResult<Department[]>> => 
   }
 };
 
-// Function to create a new department
 export const createDepartment = async (
   department: { 
     name: string; 

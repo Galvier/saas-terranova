@@ -1,9 +1,10 @@
+
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { Manager } from './types/manager';
 
 export const getAllManagers = async (): Promise<CrudResult<Manager[]>> => {
   try {
-    const { data, error } = await callRPC<Manager[]>('get_all_managers');
+    const { data, error } = await callRPC<Manager[]>('get_all_managers', {});
     return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error fetching managers:', error);
@@ -77,9 +78,11 @@ export const deleteManager = async (id: string): Promise<CrudResult<Manager>> =>
 
 export const getManagerById = async (id: string): Promise<CrudResult<Manager>> => {
   try {
+    console.log("Fetching manager with ID:", id);
     const { data, error } = await callRPC<Manager>('get_manager_by_id', {
       manager_id: id
     });
+    console.log("Manager data received:", data);
     return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error fetching manager:', error);
