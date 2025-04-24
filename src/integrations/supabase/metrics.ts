@@ -27,6 +27,7 @@ export const createMetricDefinition = async (metric: {
   department_id: string;
   frequency?: string;
   is_active?: boolean;
+  icon_name?: string;
 }): Promise<CrudResult<string>> => {
   try {
     const { data, error } = await callRPC<string>('create_metric_definition', {
@@ -36,11 +37,55 @@ export const createMetricDefinition = async (metric: {
       metric_target: metric.target,
       metric_department_id: metric.department_id,
       metric_frequency: metric.frequency,
-      metric_is_active: metric.is_active
+      metric_is_active: metric.is_active,
+      metric_icon_name: metric.icon_name
     });
     return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error creating metric:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Function to update a metric
+export const updateMetricDefinition = async (metricId: string, metric: {
+  name: string;
+  description: string;
+  unit: string;
+  target: number;
+  department_id: string;
+  frequency?: string;
+  is_active?: boolean;
+  icon_name?: string;
+}): Promise<CrudResult<string>> => {
+  try {
+    const { data, error } = await callRPC<string>('update_metric_definition', {
+      metric_id: metricId,
+      metric_name: metric.name,
+      metric_description: metric.description,
+      metric_unit: metric.unit,
+      metric_target: metric.target,
+      metric_department_id: metric.department_id,
+      metric_frequency: metric.frequency,
+      metric_is_active: metric.is_active,
+      metric_icon_name: metric.icon_name
+    });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error updating metric:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Function to delete a metric
+export const deleteMetricDefinition = async (metricId: string): Promise<CrudResult<string>> => {
+  try {
+    const { data, error } = await callRPC<string>('delete_metric_definition', {
+      metric_id: metricId
+    });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error deleting metric:', error);
     return formatCrudResult(null, error);
   }
 };

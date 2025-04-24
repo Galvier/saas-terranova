@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Simple type to represent CRUD operation results
@@ -69,6 +70,20 @@ export type RpcParams = {
   'get_metric_history': {
     metric_id_param: string;
     limit_param?: number;
+  };
+  'update_metric_definition': {
+    metric_id: string;
+    metric_name: string;
+    metric_description: string;
+    metric_unit: string;
+    metric_target: number;
+    metric_department_id: string;
+    metric_frequency?: string;
+    metric_is_active?: boolean;
+    metric_icon_name?: string;
+  };
+  'delete_metric_definition': {
+    metric_id: string;
   };
 };
 

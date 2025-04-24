@@ -360,6 +360,10 @@ export type Database = {
         }
         Returns: string
       }
+      delete_metric_definition: {
+        Args: { metric_id: string }
+        Returns: string
+      }
       get_all_departments: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -420,6 +424,20 @@ export type Database = {
       run_diagnostic_write_test: {
         Args: { test_id_param: string }
         Returns: Json
+      }
+      update_metric_definition: {
+        Args: {
+          metric_id: string
+          metric_name: string
+          metric_description: string
+          metric_unit: string
+          metric_target: number
+          metric_department_id: string
+          metric_frequency?: string
+          metric_is_active?: boolean
+          metric_icon_name?: string
+        }
+        Returns: string
       }
     }
     Enums: {

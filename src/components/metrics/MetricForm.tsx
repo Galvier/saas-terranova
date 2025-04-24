@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Department, createMetricDefinition } from '@/integrations/supabase';
+import { Department, MetricDefinition, createMetricDefinition, updateMetricDefinition } from '@/integrations/supabase';
 import { IconSelect, type MetricIcon } from './IconSelect';
 
 const formSchema = z.object({
@@ -27,49 +27,68 @@ const formSchema = z.object({
 interface MetricFormProps {
   departments: Department[];
   onSuccess: () => void;
+  metric?: MetricDefinition;
 }
 
-const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess }) => {
+const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric }) => {
   const { toast } = useToast();
+  const isEditing = !!metric;
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      description: '',
-      unit: '',
-      target: 0,
-      frequency: 'monthly',
-      is_active: true,
-      icon_name: 'chart-line'
+      name: metric?.name || '',
+      description: metric?.description || '',
+      unit: metric?.unit || '',
+      target: metric?.target || 0,
+      department_id: metric?.department_id || '',
+      frequency: metric?.frequency || 'monthly',
+      is_active: metric?.is_active ?? true,
+      icon_name: metric?.icon_name || 'chart-line'
     }
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const result = await createMetricDefinition({
-        name: values.name,
-        description: values.description || '',
-        unit: values.unit,
-        target: values.target,
-        department_id: values.department_id,
-        frequency: values.frequency,
-        is_active: values.is_active,
-        icon_name: values.icon_name
-      });
+      let result;
+      
+      if (isEditing && metric) {
+        result = await updateMetricDefinition(metric.id, {
+          name: values.name,
+          description: values.description || '',
+          unit: values.unit,
+          target: values.target,
+          department_id: values.department_id,
+          frequency: values.frequency,
+          is_active: values.is_active,
+          icon_name: values.icon_name
+        });
+      } else {
+        result = await createMetricDefinition({
+          name: values.name,
+          description: values.description || '',
+          unit: values.unit,
+          target: values.target,
+          department_id: values.department_id,
+          frequency: values.frequency,
+          is_active: values.is_active,
+          icon_name: values.icon_name
+        });
+      }
 
       if (result.error) {
         throw new Error(result.message);
       }
 
       toast({
-        title: 'Métrica criada',
-        description: 'Métrica criada com sucesso'
+        title: isEditing ? 'Métrica atualizada' : 'Métrica criada',
+        description: isEditing ? 'Métrica atualizada com sucesso' : 'Métrica criada com sucesso'
       });
 
       onSuccess();
     } catch (error: any) {
       toast({
-        title: 'Erro ao criar métrica',
+        title: `Erro ao ${isEditing ? 'atualizar' : 'criar'} métrica`,
         description: error.message,
         variant: 'destructive'
       });
@@ -231,7 +250,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess }) => {
         />
 
         <Button type="submit" className="w-full">
-          Criar Métrica
+          {isEditing ? 'Atualizar Métrica' : 'Criar Métrica'}
         </Button>
       </form>
     </Form>

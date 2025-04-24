@@ -8,10 +8,15 @@ export interface LoginCredentials {
   password: string;
 }
 
-export interface SignUpCredentials extends LoginCredentials {
+export interface UserRegistrationData extends LoginCredentials {
   name?: string;
   firstName?: string;
   lastName?: string;
+}
+
+export interface AuthResult {
+  user: User | null;
+  error: any | null;
 }
 
 export const authCredentials = {
@@ -37,7 +42,7 @@ export const authCredentials = {
     }
   },
   
-  signUp: async (credentials: SignUpCredentials): Promise<CrudResult<User | null>> => {
+  signUp: async (credentials: UserRegistrationData): Promise<CrudResult<User | null>> => {
     try {
       console.log('[AuthCredentials] Iniciando registro para:', credentials.email);
       
