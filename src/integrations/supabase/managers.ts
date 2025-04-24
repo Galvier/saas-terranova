@@ -23,23 +23,43 @@ export const createManager = async (
   }
 ): Promise<CrudResult<Manager>> => {
   try {
-    // For now, we'll use a dummy implementation as the RPC function is not implemented yet
-    // This will be replaced with an actual RPC call once the backend is ready
-    console.log("Creating manager:", manager);
-    
-    // Create a dummy success response
-    const newManager: Manager = {
-      id: crypto.randomUUID(),
-      name: manager.name,
-      email: manager.email,
-      department_id: manager.department_id,
-      is_active: manager.is_active,
-      created_at: new Date().toISOString()
-    };
-
-    return formatCrudResult(newManager, null);
+    const { data, error } = await callRPC<Manager>('create_manager', manager);
+    return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error creating manager:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Function to update a manager
+export const updateManager = async (
+  id: string,
+  manager: { 
+    name: string; 
+    email: string; 
+    department_id: string;
+    is_active: boolean;
+  }
+): Promise<CrudResult<Manager>> => {
+  try {
+    const { data, error } = await callRPC<Manager>('update_manager', {
+      manager_id: id,
+      ...manager
+    });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error updating manager:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Function to delete a manager
+export const deleteManager = async (id: string): Promise<CrudResult<Manager>> => {
+  try {
+    const { data, error } = await callRPC<Manager>('delete_manager', { manager_id: id });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error deleting manager:', error);
     return formatCrudResult(null, error);
   }
 };

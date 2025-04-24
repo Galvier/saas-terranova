@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -29,83 +31,44 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { Edit, MoreHorizontal, Plus, Search, Trash2, UserPlus } from 'lucide-react';
-import { Manager, ManagerStatus } from '@/types/manager';
+import { getAllManagers } from '@/integrations/supabase';
 import { CustomBadge } from '@/components/ui/custom-badge';
 
 const Managers = () => {
-  const [managers, setManagers] = useState<Manager[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [managerToDelete, setManagerToDelete] = useState<Manager | null>(null);
+  const [managerToDelete, setManagerToDelete] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const dummyManagers: Manager[] = [
-      {
-        id: 1,
-        name: 'João Silva',
-        email: 'joao.silva@empresa.com',
-        department: 'Vendas',
-        role: 'Gerente Regional',
-        status: 'active'
-      },
-      {
-        id: 2,
-        name: 'Maria Oliveira',
-        email: 'maria.oliveira@empresa.com',
-        department: 'Marketing',
-        role: 'Diretora de Marketing',
-        status: 'active'
-      },
-      {
-        id: 3,
-        name: 'Carlos Santos',
-        email: 'carlos.santos@empresa.com',
-        department: 'Finanças',
-        role: 'Controller',
-        status: 'inactive'
-      },
-      {
-        id: 4,
-        name: 'Ana Rodrigues',
-        email: 'ana.rodrigues@empresa.com',
-        department: 'Recursos Humanos',
-        role: 'Gerente de RH',
-        status: 'active'
-      },
-      {
-        id: 5,
-        name: 'Paulo Mendes',
-        email: 'paulo.mendes@empresa.com',
-        department: 'Operações',
-        role: 'Coordenador de Operações',
-        status: 'active'
-      }
-    ];
-    
-    setManagers(dummyManagers);
-  }, []);
+  // Fetch managers using react-query
+  const { data: managersData, isLoading, error } = useQuery({
+    queryKey: ['managers'],
+    queryFn: async () => {
+      const result = await getAllManagers();
+      if (result.error) throw new Error(result.message);
+      return result.data || [];
+    }
+  });
+
+  const managers = managersData || [];
 
   const filteredManagers = managers.filter(manager => 
-    manager.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    manager.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    manager.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    manager.role.toLowerCase().includes(searchTerm.toLowerCase())
+    manager.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    manager.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddManager = () => {
     navigate('/managers/new');
   };
 
-  const handleEditManager = (id: number) => {
+  const handleEditManager = (id: string) => {
     navigate(`/managers/edit/${id}`);
   };
 
   const confirmDelete = () => {
     if (managerToDelete) {
-      setManagers(managers.filter(manager => manager.id !== managerToDelete.id));
-      
+      // TODO: Implement delete functionality when backend is ready
       toast({
         title: "Gestor removido",
         description: `${managerToDelete.name} foi removido com sucesso.`
@@ -116,10 +79,18 @@ const Managers = () => {
     }
   };
 
-  const openDeleteDialog = (manager: Manager) => {
+  const openDeleteDialog = (manager: any) => {
     setManagerToDelete(manager);
     setIsDeleteDialogOpen(true);
   };
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        Erro ao carregar gestores: {error.message}
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -159,23 +130,25 @@ const Managers = () => {
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Departamento</TableHead>
-              <TableHead>Função</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredManagers.length > 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-6">
+                  Carregando gestores...
+                </TableCell>
+              </TableRow>
+            ) : filteredManagers.length > 0 ? (
               filteredManagers.map((manager) => (
                 <TableRow key={manager.id}>
                   <TableCell className="font-medium">{manager.name}</TableCell>
                   <TableCell>{manager.email}</TableCell>
-                  <TableCell>{manager.department}</TableCell>
-                  <TableCell>{manager.role}</TableCell>
                   <TableCell>
-                    <CustomBadge variant={manager.status === 'active' ? "success" : "secondary"}>
-                      {manager.status === 'active' ? 'Ativo' : 'Inativo'}
+                    <CustomBadge variant={manager.is_active ? "success" : "secondary"}>
+                      {manager.is_active ? 'Ativo' : 'Inativo'}
                     </CustomBadge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -204,7 +177,7 @@ const Managers = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                   Nenhum gestor encontrado
                 </TableCell>
               </TableRow>
