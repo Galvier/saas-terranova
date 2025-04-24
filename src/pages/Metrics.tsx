@@ -12,7 +12,7 @@ import MetricCard from '@/components/metrics/MetricCard';
 
 const Metrics = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<string | undefined>("all");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
 
   const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
     queryKey: ['departments'],

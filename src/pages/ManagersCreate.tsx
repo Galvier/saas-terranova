@@ -92,7 +92,7 @@ const ManagersCreate = () => {
         title="Novo Gestor"
         subtitle="Adicione um novo gestor ao sistema"
         backButton={{
-          href: '/managers',
+          to: '/managers',
           label: 'Voltar'
         }}
       />
