@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -16,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
@@ -28,6 +30,10 @@ const formSchema = z.object({
   email: z.string().email('Email inválido'),
   department_id: z.string().uuid('Selecione um departamento'),
   is_active: z.boolean().default(true),
+  role: z.enum(['admin', 'manager', 'viewer'], {
+    required_error: 'Selecione uma função',
+  }).default('manager'),
+  password: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -53,6 +59,7 @@ const ManagersCreate = () => {
       name: '',
       email: '',
       is_active: true,
+      role: 'manager',
     },
   });
 
@@ -63,7 +70,9 @@ const ManagersCreate = () => {
         name: values.name,
         email: values.email,
         department_id: values.department_id,
-        is_active: values.is_active
+        is_active: values.is_active,
+        role: values.role,
+        password: values.password
       });
 
       if (result.error) {
@@ -150,6 +159,32 @@ const ManagersCreate = () => {
 
               <FormField
                 control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Função</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a função" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                        <SelectItem value="manager">Gestor</SelectItem>
+                        <SelectItem value="viewer">Visualizador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Defina o nível de acesso do gestor no sistema.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="is_active"
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between rounded-lg border p-4">
@@ -165,6 +200,28 @@ const ManagersCreate = () => {
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {/* Optional password field */}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha (opcional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder="Deixe em branco para gerar automaticamente" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Se deixado em branco, uma senha será gerada automaticamente.
+                    </FormDescription>
+                    <FormMessage />
                   </FormItem>
                 )}
               />

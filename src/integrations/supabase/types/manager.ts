@@ -6,6 +6,7 @@ export interface Manager {
   department_id?: string;
   department_name?: string;
   is_active: boolean;
+  role?: string;
   created_at?: string;
   updated_at?: string;
 }

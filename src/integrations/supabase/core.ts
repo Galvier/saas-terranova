@@ -94,6 +94,7 @@ export type RpcParams = {
     manager_department_id: string;
     manager_is_active: boolean;
     manager_password?: string;
+    manager_role?: string;
   };
   'update_manager': {
     manager_id: string;
@@ -134,3 +135,15 @@ export const callRPC = async <T = any>(
 export const getSupabaseUrl = (): string => {
   return "https://wjuzzjitpkhjjxujxftm.supabase.co";
 };
+
+export interface Manager {
+  id: string;
+  name: string;
+  email: string;
+  department_id?: string;
+  department_name?: string;
+  is_active: boolean;
+  role?: string;
+  created_at?: string;
+  updated_at?: string;
+}

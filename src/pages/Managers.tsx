@@ -130,6 +130,8 @@ const Managers = () => {
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Departamento</TableHead>
+              <TableHead>Função</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -137,7 +139,7 @@ const Managers = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-6">
+                <TableCell colSpan={6} className="text-center py-6">
                   Carregando gestores...
                 </TableCell>
               </TableRow>
@@ -146,6 +148,8 @@ const Managers = () => {
                 <TableRow key={manager.id}>
                   <TableCell className="font-medium">{manager.name}</TableCell>
                   <TableCell>{manager.email}</TableCell>
+                  <TableCell>{manager.department_name || 'Não definido'}</TableCell>
+                  <TableCell>{manager.role || 'Gestor'}</TableCell>
                   <TableCell>
                     <CustomBadge variant={manager.is_active ? "success" : "secondary"}>
                       {manager.is_active ? 'Ativo' : 'Inativo'}
@@ -177,7 +181,7 @@ const Managers = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                   Nenhum gestor encontrado
                 </TableCell>
               </TableRow>
