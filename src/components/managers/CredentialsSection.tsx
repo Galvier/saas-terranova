@@ -3,11 +3,11 @@ import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { PasswordStrength } from '@/components/auth/PasswordStrength';
 
 interface CredentialsSectionProps {
   isEdit?: boolean;
@@ -37,67 +37,35 @@ const CredentialsSection = ({
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
-  // Calcular força da senha
   const calculatePasswordStrength = (password: string) => {
     if (!password) return 0;
-    
     let strength = 0;
-    
-    // Comprimento mínimo
     if (password.length >= 8) strength += 25;
-    
-    // Contém letras maiúsculas e minúsculas
     if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
-    
-    // Contém números
     if (/[0-9]/.test(password)) strength += 25;
-    
-    // Contém caracteres especiais
     if (/[^a-zA-Z0-9]/.test(password)) strength += 25;
-    
     return strength;
   };
 
-  // Atualizar senha e sua força
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = e.target.value;
     setPassword(newPassword);
     setPasswordStrength(calculatePasswordStrength(newPassword));
   };
 
-  const toggleShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const getStrengthColor = () => {
-    if (passwordStrength < 50) return 'bg-red-500';
-    if (passwordStrength < 75) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
-  const getStrengthText = () => {
-    if (passwordStrength < 50) return 'Fraca';
-    if (passwordStrength < 75) return 'Média';
-    return 'Forte';
-  };
-
-  // Gerar senha aleatória segura
   const generatePassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
     let newPassword = '';
     
-    // Garantir pelo menos um de cada tipo
     newPassword += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
     newPassword += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)];
     newPassword += '0123456789'[Math.floor(Math.random() * 10)];
     newPassword += '!@#$%^&*()'[Math.floor(Math.random() * 10)];
     
-    // Preencher o resto da senha
     for (let i = 0; i < 8; i++) {
       newPassword += chars[Math.floor(Math.random() * chars.length)];
     }
     
-    // Embaralhar a senha
     newPassword = newPassword.split('').sort(() => 0.5 - Math.random()).join('');
     
     setPassword(newPassword);
@@ -169,53 +137,13 @@ const CredentialsSection = ({
                 variant="ghost"
                 size="sm"
                 className="absolute right-0 top-0 h-full px-3 py-1 text-muted-foreground"
-                onClick={toggleShowPassword}
+                onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
             
-            {password && (
-              <div className="space-y-1 mt-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Força da senha:</span>
-                  <span className={`text-xs font-medium ${
-                    passwordStrength < 50 ? 'text-red-500' : 
-                    passwordStrength < 75 ? 'text-yellow-500' : 'text-green-500'
-                  }`}>
-                    {getStrengthText()}
-                  </span>
-                </div>
-                <Progress value={passwordStrength} className={getStrengthColor()} />
-                
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <div className="flex items-center gap-1 text-xs">
-                    <div className={`h-2 w-2 rounded-full ${password.length >= 8 ? 'bg-green-500' : 'bg-gray-300'}`} />
-                    <span className={password.length >= 8 ? 'text-green-700' : 'text-muted-foreground'}>
-                      Mínimo 8 caracteres
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs">
-                    <div className={`h-2 w-2 rounded-full ${/[A-Z]/.test(password) && /[a-z]/.test(password) ? 'bg-green-500' : 'bg-gray-300'}`} />
-                    <span className={/[A-Z]/.test(password) && /[a-z]/.test(password) ? 'text-green-700' : 'text-muted-foreground'}>
-                      Maiúsculas e minúsculas
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs">
-                    <div className={`h-2 w-2 rounded-full ${/[0-9]/.test(password) ? 'bg-green-500' : 'bg-gray-300'}`} />
-                    <span className={/[0-9]/.test(password) ? 'text-green-700' : 'text-muted-foreground'}>
-                      Números
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs">
-                    <div className={`h-2 w-2 rounded-full ${/[^a-zA-Z0-9]/.test(password) ? 'bg-green-500' : 'bg-gray-300'}`} />
-                    <span className={/[^a-zA-Z0-9]/.test(password) ? 'text-green-700' : 'text-muted-foreground'}>
-                      Símbolos
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
+            <PasswordStrength password={password} strength={passwordStrength} />
           </div>
           
           <div className="space-y-2">
