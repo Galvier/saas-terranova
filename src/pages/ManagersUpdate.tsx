@@ -30,7 +30,12 @@ const ManagersUpdate = () => {
   }, []);
 
   const handleSubmit = async (values: ManagerUpdateValues) => {
-    const success = await handleUpdateManager(values);
+    const success = await handleUpdateManager({
+      name: values.name,
+      email: values.email,
+      department_id: values.department_id,
+      is_active: values.is_active
+    });
     if (success) {
       navigate('/managers');
     }
@@ -63,3 +68,4 @@ const ManagersUpdate = () => {
 };
 
 export default ManagersUpdate;
+
