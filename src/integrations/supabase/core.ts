@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Simple type to represent CRUD operation results
@@ -49,10 +48,11 @@ export type RpcParams = {
     manager_email: string;
     manager_department_id: string;
     manager_is_active: boolean;
-    manager_role?: string;
   };
-  'check_user_profile': { user_id: string };
-  'get_metrics_by_department': { department_id_param?: string };
+  'get_metrics_by_department': { 
+    department_id_param?: string;
+    date_param?: string;
+  };
   'create_metric_definition': {
     metric_name: string;
     metric_description: string;
@@ -91,17 +91,6 @@ export type RpcParams = {
   'validate_metric_value_date': { 
     metric_id: string;
     value_date: string;
-  };
-  'create_manager': { 
-    manager_name: string; 
-    manager_email: string;
-    manager_department_id: string;
-    manager_is_active: boolean;
-    manager_password?: string;
-    manager_role?: string;
-  };
-  'delete_manager': {
-    manager_id: string;
   };
 };
 

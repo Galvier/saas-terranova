@@ -1,14 +1,16 @@
+
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { MetricDefinition, MetricHistory } from './types/metric';
 
 // Function to get metrics by department
-export const getMetricsByDepartment = async (departmentId?: string): Promise<CrudResult<MetricDefinition[]>> => {
+export const getMetricsByDepartment = async (departmentId?: string, date?: string): Promise<CrudResult<MetricDefinition[]>> => {
   try {
     // If departmentId is "all", pass undefined to get all metrics
     const actualDepartmentId = departmentId === "all" ? undefined : departmentId;
     
     const { data, error } = await callRPC<MetricDefinition[]>('get_metrics_by_department', {
-      department_id_param: actualDepartmentId
+      department_id_param: actualDepartmentId,
+      date_param: date || new Date().toISOString().split('T')[0]
     });
     return formatCrudResult(data, error);
   } catch (error) {

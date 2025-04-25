@@ -1,8 +1,12 @@
-
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { getAllDepartments, getMetricsByDepartment, deleteMetricDefinition, MetricDefinition } from '@/integrations/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import MetricsHeader from '@/components/metrics/MetricsHeader';
 import MetricsTable from '@/components/metrics/MetricsTable';
 import MetricsDialogs from '@/components/metrics/MetricsDialogs';
@@ -14,6 +18,7 @@ const Metrics = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [selectedMetric, setSelectedMetric] = useState<MetricDefinition | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -27,9 +32,12 @@ const Metrics = () => {
   });
 
   const { data: metrics = [], isLoading: isLoadingMetrics } = useQuery({
-    queryKey: ['metrics', selectedDepartment],
+    queryKey: ['metrics', selectedDepartment, selectedDate],
     queryFn: async () => {
-      const result = await getMetricsByDepartment(selectedDepartment);
+      const result = await getMetricsByDepartment(
+        selectedDepartment,
+        format(selectedDate, 'yyyy-MM-dd')
+      );
       if (result.error) throw new Error(result.message);
       return result.data || [];
     }
@@ -105,6 +113,28 @@ const Metrics = () => {
         setIsCreateDialogOpen={setIsCreateDialogOpen}
       />
       
+      <div className="flex justify-end mb-6">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-[240px] justify-start text-left font-normal"
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {format(selectedDate, 'dd/MM/yyyy')}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
       {isLoading ? (
         <div className="text-center py-8">Carregando métricas...</div>
       ) : metrics.length === 0 ? (

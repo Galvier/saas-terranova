@@ -452,7 +452,9 @@ export type Database = {
         }[]
       }
       get_metrics_by_department: {
-        Args: { department_id_param?: string }
+        Args:
+          | { department_id_param?: string }
+          | { department_id_param?: string; date_param?: string }
         Returns: {
           id: string
           name: string
