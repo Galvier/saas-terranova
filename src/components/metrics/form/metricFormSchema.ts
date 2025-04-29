@@ -1,13 +1,32 @@
 
-import * as z from 'zod';
+import { z } from 'zod';
 
+// Define the form schema with validation rules
 export const formSchema = z.object({
-  name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
+  name: z.string()
+    .min(3, { message: 'O nome deve ter pelo menos 3 caracteres' })
+    .max(100, { message: 'O nome não pode ter mais de 100 caracteres' }),
+  
   description: z.string().optional(),
-  unit: z.string().min(1, 'Unidade é obrigatória'),
-  target: z.coerce.number().positive('Meta deve ser um número positivo'),
-  department_id: z.string().uuid('Departamento é obrigatório'),
-  frequency: z.string(),
-  is_active: z.boolean(),
-  lower_is_better: z.boolean().default(false)
+  
+  unit: z.string()
+    .min(1, { message: 'A unidade de medida é obrigatória' }),
+  
+  target: z.number()
+    .nonnegative({ message: 'O valor da meta não pode ser negativo' }),
+  
+  department_id: z.string()
+    .min(1, { message: 'Selecione um departamento' }),
+  
+  frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly']),
+  
+  is_active: z.boolean().default(true),
+  
+  lower_is_better: z.boolean().default(false),
+  
+  visualization_type: z.enum(['card', 'bar', 'line', 'pie', 'area', 'table']).default('card'),
+  
+  priority: z.enum(['normal', 'high', 'critical']).default('normal'),
+  
+  default_period: z.enum(['day', 'week', 'month', 'quarter', 'year']).default('month')
 });

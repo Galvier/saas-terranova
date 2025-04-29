@@ -1,3 +1,4 @@
+
 export interface MetricDefinition {
   id: string;
   name: string;
@@ -13,9 +14,20 @@ export interface MetricDefinition {
   is_active: boolean;
   icon_name: string | null;
   lower_is_better: boolean;
+  visualization_type?: string;
+  priority?: string;
+  default_period?: string;
 }
 
 export interface MetricHistory {
   date: string;
   value: number;
+}
+
+export interface AdminDashboardConfig {
+  id: string;
+  user_id: string;
+  metric_ids: string[];
+  created_at: string;
+  updated_at: string;
 }

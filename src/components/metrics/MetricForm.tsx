@@ -10,6 +10,7 @@ import { formSchema } from './form/metricFormSchema';
 import BasicMetricFields from './form/BasicMetricFields';
 import MetricValueFields from './form/MetricValueFields';
 import MetricConfigFields from './form/MetricConfigFields';
+import VisualizationConfigFields from './form/VisualizationConfigFields';
 import { z } from 'zod';
 
 interface MetricFormProps {
@@ -32,7 +33,10 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
       department_id: metric?.department_id || '',
       frequency: metric?.frequency || 'monthly',
       is_active: metric?.is_active ?? true,
-      lower_is_better: metric?.lower_is_better ?? false
+      lower_is_better: metric?.lower_is_better ?? false,
+      visualization_type: metric?.visualization_type || 'card',
+      priority: metric?.priority || 'normal',
+      default_period: metric?.default_period || 'month'
     }
   });
 
@@ -50,7 +54,10 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
           frequency: values.frequency,
           is_active: values.is_active,
           lower_is_better: values.lower_is_better,
-          icon_name: 'chart-line' // Default icon
+          icon_name: 'chart-line', // Default icon
+          visualization_type: values.visualization_type,
+          priority: values.priority,
+          default_period: values.default_period
         });
       } else {
         result = await createMetricDefinition({
@@ -62,7 +69,10 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
           frequency: values.frequency,
           is_active: values.is_active,
           lower_is_better: values.lower_is_better,
-          icon_name: 'chart-line' // Default icon
+          icon_name: 'chart-line', // Default icon
+          visualization_type: values.visualization_type,
+          priority: values.priority,
+          default_period: values.default_period
         });
       }
 
@@ -87,10 +97,11 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <BasicMetricFields form={form} />
         <MetricValueFields form={form} />
         <MetricConfigFields form={form} departments={departments} />
+        <VisualizationConfigFields form={form} />
         
         <Button type="submit" className="w-full">
           {isEditing ? 'Atualizar Métrica' : 'Criar Métrica'}

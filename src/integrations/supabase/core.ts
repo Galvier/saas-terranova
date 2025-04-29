@@ -76,6 +76,9 @@ export type RpcParams = {
     metric_is_active?: boolean;
     metric_icon_name?: string;
     metric_lower_is_better?: boolean;
+    metric_visualization_type?: string;
+    metric_priority?: string;
+    metric_default_period?: string;
   };
   'record_metric_value': {
     metric_id: string;
@@ -97,6 +100,9 @@ export type RpcParams = {
     metric_is_active?: boolean;
     metric_icon_name?: string;
     metric_lower_is_better?: boolean;
+    metric_visualization_type?: string;
+    metric_priority?: string;
+    metric_default_period?: string;
   };
   'delete_metric_definition': {
     metric_id: string;
@@ -104,6 +110,13 @@ export type RpcParams = {
   'validate_metric_value_date': { 
     metric_id: string;
     value_date: string;
+  };
+  'save_admin_dashboard_config': {
+    metrics_ids: string[];
+    user_id: string;
+  };
+  'get_admin_dashboard_config': {
+    user_id: string;
   };
 };
 

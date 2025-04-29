@@ -17,34 +17,34 @@ const DepartmentFilter: React.FC<DepartmentFilterProps> = ({
   onDepartmentChange,
   className = ''
 }) => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, userDepartmentId } = useAuth();
   
-  // Filter manager's departments when not admin
-  const userDepartment = React.useMemo(() => {
-    if (!isAdmin && departments.length > 0) {
-      // Find department of the current user (if they're a manager)
-      return departments.find(dept => dept.manager_id === user?.id)?.id || 'all';
-    }
-    return null;
-  }, [departments, isAdmin, user]);
-  
-  // Use localStorage to persist user preference
+  // Set initial department based on user role
   useEffect(() => {
     try {
+      // Try to load from localStorage if user has a saved preference
       const savedDepartment = localStorage.getItem('selectedDepartment');
+      
       if (savedDepartment) {
         // Only apply saved preference if user is admin or it's their department
-        if (isAdmin || savedDepartment === userDepartment) {
+        if (isAdmin || savedDepartment === userDepartmentId) {
           onDepartmentChange(savedDepartment);
+          return;
         }
-      } else if (userDepartment) {
-        // Default to user's department if they're a manager
-        onDepartmentChange(userDepartment);
+      }
+      
+      // If no saved preference or not applicable, use defaults
+      if (!isAdmin && userDepartmentId) {
+        // Managers default to their department
+        onDepartmentChange(userDepartmentId);
+      } else if (isAdmin) {
+        // Admins default to "all departments"
+        onDepartmentChange('all');
       }
     } catch (error) {
-      console.error("Error loading saved department preference:", error);
+      console.error("Error setting initial department:", error);
     }
-  }, [userDepartment, isAdmin]);
+  }, [isAdmin, userDepartmentId, onDepartmentChange]);
   
   // Save preference whenever it changes
   useEffect(() => {
@@ -61,7 +61,7 @@ const DepartmentFilter: React.FC<DepartmentFilterProps> = ({
     <Select
       value={selectedDepartment}
       onValueChange={onDepartmentChange}
-      disabled={!isAdmin && userDepartment !== null}
+      disabled={!isAdmin && userDepartmentId !== null}
     >
       <SelectTrigger className={`w-full ${className}`}>
         <SelectValue placeholder="Selecione um departamento" />
@@ -72,7 +72,7 @@ const DepartmentFilter: React.FC<DepartmentFilterProps> = ({
         
         {departments.map((dept) => {
           // For non-admins, only show their department
-          if (!isAdmin && dept.id !== userDepartment) return null;
+          if (!isAdmin && dept.id !== userDepartmentId) return null;
           
           return (
             <SelectItem key={dept.id} value={dept.id}>

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, BarChart3, LineChart, PieChart, LayoutGrid } from 'lucide-react';
 import { CustomBadge } from '@/components/ui/custom-badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MetricDefinition } from '@/integrations/supabase';
@@ -39,6 +39,32 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
       default: return frequency;
     }
   };
+  
+  const getVisualizationIcon = (type?: string) => {
+    switch (type) {
+      case 'bar':
+        return <BarChart3 className="h-4 w-4" />;
+      case 'line':
+        return <LineChart className="h-4 w-4" />;
+      case 'pie':
+        return <PieChart className="h-4 w-4" />;
+      case 'card':
+      default:
+        return <LayoutGrid className="h-4 w-4" />;
+    }
+  };
+  
+  const getPriorityBadge = (priority?: string) => {
+    switch (priority) {
+      case 'critical':
+        return <CustomBadge variant="destructive">Crítica</CustomBadge>;
+      case 'high':
+        return <CustomBadge variant="secondary">Alta</CustomBadge>;
+      case 'normal':
+      default:
+        return <CustomBadge variant="outline">Normal</CustomBadge>;
+    }
+  };
 
   return (
     <div className="rounded-md border">
@@ -51,6 +77,8 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
             <TableHead>Atual</TableHead>
             <TableHead className="text-center">Tendência</TableHead>
             <TableHead>Frequência</TableHead>
+            <TableHead className="text-center">Visualização</TableHead>
+            <TableHead className="text-center">Prioridade</TableHead>
             <TableHead className="text-center">Status</TableHead>
             <TableHead className="text-center">Ações</TableHead>
           </TableRow>
@@ -88,6 +116,27 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                   )}
                 </TableCell>
                 <TableCell>{getFrequencyLabel(metric.frequency)}</TableCell>
+                <TableCell className="text-center">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <div className="flex justify-center">
+                          {getVisualizationIcon(metric.visualization_type)}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{metric.visualization_type === 'card' ? 'Cartão KPI' : 
+                           metric.visualization_type === 'bar' ? 'Gráfico de barras' :
+                           metric.visualization_type === 'line' ? 'Gráfico de linha' :
+                           metric.visualization_type === 'pie' ? 'Gráfico de pizza' :
+                           'Cartão KPI'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+                <TableCell className="text-center">
+                  {getPriorityBadge(metric.priority)}
+                </TableCell>
                 <TableCell className="text-center">
                   <CustomBadge variant={getStatusVariant(metric.status)}>
                     {metric.status === 'success' ? 'Ótimo' : 
