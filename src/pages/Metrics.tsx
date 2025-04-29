@@ -1,15 +1,13 @@
+
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { getAllDepartments, getMetricsByDepartment, deleteMetricDefinition, MetricDefinition } from '@/integrations/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import MetricsHeader from '@/components/metrics/MetricsHeader';
 import MetricsTable from '@/components/metrics/MetricsTable';
 import MetricsDialogs from '@/components/metrics/MetricsDialogs';
+import DateFilter, { DateRangeType } from '@/components/filters/DateFilter';
 
 const Metrics = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -19,6 +17,7 @@ const Metrics = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [selectedMetric, setSelectedMetric] = useState<MetricDefinition | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [dateRangeType, setDateRangeType] = useState<DateRangeType>('month');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -32,10 +31,10 @@ const Metrics = () => {
   });
 
   const { data: metrics = [], isLoading: isLoadingMetrics } = useQuery({
-    queryKey: ['metrics', selectedDepartment, selectedDate],
+    queryKey: ['metrics', selectedDepartment, format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       const result = await getMetricsByDepartment(
-        selectedDepartment,
+        selectedDepartment === "all" ? undefined : selectedDepartment,
         format(selectedDate, 'yyyy-MM-dd')
       );
       if (result.error) throw new Error(result.message);
@@ -47,11 +46,15 @@ const Metrics = () => {
     setIsCreateDialogOpen(false);
     setIsEditDialogOpen(false);
     queryClient.invalidateQueries({ queryKey: ['metrics'] });
+    // Also invalidate dashboard metrics to show changes in real-time
+    queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
   };
 
   const handleValueSuccess = () => {
     setIsValueDialogOpen(false);
     queryClient.invalidateQueries({ queryKey: ['metrics'] });
+    // Also invalidate dashboard metrics to show changes in real-time
+    queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
   };
 
   const handleAddValueClick = (metric: MetricDefinition) => {
@@ -90,6 +93,8 @@ const Metrics = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      // Also invalidate dashboard metrics
+      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
     } catch (error) {
       toast({
         title: "Erro",
@@ -104,6 +109,32 @@ const Metrics = () => {
 
   const isLoading = isLoadingDepartments || isLoadingMetrics;
 
+  // Load saved date filter preference
+  React.useEffect(() => {
+    try {
+      const savedPrefs = localStorage.getItem('metricsDatePreferences');
+      if (savedPrefs) {
+        const prefs = JSON.parse(savedPrefs);
+        if (prefs.date) setSelectedDate(new Date(prefs.date));
+        if (prefs.type) setDateRangeType(prefs.type);
+      }
+    } catch (error) {
+      console.error("Error loading date preferences", error);
+    }
+  }, []);
+  
+  // Save date filter preference
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('metricsDatePreferences', JSON.stringify({
+        date: selectedDate.toISOString(),
+        type: dateRangeType
+      }));
+    } catch (error) {
+      console.error("Error saving date preferences", error);
+    }
+  }, [selectedDate, dateRangeType]);
+
   return (
     <div className="animate-fade-in">
       <MetricsHeader 
@@ -114,25 +145,13 @@ const Metrics = () => {
       />
       
       <div className="flex justify-end mb-6">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-[240px] justify-start text-left font-normal"
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {format(selectedDate, 'dd/MM/yyyy')}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+        <DateFilter
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          dateRangeType={dateRangeType}
+          onDateRangeTypeChange={setDateRangeType as (type: DateRangeType) => void}
+          className="w-full sm:w-auto"
+        />
       </div>
 
       {isLoading ? (

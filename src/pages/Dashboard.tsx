@@ -1,34 +1,24 @@
 
 import React, { useState, useEffect } from 'react';
-import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, subWeeks, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { BarChart3, FileText, ShoppingCart, Users, Calendar as CalendarIcon, Filter, ChevronDown } from 'lucide-react';
+import { BarChart3, FileText, ShoppingCart, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllDepartments, getMetricsByDepartment } from '@/integrations/supabase';
-
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 import PageHeader from '@/components/PageHeader';
 import KpiCard from '@/components/KpiCard';
 import PerformanceChart from '@/components/PerformanceChart';
 import { useToast } from '@/hooks/use-toast';
-
-// Type for date filter presets
-type DatePreset = {
-  label: string;
-  startDate: Date;
-  endDate: Date;
-};
+import DepartmentFilter from '@/components/filters/DepartmentFilter';
+import DateFilter, { DateRangeType } from '@/components/filters/DateFilter';
+import { Card } from '@/components/ui/card';
 
 const Dashboard = () => {
   const { toast } = useToast();
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [dateRangeType, setDateRangeType] = useState<'day' | 'week' | 'month'>('month');
+  const [dateRangeType, setDateRangeType] = useState<DateRangeType>('month');
   
   // Load departments
   const { data: departments = [] } = useQuery({
@@ -39,35 +29,6 @@ const Dashboard = () => {
       return result.data || [];
     }
   });
-
-  // Custom date presets
-  const datePresets: DatePreset[] = [
-    {
-      label: "Hoje",
-      startDate: new Date(),
-      endDate: new Date(),
-    },
-    {
-      label: "Ontem",
-      startDate: subDays(new Date(), 1),
-      endDate: subDays(new Date(), 1),
-    },
-    {
-      label: "Últimos 7 dias",
-      startDate: subDays(new Date(), 6),
-      endDate: new Date(),
-    },
-    {
-      label: "Último mês",
-      startDate: startOfMonth(subMonths(new Date(), 1)),
-      endDate: endOfMonth(subMonths(new Date(), 1)),
-    },
-    {
-      label: "Este mês",
-      startDate: startOfMonth(new Date()),
-      endDate: new Date(),
-    },
-  ];
   
   // Load metrics data with filters
   const { data: metrics = [], isLoading } = useQuery({
@@ -202,51 +163,63 @@ const Dashboard = () => {
     
   }, [metrics]);
   
-  // Apply date preset
-  const handleDatePreset = (preset: DatePreset) => {
-    setSelectedDate(preset.endDate);
-  };
-  
-  // Save user preferences
-  useEffect(() => {
-    try {
-      localStorage.setItem('dashboardPreferences', JSON.stringify({
-        department: selectedDepartment,
-        dateType: dateRangeType,
-      }));
-    } catch (error) {
-      console.error("Error saving preferences", error);
-    }
-  }, [selectedDepartment, dateRangeType]);
-  
   // Load user preferences
   useEffect(() => {
     try {
       const savedPrefs = localStorage.getItem('dashboardPreferences');
       if (savedPrefs) {
         const prefs = JSON.parse(savedPrefs);
-        setSelectedDepartment(prefs.department || "all");
-        setDateRangeType(prefs.dateType || "month");
+        if (prefs.dateType) setDateRangeType(prefs.dateType);
       }
+      
+      // Department is now handled by the DepartmentFilter component
     } catch (error) {
       console.error("Error loading preferences", error);
     }
   }, []);
   
-  // Format the date display based on range type
-  const getFormattedDateDisplay = () => {
-    switch (dateRangeType) {
-      case 'day':
-        return format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-      case 'week':
-        const weekStart = startOfWeek(selectedDate);
-        const weekEnd = endOfWeek(selectedDate);
-        return `${format(weekStart, "dd/MM", { locale: ptBR })} - ${format(weekEnd, "dd/MM/yyyy", { locale: ptBR })}`;
-      case 'month':
-        return format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR });
-      default:
-        return format(selectedDate, "dd/MM/yyyy", { locale: ptBR });
+  // Save date range type preference
+  useEffect(() => {
+    try {
+      localStorage.setItem('dashboardPreferences', JSON.stringify({
+        dateType: dateRangeType,
+      }));
+    } catch (error) {
+      console.error("Error saving preferences", error);
     }
+  }, [dateRangeType]);
+
+  // Function to render metric cards based on their type
+  const renderMetricCards = () => {
+    // Filter metrics that are not already displayed in main KPI cards
+    const additionalMetrics = metrics.filter(metric => 
+      !metric.name.toLowerCase().includes('venda') &&
+      !metric.name.toLowerCase().includes('receita') &&
+      !metric.name.toLowerCase().includes('cliente') &&
+      !metric.name.toLowerCase().includes('usuário') &&
+      !metric.name.toLowerCase().includes('conversão') &&
+      !metric.name.toLowerCase().includes('taxa') &&
+      !metric.name.toLowerCase().includes('projeto') &&
+      !metric.name.toLowerCase().includes('tarefa')
+    );
+    
+    if (additionalMetrics.length === 0) return null;
+    
+    return (
+      <>
+        <h2 className="text-xl font-semibold mb-4 mt-8">Métricas adicionais</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {additionalMetrics.map(metric => (
+            <KpiCard
+              key={metric.id}
+              title={metric.name}
+              value={`${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`}
+              status={metric.status as 'success' | 'warning' | 'danger'}
+            />
+          ))}
+        </div>
+      </>
+    );
   };
 
   return (
@@ -256,100 +229,45 @@ const Dashboard = () => {
         subtitle="Visão geral dos indicadores de desempenho da empresa"
       />
       
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="flex flex-col gap-4 mb-6">
         {/* Department filter */}
-        <div className="w-full sm:w-auto">
-          <Select
-            value={selectedDepartment}
-            onValueChange={setSelectedDepartment}
-          >
-            <SelectTrigger className="w-full sm:w-[240px]">
-              <SelectValue placeholder="Todos os departamentos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os departamentos</SelectItem>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <DepartmentFilter
+          departments={departments}
+          selectedDepartment={selectedDepartment}
+          onDepartmentChange={setSelectedDepartment}
+          className="w-full sm:w-[280px]"
+        />
         
         {/* Date range controls */}
-        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 w-full sm:w-auto">
-          <Select
-            value={dateRangeType}
-            onValueChange={(value) => setDateRangeType(value as 'day' | 'week' | 'month')}
-          >
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Diário</SelectItem>
-              <SelectItem value="week">Semanal</SelectItem>
-              <SelectItem value="month">Mensal</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto">
-                <Filter className="mr-2 h-4 w-4" />
-                <span>Períodos</span>
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[200px]">
-              {datePresets.map((preset) => (
-                <DropdownMenuItem 
-                  key={preset.label}
-                  onClick={() => handleDatePreset(preset)}
-                >
-                  {preset.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto justify-start text-left sm:ml-auto"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {getFormattedDateDisplay()}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+        <DateFilter
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          dateRangeType={dateRangeType}
+          onDateRangeTypeChange={setDateRangeType as (type: DateRangeType) => void}
+        />
       </div>
       
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <p className="text-muted-foreground">Carregando indicadores...</p>
         </div>
+      ) : metrics.length === 0 ? (
+        <Card className="p-8 text-center">
+          <h3 className="text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
+          <p className="text-muted-foreground">
+            Não há métricas disponíveis para o departamento e período selecionados.
+          </p>
+        </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <KpiCard
               title="Vendas totais"
               value={`R$ ${kpiData.salesTotal.toLocaleString('pt-BR')}`}
               change={12.5}
               changeLabel="vs. período anterior"
               status="success"
-              icon={<ShoppingCart className="h-5 w-5 text-primary" />}
+              icon={<ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
             />
             
             <KpiCard
@@ -358,7 +276,7 @@ const Dashboard = () => {
               change={-3.2}
               changeLabel="vs. período anterior"
               status="warning"
-              icon={<Users className="h-5 w-5 text-primary" />}
+              icon={<Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
             />
             
             <KpiCard
@@ -367,7 +285,7 @@ const Dashboard = () => {
               change={0.5}
               changeLabel="vs. período anterior"
               status="success"
-              icon={<BarChart3 className="h-5 w-5 text-primary" />}
+              icon={<BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
             />
             
             <KpiCard
@@ -376,24 +294,31 @@ const Dashboard = () => {
               change={-1}
               changeLabel="vs. período anterior"
               status="danger"
-              icon={<FileText className="h-5 w-5 text-primary" />}
+              icon={<FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
             />
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <PerformanceChart
-              title={`Desempenho por departamento (%)`}
-              data={departmentPerformance.length > 0 ? departmentPerformance : [
-                { name: 'Carregando...', value: 0 }
-              ]}
+              title="Desempenho por departamento"
+              data={departmentPerformance.length > 0 ? departmentPerformance : [{ name: 'Carregando...', value: 0 }]}
+              type="bar"
+              percentage={true}
+              status="success"
+              trend={5.2}
             />
             
             <PerformanceChart
               title="Receita mensal (R$)"
               data={monthlyRevenue}
               color="#10b981"
+              type="line"
+              status="success"
+              trend={3.8}
             />
           </div>
+          
+          {renderMetricCards()}
         </>
       )}
     </div>
