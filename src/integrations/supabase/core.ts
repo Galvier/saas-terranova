@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Simple type to represent CRUD operation results
@@ -30,6 +31,7 @@ export const formatCrudResult = <T>(data: T | null, error: any): CrudResult<T> =
 // Define parameter types for each RPC function
 export type RpcParams = {
   'check_table_exists_and_count': { table_name: string };
+  'check_user_profile': { user_id: string };
   'create_department': { 
     department_name: string; 
     department_description: string; 
@@ -37,6 +39,17 @@ export type RpcParams = {
     department_manager_id?: string | null;
   };
   'create_diagnostic_table_if_not_exists': Record<string, never>;
+  'create_manager': { 
+    manager_name: string; 
+    manager_email: string; 
+    manager_department_id: string; 
+    manager_is_active: boolean; 
+    manager_password?: string | null;
+    manager_role?: string;
+  };
+  'delete_manager': { 
+    manager_id: string;
+  };
   'get_all_departments': Record<string, never>;
   'postgres_version': Record<string, never>;
   'run_diagnostic_write_test': { test_id_param: string };
@@ -63,6 +76,9 @@ export type RpcParams = {
     metric_is_active?: boolean;
     metric_icon_name?: string;
     metric_lower_is_better?: boolean;
+    metric_visualization_type?: string;
+    metric_priority?: string;
+    metric_default_period?: string;
   };
   'record_metric_value': {
     metric_id: string;
@@ -84,6 +100,9 @@ export type RpcParams = {
     metric_is_active?: boolean;
     metric_icon_name?: string;
     metric_lower_is_better?: boolean;
+    metric_visualization_type?: string;
+    metric_priority?: string;
+    metric_default_period?: string;
   };
   'delete_metric_definition': {
     metric_id: string;
@@ -91,6 +110,13 @@ export type RpcParams = {
   'validate_metric_value_date': { 
     metric_id: string;
     value_date: string;
+  };
+  'save_admin_dashboard_config': {
+    metrics_ids: string[];
+    user_id: string;
+  };
+  'get_admin_dashboard_config': {
+    user_id_param: string;
   };
 };
 

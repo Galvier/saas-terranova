@@ -1,6 +1,6 @@
 
 import { callRPC, formatCrudResult, type CrudResult } from './core';
-import type { MetricDefinition, MetricHistory } from './types/metric';
+import type { MetricDefinition, MetricHistory, AdminDashboardConfig } from './types/metric';
 
 // Function to get metrics by department
 export const getMetricsByDepartment = async (departmentId?: string, date?: string): Promise<CrudResult<MetricDefinition[]>> => {
@@ -30,6 +30,9 @@ export const createMetricDefinition = async (metric: {
   is_active?: boolean;
   icon_name?: string;
   lower_is_better?: boolean;
+  visualization_type?: string;
+  priority?: string;
+  default_period?: string;
 }): Promise<CrudResult<string>> => {
   try {
     const { data, error } = await callRPC<string>('create_metric_definition', {
@@ -41,7 +44,10 @@ export const createMetricDefinition = async (metric: {
       metric_frequency: metric.frequency,
       metric_is_active: metric.is_active,
       metric_icon_name: metric.icon_name,
-      metric_lower_is_better: metric.lower_is_better
+      metric_lower_is_better: metric.lower_is_better,
+      metric_visualization_type: metric.visualization_type || 'card',
+      metric_priority: metric.priority || 'normal',
+      metric_default_period: metric.default_period || 'month'
     });
     return formatCrudResult(data, error);
   } catch (error) {
@@ -61,6 +67,9 @@ export const updateMetricDefinition = async (metricId: string, metric: {
   is_active?: boolean;
   icon_name?: string;
   lower_is_better?: boolean;
+  visualization_type?: string;
+  priority?: string;
+  default_period?: string;
 }): Promise<CrudResult<string>> => {
   try {
     const { data, error } = await callRPC<string>('update_metric_definition', {
@@ -73,7 +82,10 @@ export const updateMetricDefinition = async (metricId: string, metric: {
       metric_frequency: metric.frequency,
       metric_is_active: metric.is_active,
       metric_icon_name: metric.icon_name,
-      metric_lower_is_better: metric.lower_is_better
+      metric_lower_is_better: metric.lower_is_better,
+      metric_visualization_type: metric.visualization_type,
+      metric_priority: metric.priority,
+      metric_default_period: metric.default_period
     });
     return formatCrudResult(data, error);
   } catch (error) {
@@ -127,6 +139,38 @@ export const getMetricHistory = async (
     return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error fetching metric history:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Function to save admin dashboard configuration
+export const saveAdminDashboardConfig = async (
+  metricIds: string[],
+  userId: string
+): Promise<CrudResult<string>> => {
+  try {
+    const { data, error } = await callRPC<string>('save_admin_dashboard_config', {
+      metrics_ids: metricIds,
+      user_id: userId
+    });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error saving admin dashboard config:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Function to get admin dashboard configuration
+export const getAdminDashboardConfig = async (
+  userId: string
+): Promise<CrudResult<AdminDashboardConfig>> => {
+  try {
+    const { data, error } = await callRPC<AdminDashboardConfig>('get_admin_dashboard_config', {
+      user_id: userId
+    });
+    return formatCrudResult(data, error);
+  } catch (error) {
+    console.error('Error fetching admin dashboard config:', error);
     return formatCrudResult(null, error);
   }
 };

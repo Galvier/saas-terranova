@@ -405,6 +405,16 @@ export type Database = {
         Args: { metric_id: string }
         Returns: string
       }
+      get_admin_dashboard_config: {
+        Args: { user_id_param: string }
+        Returns: {
+          id: string
+          user_id: string
+          metric_ids: string[]
+          created_at: string
+          updated_at: string
+        }[]
+      }
       get_all_departments: {
         Args: Record<PropertyKey, never>
         Returns: {

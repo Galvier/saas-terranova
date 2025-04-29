@@ -28,35 +28,58 @@ const KpiCard: React.FC<KpiCardProps> = ({
     
     const isPositive = change > 0;
     const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
-    const color = isPositive ? 'text-success' : 'text-danger';
+    const statusColor = status === 'success' ? 'text-success' : 
+                        status === 'warning' ? 'text-warning' : 'text-destructive';
+    const changeColor = isPositive ? 'text-success' : 'text-destructive';
     
     return (
-      <div className={`flex items-center ${color}`}>
-        <Icon className="w-4 h-4 mr-1" />
-        <span>{Math.abs(change)}%</span>
-        {changeLabel && <span className="ml-1 text-muted-foreground text-xs">{changeLabel}</span>}
+      <div className={`flex items-center ${changeColor}`}>
+        <Icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+        <span className="text-xs sm:text-sm">{Math.abs(change)}%</span>
+        {changeLabel && <span className="ml-1 text-muted-foreground text-xs hidden sm:inline">{changeLabel}</span>}
       </div>
     );
   };
 
+  const getBorderColor = () => {
+    switch (status) {
+      case 'success': return 'var(--success)';
+      case 'warning': return 'var(--warning)';
+      case 'danger': return 'var(--destructive)';
+      default: return 'var(--success)';
+    }
+  };
+
   return (
-    <Card className="relative overflow-hidden">
-      <div className={`card-indicator card-indicator-${status}`} />
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-            <div className="text-2xl font-bold mt-1">{value}</div>
-            {renderChange()}
-          </div>
-          {icon && (
-            <div className="bg-primary/10 p-2 rounded-full">
-              {icon}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Card 
+            className="relative overflow-hidden transition-all hover:shadow-md border-l-4 h-full" 
+            style={{ borderLeftColor: getBorderColor() }}
+          >
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</h3>
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold mt-1">{value}</div>
+                  {renderChange()}
+                </div>
+                {icon && (
+                  <div className="bg-primary/10 p-1 sm:p-2 rounded-full">
+                    {icon}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{title}</p>
+          {changeLabel && <p className="text-muted-foreground text-xs">{changeLabel}</p>}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 

@@ -10,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  userDepartmentId: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
@@ -21,6 +22,7 @@ const defaultAuthContext: AuthContextType = {
   isLoading: false,
   isAuthenticated: true, // Always authenticated for demo purposes
   isAdmin: true, // Always admin for demo purposes
+  userDepartmentId: null,
   login: async () => true, // Mock function
   logout: async () => {} // Mock function
 };
@@ -31,13 +33,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [userDepartmentId, setUserDepartmentId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Determine if the user is an admin based on role
+  // For demo purposes, we're using a fixed value, but in a real application
+  // this would be determined from the user's metadata or profile
+  const isAdmin = true; // In a real app, check user.role === 'admin'
 
   useEffect(() => {
     // Set up subscription for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user || null);
+      
+      // Fetch or determine user's department if they're logged in
+      if (session?.user) {
+        // In a real app, fetch the user's department from their profile
+        // For demo purposes, we'll use a simulated value if not admin
+        if (!isAdmin) {
+          // Simulate fetching the manager's department
+          // In a real app, make an API call to get this information
+          setUserDepartmentId('department-123');
+        }
+      } else {
+        setUserDepartmentId(null);
+      }
       
       if (event === 'SIGNED_IN') {
         toast({
@@ -60,6 +81,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data } = await supabase.auth.getSession();
         setSession(data.session);
         setUser(data.session?.user || null);
+        
+        // Fetch or determine user's department if they're logged in
+        if (data.session?.user && !isAdmin) {
+          // Simulate fetching the manager's department
+          setUserDepartmentId('department-123');
+        }
       } catch (error) {
         console.error('Erro ao verificar sessão:', error);
       } finally {
@@ -121,7 +148,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Always consider the user as authenticated for demo purposes
   const isAuthenticated = true;
-  const isAdmin = true;
 
   return (
     <AuthContext.Provider value={{
@@ -130,6 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isLoading,
       isAuthenticated,
       isAdmin,
+      userDepartmentId,
       login,
       logout
     }}>
