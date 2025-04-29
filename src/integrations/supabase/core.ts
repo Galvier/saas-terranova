@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Simple type to represent CRUD operation results
@@ -30,6 +31,7 @@ export const formatCrudResult = <T>(data: T | null, error: any): CrudResult<T> =
 // Define parameter types for each RPC function
 export type RpcParams = {
   'check_table_exists_and_count': { table_name: string };
+  'check_user_profile': { user_id: string };
   'create_department': { 
     department_name: string; 
     department_description: string; 
@@ -37,6 +39,17 @@ export type RpcParams = {
     department_manager_id?: string | null;
   };
   'create_diagnostic_table_if_not_exists': Record<string, never>;
+  'create_manager': { 
+    manager_name: string; 
+    manager_email: string; 
+    manager_department_id: string; 
+    manager_is_active: boolean; 
+    manager_password?: string | null;
+    manager_role?: string;
+  };
+  'delete_manager': { 
+    manager_id: string;
+  };
   'get_all_departments': Record<string, never>;
   'postgres_version': Record<string, never>;
   'run_diagnostic_write_test': { test_id_param: string };

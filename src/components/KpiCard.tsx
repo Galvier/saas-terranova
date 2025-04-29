@@ -28,35 +28,49 @@ const KpiCard: React.FC<KpiCardProps> = ({
     
     const isPositive = change > 0;
     const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
-    const color = isPositive ? 'text-success' : 'text-danger';
+    const statusColor = status === 'success' ? 'text-success' : 
+                        status === 'warning' ? 'text-warning' : 'text-destructive';
+    const changeColor = isPositive ? 'text-success' : 'text-destructive';
     
     return (
-      <div className={`flex items-center ${color}`}>
+      <div className={`flex items-center ${changeColor}`}>
         <Icon className="w-4 h-4 mr-1" />
         <span>{Math.abs(change)}%</span>
-        {changeLabel && <span className="ml-1 text-muted-foreground text-xs">{changeLabel}</span>}
+        {changeLabel && <span className="ml-1 text-muted-foreground text-xs hidden sm:inline">{changeLabel}</span>}
       </div>
     );
   };
 
   return (
-    <Card className="relative overflow-hidden">
-      <div className={`card-indicator card-indicator-${status}`} />
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-            <div className="text-2xl font-bold mt-1">{value}</div>
-            {renderChange()}
-          </div>
-          {icon && (
-            <div className="bg-primary/10 p-2 rounded-full">
-              {icon}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Card className="relative overflow-hidden transition-all hover:shadow-md border-l-4" 
+                style={{ borderLeftColor: status === 'success' ? 'var(--success)' : 
+                                        status === 'warning' ? 'var(--warning)' : 
+                                        'var(--destructive)' }}>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+                  <div className="text-xl sm:text-2xl font-bold mt-1">{value}</div>
+                  {renderChange()}
+                </div>
+                {icon && (
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    {icon}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{title}</p>
+          <p className="text-muted-foreground text-xs">{changeLabel}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
