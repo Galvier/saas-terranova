@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Department, MetricDefinition, createMetricDefinition, updateMetricDefinition } from '@/integrations/supabase';
-import { formSchema } from './form/metricFormSchema';
+import { formSchema, FrequencyEnum, VisualizationTypeEnum, PriorityEnum, DefaultPeriodEnum } from './form/metricFormSchema';
 import BasicMetricFields from './form/BasicMetricFields';
 import MetricValueFields from './form/MetricValueFields';
 import MetricConfigFields from './form/MetricConfigFields';
@@ -31,12 +31,12 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
       unit: metric?.unit || 'R$',
       target: metric?.target || 0,
       department_id: metric?.department_id || '',
-      frequency: metric?.frequency || 'monthly',
+      frequency: (metric?.frequency as z.infer<typeof FrequencyEnum>) || 'monthly',
       is_active: metric?.is_active ?? true,
       lower_is_better: metric?.lower_is_better ?? false,
-      visualization_type: metric?.visualization_type || 'card',
-      priority: metric?.priority || 'normal',
-      default_period: metric?.default_period || 'month'
+      visualization_type: (metric?.visualization_type as z.infer<typeof VisualizationTypeEnum>) || 'card',
+      priority: (metric?.priority as z.infer<typeof PriorityEnum>) || 'normal',
+      default_period: (metric?.default_period as z.infer<typeof DefaultPeriodEnum>) || 'month'
     }
   });
 

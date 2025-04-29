@@ -116,7 +116,7 @@ export type RpcParams = {
     user_id: string;
   };
   'get_admin_dashboard_config': {
-    user_id: string;
+    user_id_param: string;
   };
 };
 

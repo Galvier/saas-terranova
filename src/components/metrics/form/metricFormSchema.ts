@@ -1,6 +1,19 @@
 
 import { z } from 'zod';
 
+// Define enums for various options
+export const FrequencyEnum = z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly']);
+export type Frequency = z.infer<typeof FrequencyEnum>;
+
+export const VisualizationTypeEnum = z.enum(['card', 'bar', 'line', 'pie', 'area', 'table']);
+export type VisualizationType = z.infer<typeof VisualizationTypeEnum>;
+
+export const PriorityEnum = z.enum(['normal', 'high', 'critical']);
+export type Priority = z.infer<typeof PriorityEnum>;
+
+export const DefaultPeriodEnum = z.enum(['day', 'week', 'month', 'quarter', 'year']);
+export type DefaultPeriod = z.infer<typeof DefaultPeriodEnum>;
+
 // Define the form schema with validation rules
 export const formSchema = z.object({
   name: z.string()
@@ -18,15 +31,15 @@ export const formSchema = z.object({
   department_id: z.string()
     .min(1, { message: 'Selecione um departamento' }),
   
-  frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly']),
+  frequency: FrequencyEnum,
   
   is_active: z.boolean().default(true),
   
   lower_is_better: z.boolean().default(false),
   
-  visualization_type: z.enum(['card', 'bar', 'line', 'pie', 'area', 'table']).default('card'),
+  visualization_type: VisualizationTypeEnum.default('card'),
   
-  priority: z.enum(['normal', 'high', 'critical']).default('normal'),
+  priority: PriorityEnum.default('normal'),
   
-  default_period: z.enum(['day', 'week', 'month', 'quarter', 'year']).default('month')
+  default_period: DefaultPeriodEnum.default('month')
 });
