@@ -31,6 +31,7 @@ export const formatCrudResult = <T>(data: T | null, error: any): CrudResult<T> =
 // Define parameter types for each RPC function
 export type RpcParams = {
   'check_table_exists_and_count': { table_name: string };
+  'check_user_profile': Record<string, never>;
   'create_department': { 
     department_name: string; 
     department_description: string; 
