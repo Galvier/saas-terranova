@@ -1,5 +1,5 @@
 
-import { Frequency, VisualizationType, Priority, DefaultPeriod } from '../../components/metrics/form/metricFormSchema';
+import { Frequency, VisualizationType, Priority, DefaultPeriod } from '@/components/metrics/form/metricFormSchema';
 
 export interface MetricDefinition {
   id: string;
