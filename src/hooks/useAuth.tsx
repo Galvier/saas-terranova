@@ -3,6 +3,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client'; 
 import { useToast } from './use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -19,12 +20,12 @@ interface AuthContextType {
 const defaultAuthContext: AuthContextType = {
   user: null,
   session: null,
-  isLoading: false,
-  isAuthenticated: true, // Always authenticated for demo purposes
-  isAdmin: true, // Always admin for demo purposes
+  isLoading: true,
+  isAuthenticated: false,
+  isAdmin: false,
   userDepartmentId: null,
-  login: async () => true, // Mock function
-  logout: async () => {} // Mock function
+  login: async () => false,
+  logout: async () => {}
 };
 
 const AuthContext = createContext<AuthContextType>(defaultAuthContext);
@@ -32,14 +33,12 @@ const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [userDepartmentId, setUserDepartmentId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Determine if the user is an admin based on role
-  // For demo purposes, we're using a fixed value, but in a real application
-  // this would be determined from the user's metadata or profile
-  const isAdmin = true; // In a real app, check user.role === 'admin'
+  // Determine if the user is an admin based on metadata
+  const isAdmin = user?.user_metadata?.user_type === 'admin';
 
   useEffect(() => {
     // Set up subscription for auth changes
@@ -50,11 +49,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Fetch or determine user's department if they're logged in
       if (session?.user) {
         // In a real app, fetch the user's department from their profile
-        // For demo purposes, we'll use a simulated value if not admin
-        if (!isAdmin) {
-          // Simulate fetching the manager's department
-          // In a real app, make an API call to get this information
-          setUserDepartmentId('department-123');
+        if (!isAdmin && session.user.user_metadata?.department_id) {
+          setUserDepartmentId(session.user.user_metadata.department_id);
         }
       } else {
         setUserDepartmentId(null);
@@ -73,6 +69,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           description: "Sessão encerrada com sucesso"
         });
       }
+
+      // Update loading state
+      setIsLoading(false);
     });
 
     // Check current session
@@ -83,9 +82,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(data.session?.user || null);
         
         // Fetch or determine user's department if they're logged in
-        if (data.session?.user && !isAdmin) {
-          // Simulate fetching the manager's department
-          setUserDepartmentId('department-123');
+        if (data.session?.user) {
+          if (!isAdmin && data.session.user.user_metadata?.department_id) {
+            setUserDepartmentId(data.session.user.user_metadata.department_id);
+          }
         }
       } catch (error) {
         console.error('Erro ao verificar sessão:', error);
@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, [toast, isAdmin]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -110,22 +110,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       if (error) {
-        console.info('Supabase login failed, using mock login:', error);
+        console.error('Erro durante login:', error);
         toast({
-          title: "Login simulado",
-          description: "Modo de demonstração ativado",
+          title: "Erro no login",
+          description: error.message || "Credenciais inválidas. Por favor, verifique seu email e senha.",
+          variant: "destructive"
         });
-        return true; // Always return true for demo purposes
+        return false;
       }
       
       return true;
     } catch (error: any) {
-      console.error('Error during login:', error);
+      console.error('Erro durante login:', error);
       toast({
-        title: "Login simulado",
-        description: "Modo de demonstração ativado",
+        title: "Erro no login",
+        description: error.message || "Ocorreu um erro ao fazer login. Por favor, tente novamente.",
+        variant: "destructive"
       });
-      return true; // Always return true for demo purposes
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -146,8 +148,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Always consider the user as authenticated for demo purposes
-  const isAuthenticated = true;
+  // Consider user as authenticated if user object exists and not loading
+  const isAuthenticated = !!user && !isLoading;
 
   return (
     <AuthContext.Provider value={{

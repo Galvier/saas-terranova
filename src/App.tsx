@@ -3,8 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Login from "./pages/Login";
 import FirstAccess from "./pages/FirstAccess";
 import Dashboard from "./pages/Dashboard";
@@ -27,6 +27,26 @@ const queryClient = new QueryClient({
   },
 });
 
+// Protected route component
+const ProtectedRoute = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+  
+  if (isLoading) {
+    // You could show a loading spinner here
+    return <div className="flex items-center justify-center h-screen">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>;
+  }
+  
+  if (!isAuthenticated) {
+    // Redirect to login if not authenticated
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+  
+  return <Outlet />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -39,16 +59,19 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/primeiro-acesso" element={<FirstAccess />} />
             
-            <Route path="/" element={<AppLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/departments" element={<Departments />} />
-              <Route path="/managers" element={<Managers />} />
-              <Route path="/managers/new" element={<ManagersCreate />} />
-              <Route path="/managers/edit/:id" element={<ManagersUpdate />} />
-              <Route path="/metrics" element={<Metrics />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/diagnostico" element={<Diagnostic />} />
-              <Route path="/admin/diagnostico" element={<Diagnostic />} />
+            {/* Protected routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/departments" element={<Departments />} />
+                <Route path="/managers" element={<Managers />} />
+                <Route path="/managers/new" element={<ManagersCreate />} />
+                <Route path="/managers/edit/:id" element={<ManagersUpdate />} />
+                <Route path="/metrics" element={<Metrics />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/diagnostico" element={<Diagnostic />} />
+                <Route path="/admin/diagnostico" element={<Diagnostic />} />
+              </Route>
             </Route>
             
             <Route path="*" element={<NotFound />} />
@@ -58,5 +81,8 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
+
+// Import the Loader2 icon
+import { Loader2 } from 'lucide-react';
 
 export default App;

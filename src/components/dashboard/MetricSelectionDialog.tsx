@@ -4,8 +4,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { MetricDefinition, saveAdminDashboardConfig } from '@/integrations/supabase';
+import { MetricDefinition } from '@/integrations/supabase/types/metric';
+import { saveAdminDashboardConfig } from '@/integrations/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { Loader2 } from 'lucide-react';
 
 interface MetricSelectionDialogProps {
   open: boolean;
@@ -23,6 +25,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
   onSelectionChange,
 }) => {
   const [localSelection, setLocalSelection] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -44,7 +47,16 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
   };
 
   const handleSave = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para salvar configurações",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSaving(true);
     
     try {
       const result = await saveAdminDashboardConfig(
@@ -53,22 +65,26 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
       );
       
       if (result.error) {
-        throw new Error(result.message);
+        throw new Error(result.message || "Erro ao salvar configuração");
       }
       
       onSelectionChange(localSelection);
-      onOpenChange(false);
       
       toast({
         title: "Configuração salva",
         description: "Seu dashboard personalizado foi atualizado com sucesso",
       });
+      
+      onOpenChange(false);
     } catch (error: any) {
+      console.error("Erro ao salvar configuração:", error);
       toast({
         title: "Erro ao salvar configuração",
         description: error.message || "Ocorreu um erro ao salvar a configuração",
         variant: "destructive"
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -110,15 +126,22 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
         </div>
         
         <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancelar
           </Button>
           <div className="flex gap-2">
-            <Button onClick={() => setLocalSelection([])}>
+            <Button onClick={() => setLocalSelection([])} disabled={isSaving || localSelection.length === 0}>
               Limpar seleção
             </Button>
-            <Button onClick={handleSave}>
-              Salvar configuração
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar configuração'
+              )}
             </Button>
           </div>
         </DialogFooter>

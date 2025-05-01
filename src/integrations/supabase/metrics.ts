@@ -166,7 +166,7 @@ export const getAdminDashboardConfig = async (
 ): Promise<CrudResult<AdminDashboardConfig>> => {
   try {
     const { data, error } = await callRPC<AdminDashboardConfig>('get_admin_dashboard_config', {
-      user_id: userId
+      user_id_param: userId
     });
     return formatCrudResult(data, error);
   } catch (error) {

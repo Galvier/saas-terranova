@@ -53,7 +53,8 @@ export const authCredentials = {
           data: {
             first_name: credentials.firstName || credentials.name?.split(' ')[0] || '',
             last_name: credentials.lastName || 
-              (credentials.name ? credentials.name.split(' ').slice(1).join(' ') : '')
+              (credentials.name ? credentials.name.split(' ').slice(1).join(' ') : ''),
+            user_type: 'admin' // Set the user type as admin for first access registration
           }
         }
       });

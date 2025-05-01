@@ -18,3 +18,6 @@ export type {
   LoginCredentials,
   AuthResult
 } from './credentials';
+
+// Export individual auth modules for direct access
+export { authCore, authCredentials, authRecovery, authRoles };
