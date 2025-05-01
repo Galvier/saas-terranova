@@ -1,13 +1,12 @@
 
-// Removido Supabase: simula apenas formulário para demonstração.
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import AppLogo from '@/components/AppLogo';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
 import { RegistrationForm } from '@/components/auth/RegistrationForm';
+import { authCredentials } from '@/services/auth';
 
 const FirstAccess = () => {
   const [name, setName] = useState('');
@@ -20,7 +19,6 @@ const FirstAccess = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     if (!password) {
@@ -35,18 +33,7 @@ const FirstAccess = () => {
     setPasswordStrength(strength);
   }, [password]);
 
-  useEffect(() => {
-    const state = location.state as { email?: string };
-    if (state?.email) {
-      setEmail(state.email);
-      toast({
-        title: "Configuração concluída",
-        description: "Use as credenciais criadas para fazer login",
-      });
-    }
-  }, [location.state, toast]);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name || !email || !password) {
@@ -86,17 +73,39 @@ const FirstAccess = () => {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setSuccessMessage("Usuário criado (DEMO, não salvo no banco de dados)!");
+    
+    try {
+      const result = await authCredentials.signUp({
+        name,
+        email,
+        password
+      });
+      
+      if (result.error) {
+        throw new Error(result.error.message || "Erro ao criar usuário");
+      }
+      
+      setSuccessMessage("Usuário administrador criado com sucesso!");
       toast({
         title: "Configuração concluída",
-        description: "Usuário criado apenas na demonstração."
+        description: "Use as credenciais criadas para fazer login"
       });
+      
+      // Redirect to login after successful registration
       setTimeout(() => {
         navigate('/login', { state: { email: email } });
       }, 2000);
-    }, 1000);
+      
+    } catch (error: any) {
+      console.error("Erro ao criar usuário:", error);
+      toast({
+        title: "Erro ao criar usuário",
+        description: error.message || "Ocorreu um erro ao criar o usuário administrador",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -112,8 +121,7 @@ const FirstAccess = () => {
               <CardTitle className="text-2xl font-bold">Configuração Inicial</CardTitle>
             </div>
             <CardDescription>
-              Configure o primeiro usuário administrador para acessar o sistema<br/>
-              <span className="font-bold text-xs">(Demonstração: usuário não será salvo)</span>
+              Configure o primeiro usuário administrador para acessar o sistema
             </CardDescription>
           </CardHeader>
           <RegistrationForm
@@ -132,13 +140,6 @@ const FirstAccess = () => {
             onToggleShowPassword={() => setShowPassword(!showPassword)}
             onSubmit={handleSubmit}
           />
-          <div className="mt-4 text-xs text-muted-foreground">
-            <b>Usuários de demonstração:</b>
-            <ul>
-              <li>admin@teste.com / senha123</li>
-              <li>usuario@teste.com / senha123</li>
-            </ul>
-          </div>
         </Card>
       </div>
     </div>
@@ -146,4 +147,3 @@ const FirstAccess = () => {
 };
 
 export default FirstAccess;
-
