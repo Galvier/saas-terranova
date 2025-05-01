@@ -178,7 +178,7 @@ export const diagnosticService = {
       // we'll use a more generic approach with proper typing
       try {
         const { data, error } = await callRPC<boolean>('check_user_profile', { 
-          user_id: user.id 
+          user_id_param: user.id 
         });
         
         if (error) {
