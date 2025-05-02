@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ShoppingCart, Users, BarChart3, FileText } from 'lucide-react';
+import { ShoppingCart, Users, BarChart3, FileText, LineChart } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import KpiCard from '@/components/KpiCard';
 import { MetricDefinition } from '@/integrations/supabase/types/metric';
@@ -51,9 +51,15 @@ const StandardMetricsView: React.FC<StandardMetricsViewProps> = ({
     maximumFractionDigits: 2
   });
   
+  // Find the department names for each category of metrics
+  const salesDepartment = findDepartmentName(filteredMetrics, ['venda', 'receita']);
+  const customersDepartment = findDepartmentName(filteredMetrics, ['cliente', 'usuário']);
+  const conversionDepartment = findDepartmentName(filteredMetrics, ['conversão', 'taxa']);
+  const projectsDepartment = findDepartmentName(filteredMetrics, ['projeto', 'tarefa']);
+  
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 overflow-x-auto md:overflow-visible">
         <KpiCard
           title="Vendas totais"
           value={`R$ ${formattedSalesTotal}`}
@@ -61,6 +67,7 @@ const StandardMetricsView: React.FC<StandardMetricsViewProps> = ({
           changeLabel="vs. período anterior"
           status="success"
           icon={<ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+          departmentName={salesDepartment}
         />
         
         <KpiCard
@@ -70,6 +77,7 @@ const StandardMetricsView: React.FC<StandardMetricsViewProps> = ({
           changeLabel="vs. período anterior"
           status="warning"
           icon={<Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+          departmentName={customersDepartment}
         />
         
         <KpiCard
@@ -79,6 +87,7 @@ const StandardMetricsView: React.FC<StandardMetricsViewProps> = ({
           changeLabel="vs. período anterior"
           status="success"
           icon={<BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+          departmentName={conversionDepartment}
         />
         
         <KpiCard
@@ -88,12 +97,23 @@ const StandardMetricsView: React.FC<StandardMetricsViewProps> = ({
           changeLabel="vs. período anterior"
           status="danger"
           icon={<FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+          departmentName={projectsDepartment}
         />
       </div>
       
       <AdditionalMetrics filteredMetrics={filteredMetrics} />
     </>
   );
+};
+
+// Helper function to find a department name for a category of metrics
+const findDepartmentName = (metrics: MetricDefinition[], keywords: string[]): string => {
+  const matchingMetric = metrics.find(metric => 
+    keywords.some(keyword => metric.name.toLowerCase().includes(keyword)) && 
+    metric.department_name
+  );
+  
+  return matchingMetric?.department_name || 'Geral';
 };
 
 export default StandardMetricsView;

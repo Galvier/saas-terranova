@@ -67,7 +67,7 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
   };
 
   return (
-    <div className={`grid ${getGridClass()} gap-4 mb-6`}>
+    <div className={`grid ${getGridClass()} gap-4 mb-6 overflow-x-auto md:overflow-visible`}>
       {isLoading ? (
         Array(4).fill(0).map((_, idx) => (
           <KpiCard
@@ -89,6 +89,7 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
             status={metric.status as "success" | "warning" | "danger"}
             trend={metric.trend || 'neutral'}
             icon={metric.icon_name}
+            departmentName={metric.department_name || 'Sem departamento'}
           />
         ))
       )}

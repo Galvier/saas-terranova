@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, LineChart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -17,6 +16,7 @@ interface KpiCardProps {
   trend?: TrendDirection;
   icon?: React.ReactNode | string;
   isLoading?: boolean;
+  departmentName?: string;
 }
 
 const KpiCard: React.FC<KpiCardProps> = ({
@@ -29,6 +29,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
   trend,
   icon,
   isLoading = false,
+  departmentName,
 }) => {
   const renderChange = () => {
     if (change === undefined && !trend) return null;
@@ -65,27 +66,48 @@ const KpiCard: React.FC<KpiCardProps> = ({
     }
   };
 
+  const renderIcon = () => {
+    if (!icon) return null;
+    
+    if (typeof icon === 'string') {
+      // If icon is "chart-line", render the LineChart component
+      if (icon === 'chart-line') {
+        return <LineChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />;
+      }
+      // Otherwise just render the string icon
+      return <span>{icon}</span>;
+    }
+    
+    // If it's a React node, render it directly
+    return icon;
+  };
+
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <Card 
-            className={`relative overflow-hidden transition-all hover:shadow-md border-l-4 h-full ${isLoading ? 'opacity-70' : ''}`} 
+            className={`relative overflow-hidden transition-all hover:shadow-md border-l-4 h-full min-h-[180px] min-w-[280px] w-full ${isLoading ? 'opacity-70' : ''}`} 
             style={{ borderLeftColor: getBorderColor() }}
           >
             <CardContent className="p-3 sm:p-4 lg:p-6">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</h3>
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold mt-1">{value}</div>
-                  {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
-                  {renderChange()}
-                </div>
-                {icon && (
-                  <div className="bg-primary/10 p-1 sm:p-2 rounded-full">
-                    {typeof icon === 'string' ? icon : icon}
+              <div className="flex flex-col h-full">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    {departmentName && (
+                      <div className="text-xs text-muted-foreground mb-1">{departmentName}</div>
+                    )}
+                    <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</h3>
+                    <div className="text-lg sm:text-xl lg:text-2xl font-bold mt-1">{value}</div>
+                    {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
+                    {renderChange()}
                   </div>
-                )}
+                  {icon && (
+                    <div className="bg-primary/10 p-1 sm:p-2 rounded-full">
+                      {renderIcon()}
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -93,6 +115,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
         <TooltipContent>
           <p>{title}</p>
           {subtitle && <p className="text-muted-foreground text-xs">{subtitle}</p>}
+          {departmentName && <p className="text-muted-foreground text-xs">Setor: {departmentName}</p>}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

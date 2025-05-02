@@ -3,6 +3,7 @@ import React from 'react';
 import KpiCard from '@/components/KpiCard';
 import PerformanceChart from '@/components/PerformanceChart';
 import { MetricDefinition } from '@/integrations/supabase/types/metric';
+import { LineChart } from 'lucide-react';
 
 interface AdditionalMetricsProps {
   filteredMetrics: MetricDefinition[];
@@ -48,7 +49,7 @@ const AdditionalMetrics: React.FC<AdditionalMetricsProps> = ({ filteredMetrics }
       {cardMetrics.length > 0 && (
         <>
           <h2 className="text-xl font-semibold mb-4 mt-8">Métricas adicionais</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-x-auto md:overflow-visible">
             {cardMetrics.map(metric => {
               const formattedValue = metric.unit === 'R$' 
                 ? `R$ ${metric.current.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
@@ -62,6 +63,8 @@ const AdditionalMetrics: React.FC<AdditionalMetricsProps> = ({ filteredMetrics }
                   status={metric.status as 'success' | 'warning' | 'danger'}
                   change={Math.random() * 10 * (Math.random() > 0.5 ? 1 : -1)} // Mock change data
                   changeLabel="vs. período anterior"
+                  departmentName={metric.department_name || 'Sem departamento'}
+                  icon={metric.icon_name === 'chart-line' ? <LineChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /> : metric.icon_name}
                 />
               );
             })}

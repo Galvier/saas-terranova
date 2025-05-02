@@ -57,15 +57,15 @@ const Dashboard = () => {
       
       try {
         const result = await getAdminDashboardConfig(user.id);
-        if (result.error) throw new Error(result.message);
+        if (result.error) throw new Error(result.message || "Erro ao carregar configuração");
         
         if (result.data) {
           setSelectedMetrics(result.data.metric_ids || []);
         }
         
         return result.data;
-      } catch (error) {
-        console.error("Error loading admin dashboard config:", error);
+      } catch (error: any) {
+        console.error("Erro ao carregar configuração do dashboard:", error);
         return null;
       }
     },
@@ -108,14 +108,6 @@ const Dashboard = () => {
   
   // Get performance metrics
   const { departmentPerformance, monthlyRevenue } = useDashboardMetrics(filteredMetrics);
-
-  // Function to check if charts should be displayed in favorites view
-  const shouldShowChartsInFavorites = () => {
-    if (viewMode !== 'favorites' || !isAdmin) return true;
-    
-    // Only show department performance chart if at least one metric is selected
-    return selectedMetrics.length > 0 && filteredMetrics.some(m => selectedMetrics.includes(m.id));
-  };
 
   return (
     <div className="animate-fade-in">
@@ -171,12 +163,22 @@ const Dashboard = () => {
             <StandardMetricsView filteredMetrics={filteredMetrics} />
           )}
           
-          {/* Performance charts section */}
-          <PerformanceMetrics
-            departmentPerformance={departmentPerformance}
-            monthlyRevenue={monthlyRevenue}
-            shouldShowCharts={shouldShowChartsInFavorites()}
-          />
+          {/* Performance charts section - now with conditional rendering based on selected metrics */}
+          {viewMode === 'favorites' && isAdmin ? (
+            <PerformanceMetrics
+              departmentPerformance={departmentPerformance}
+              monthlyRevenue={monthlyRevenue}
+              selectedMetrics={selectedMetrics}
+              metrics={metrics}
+            />
+          ) : (
+            <PerformanceMetrics
+              departmentPerformance={departmentPerformance}
+              monthlyRevenue={monthlyRevenue}
+              selectedMetrics={[]}  // Empty array for standard view - will show all charts
+              metrics={metrics}
+            />
+          )}
         </>
       )}
       
