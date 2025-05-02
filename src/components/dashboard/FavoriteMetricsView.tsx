@@ -93,7 +93,7 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
             title="Carregando..."
             value="..."
             subtitle="Carregando dados"
-            status="neutral"
+            status="success"
             isLoading={true}
           />
         ))
@@ -104,7 +104,7 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
             title={metric.name}
             value={formatNumber(metric.current, metric.unit)}
             subtitle={`Meta: ${formatNumber(metric.target, metric.unit)}`}
-            status={metric.status || 'neutral'}
+            status={metric.status === 'neutral' ? 'success' : (metric.status || 'success')}
             trend={metric.trend || 'neutral'}
             icon={metric.icon_name}
           />
