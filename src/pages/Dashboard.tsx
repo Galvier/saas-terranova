@@ -18,6 +18,7 @@ import UserProfileIndicator from '@/components/UserProfileIndicator';
 import DashboardToggle from '@/components/dashboard/DashboardToggle';
 import MetricSelectionDialog from '@/components/dashboard/MetricSelectionDialog';
 import { useAuth } from '@/hooks/useAuth';
+import MetricCard from '@/components/metrics/MetricCard';
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -146,35 +147,6 @@ const Dashboard = () => {
     }));
   }, [filteredMetrics]);
   
-  // Calculate KPI metrics
-  const kpiData = React.useMemo(() => {
-    // Default values
-    let salesTotal = 0;
-    let newCustomers = 0;
-    let conversionRate = 0;
-    let openProjects = 0;
-    
-    // Find specific metrics by name or type
-    filteredMetrics.forEach((metric) => {
-      if (metric.name.toLowerCase().includes('venda') || metric.name.toLowerCase().includes('receita')) {
-        salesTotal += metric.current;
-      } else if (metric.name.toLowerCase().includes('cliente') || metric.name.toLowerCase().includes('usuário')) {
-        newCustomers += Math.round(metric.current);
-      } else if (metric.name.toLowerCase().includes('conversão') || metric.name.toLowerCase().includes('taxa')) {
-        conversionRate = metric.current;
-      } else if (metric.name.toLowerCase().includes('projeto') || metric.name.toLowerCase().includes('tarefa')) {
-        openProjects += Math.round(metric.current);
-      }
-    });
-    
-    return {
-      salesTotal,
-      newCustomers,
-      conversionRate,
-      openProjects
-    };
-  }, [filteredMetrics]);
-  
   // Create monthly revenue data
   const monthlyRevenue = React.useMemo(() => {
     // Use sample data if no metrics are available
@@ -246,8 +218,149 @@ const Dashboard = () => {
     }
   }, [dateRangeType, viewMode]);
 
-  // Function to render metric cards based on priority and visualization type
-  const renderMetricCards = () => {
+  // Function to render selected metrics in favorites view
+  const renderFavoriteMetrics = () => {
+    if (!selectedMetrics.length || !filteredMetrics.length) {
+      return (
+        <Card className="p-8 text-center">
+          <h3 className="text-xl font-medium mb-2">Nenhuma métrica selecionada</h3>
+          <p className="text-muted-foreground">
+            Selecione suas métricas principais usando o botão de configuração.
+            <Button 
+              variant="link" 
+              className="p-0 h-auto ml-1"
+              onClick={() => setIsMetricSelectionOpen(true)}
+            >
+              Configurar dashboard
+            </Button>
+          </p>
+        </Card>
+      );
+    }
+    
+    // Find the metrics that are selected for favorites
+    const favoriteMetrics = filteredMetrics.filter(metric => 
+      selectedMetrics.includes(metric.id)
+    );
+    
+    if (!favoriteMetrics.length) {
+      return (
+        <Card className="p-8 text-center">
+          <h3 className="text-xl font-medium mb-2">Métricas não encontradas</h3>
+          <p className="text-muted-foreground">
+            As métricas selecionadas não estão disponíveis para o departamento ou período atual.
+          </p>
+        </Card>
+      );
+    }
+    
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {favoriteMetrics.map(metric => (
+          <KpiCard
+            key={metric.id}
+            title={metric.name}
+            value={metric.unit === 'R$' ? `R$ ${metric.current.toLocaleString('pt-BR')}` : `${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`}
+            change={(Math.random() * 10 * (Math.random() > 0.5 ? 1 : -1)).toFixed(1)} // Mock change data
+            changeLabel="vs. período anterior"
+            status={metric.status as 'success' | 'warning' | 'danger'}
+            icon={<Star className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  // Function to check if charts should be displayed in favorites view
+  const shouldShowChartsInFavorites = () => {
+    if (viewMode !== 'favorites' || !isAdmin) return true;
+    
+    // Only show department performance chart if at least one metric is selected
+    return selectedMetrics.length > 0 && filteredMetrics.some(m => selectedMetrics.includes(m.id));
+  };
+
+  // Function to render metrics for "all" view 
+  const renderAllMetricsView = () => {
+    // This adds the default KPI cards for the "all" view
+    const hasMetricsData = filteredMetrics.length > 0;
+    
+    if (!hasMetricsData) {
+      return (
+        <Card className="p-8 text-center">
+          <h3 className="text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
+          <p className="text-muted-foreground">
+            Não há métricas disponíveis para o departamento e período selecionados.
+          </p>
+        </Card>
+      );
+    }
+    
+    // Calculate KPI metrics for all view
+    let salesTotal = 0;
+    let newCustomers = 0;
+    let conversionRate = 0;
+    let openProjects = 0;
+    
+    // Find specific metrics by name or type
+    filteredMetrics.forEach((metric) => {
+      if (metric.name.toLowerCase().includes('venda') || metric.name.toLowerCase().includes('receita')) {
+        salesTotal += metric.current;
+      } else if (metric.name.toLowerCase().includes('cliente') || metric.name.toLowerCase().includes('usuário')) {
+        newCustomers += Math.round(metric.current);
+      } else if (metric.name.toLowerCase().includes('conversão') || metric.name.toLowerCase().includes('taxa')) {
+        conversionRate = metric.current;
+      } else if (metric.name.toLowerCase().includes('projeto') || metric.name.toLowerCase().includes('tarefa')) {
+        openProjects += Math.round(metric.current);
+      }
+    });
+    
+    return (
+      <>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <KpiCard
+            title="Vendas totais"
+            value={`R$ ${salesTotal.toLocaleString('pt-BR')}`}
+            change={12.5}
+            changeLabel="vs. período anterior"
+            status="success"
+            icon={<ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+          />
+          
+          <KpiCard
+            title="Novos clientes"
+            value={newCustomers.toString()}
+            change={-3.2}
+            changeLabel="vs. período anterior"
+            status="warning"
+            icon={<Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+          />
+          
+          <KpiCard
+            title="Taxa de conversão"
+            value={`${conversionRate}%`}
+            change={0.5}
+            changeLabel="vs. período anterior"
+            status="success"
+            icon={<BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+          />
+          
+          <KpiCard
+            title="Projetos abertos"
+            value={openProjects.toString()}
+            change={-1}
+            changeLabel="vs. período anterior"
+            status="danger"
+            icon={<FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+          />
+        </div>
+        
+        {renderAdditionalMetrics()}
+      </>
+    );
+  };
+  
+  // Function to render additional metrics in "all" view
+  const renderAdditionalMetrics = () => {
     // Filter metrics that are not already displayed in main KPI cards
     const additionalMetrics = filteredMetrics.filter(metric => 
       !metric.name.toLowerCase().includes('venda') &&
@@ -384,26 +497,6 @@ const Dashboard = () => {
         <div className="flex justify-center items-center h-64">
           <p className="text-muted-foreground">Carregando indicadores...</p>
         </div>
-      ) : filteredMetrics.length === 0 ? (
-        <Card className="p-8 text-center">
-          <h3 className="text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
-          <p className="text-muted-foreground">
-            {viewMode === 'favorites' ? (
-              <>
-                Você não selecionou métricas favoritas.
-                <Button 
-                  variant="link" 
-                  className="p-0 h-auto ml-1"
-                  onClick={() => setIsMetricSelectionOpen(true)}
-                >
-                  Configurar dashboard
-                </Button>
-              </>
-            ) : (
-              'Não há métricas disponíveis para o departamento e período selecionados.'
-            )}
-          </p>
-        </Card>
       ) : (
         <>
           {viewMode === 'favorites' && isAdmin && (
@@ -415,65 +508,35 @@ const Dashboard = () => {
             </div>
           )}
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <KpiCard
-              title="Vendas totais"
-              value={`R$ ${kpiData.salesTotal.toLocaleString('pt-BR')}`}
-              change={12.5}
-              changeLabel="vs. período anterior"
-              status="success"
-              icon={<ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-            />
-            
-            <KpiCard
-              title="Novos clientes"
-              value={kpiData.newCustomers.toString()}
-              change={-3.2}
-              changeLabel="vs. período anterior"
-              status="warning"
-              icon={<Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-            />
-            
-            <KpiCard
-              title="Taxa de conversão"
-              value={`${kpiData.conversionRate}%`}
-              change={0.5}
-              changeLabel="vs. período anterior"
-              status="success"
-              icon={<BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-            />
-            
-            <KpiCard
-              title="Projetos abertos"
-              value={kpiData.openProjects.toString()}
-              change={-1}
-              changeLabel="vs. período anterior"
-              status="danger"
-              icon={<FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-            />
-          </div>
+          {/* Conditional rendering based on view mode */}
+          {viewMode === 'favorites' && isAdmin ? (
+            renderFavoriteMetrics()
+          ) : (
+            renderAllMetricsView()
+          )}
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <PerformanceChart
-              title="Desempenho por departamento"
-              data={departmentPerformance.length > 0 ? departmentPerformance : [{ name: 'Carregando...', value: 0 }]}
-              type="bar"
-              percentage={true}
-              status="success"
-              trend={5.2}
-            />
-            
-            <PerformanceChart
-              title="Receita mensal (R$)"
-              data={monthlyRevenue}
-              color="#10b981"
-              type="line"
-              status="success"
-              trend={3.8}
-            />
-          </div>
-          
-          {renderMetricCards()}
+          {/* Charts section - only show if needed */}
+          {shouldShowChartsInFavorites() && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <PerformanceChart
+                title="Desempenho por departamento"
+                data={departmentPerformance.length > 0 ? departmentPerformance : [{ name: 'Carregando...', value: 0 }]}
+                type="bar"
+                percentage={true}
+                status="success"
+                trend={5.2}
+              />
+              
+              <PerformanceChart
+                title="Receita mensal (R$)"
+                data={monthlyRevenue}
+                color="#10b981"
+                type="line"
+                status="success"
+                trend={3.8}
+              />
+            </div>
+          )}
         </>
       )}
       
