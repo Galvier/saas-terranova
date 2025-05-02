@@ -22,35 +22,17 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
   const { toast } = useToast();
   const [selectedMetrics, setSelectedMetrics] = useState<MetricDefinition[]>([]);
 
-  // Group metrics by their status for easy access
-  const groupMetricsByStatus = () => {
-    const grouped: Record<string, MetricDefinition[]> = {
-      success: [],
-      warning: [],
-      danger: []
-    };
-
-    metrics.forEach(metric => {
-      if (metric.status) {
-        const status = metric.status.toLowerCase();
-        if (grouped[status]) {
-          grouped[status].push(metric);
-        }
-      }
-    });
-
-    return grouped;
-  };
-
   // Use effect to filter and set the selected metrics
   useEffect(() => {
-    if (metrics.length > 0) {
+    if (metrics && metrics.length > 0) {
       setSelectedMetrics(metrics);
+    } else {
+      setSelectedMetrics([]);
     }
   }, [metrics]);
 
   // Handle empty state
-  if (selectedMetrics.length === 0 && !isLoading) {
+  if (!isLoading && (!selectedMetrics || selectedMetrics.length === 0)) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
@@ -78,7 +60,7 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
 
   // Define how many metrics to show per row based on count
   const getGridClass = () => {
-    const count = selectedMetrics.length;
+    const count = selectedMetrics ? selectedMetrics.length : 0;
     if (count <= 2) return "grid-cols-1 sm:grid-cols-2";
     if (count <= 4) return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
     return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
@@ -98,13 +80,13 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
           />
         ))
       ) : (
-        selectedMetrics.map((metric) => (
+        selectedMetrics && selectedMetrics.map((metric) => (
           <KpiCard
             key={metric.id}
             title={metric.name}
             value={formatNumber(metric.current, metric.unit)}
             subtitle={`Meta: ${formatNumber(metric.target, metric.unit)}`}
-            status={metric.status === 'neutral' ? 'success' : (metric.status || 'success')}
+            status={metric.status as "success" | "warning" | "danger"}
             trend={metric.trend || 'neutral'}
             icon={metric.icon_name}
           />

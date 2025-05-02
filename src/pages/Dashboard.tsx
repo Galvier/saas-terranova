@@ -162,9 +162,10 @@ const Dashboard = () => {
           {/* Conditional rendering based on view mode */}
           {viewMode === 'favorites' && isAdmin ? (
             <FavoriteMetricsView 
-              selectedMetrics={selectedMetrics} 
-              filteredMetrics={filteredMetrics}
-              onConfigClick={() => setIsMetricSelectionOpen(true)} 
+              metrics={filteredMetrics} 
+              isLoading={isLoading}
+              dateFilter={format(selectedDate, 'yyyy-MM-dd')}
+              departmentFilter={selectedDepartment}
             />
           ) : (
             <StandardMetricsView filteredMetrics={filteredMetrics} />
