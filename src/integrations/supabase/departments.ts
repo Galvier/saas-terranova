@@ -1,3 +1,4 @@
+
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { Department } from './types/department';
 

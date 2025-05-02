@@ -1,4 +1,3 @@
-
 import { supabase } from "./client";
 
 type Tables = {
@@ -17,24 +16,22 @@ export type RpcParams = {
   check_table_exists_and_count: {
     table_name: string;
   };
-  check_user_profile_param: { // Changed name to avoid conflict
+  check_user_profile: { 
     email: string;
   };
   postgres_version: never;
   create_diagnostic_table: {
     table_name?: string;
   };
-  create_diagnostic_table_if_not_exists: {
-    table_name?: string;
-  };
+  create_diagnostic_table_if_not_exists: never;
   run_diagnostic_write_test: {
-    table_name?: string;
     test_id: string;
   };
   create_department: {
-    name: string;
-    description?: string | null;
-    manager_id?: string | null;
+    department_name: string;
+    department_description: string;
+    department_is_active: boolean;
+    department_manager_id?: string | null;
   };
   update_department: {
     id: string;
@@ -45,24 +42,31 @@ export type RpcParams = {
   };
   get_all_departments: never;
   create_manager: {
-    name: string;
-    email: string;
-    department_id?: string | null;
-    role?: string;
+    manager_name: string;
+    manager_email: string;
+    manager_department_id?: string | null;
+    manager_is_active: boolean;
+    manager_password?: string;
+    manager_role?: string;
   };
   update_manager: {
-    id: string;
-    name: string;
-    email: string;
-    department_id?: string | null;
-    role?: string;
-    is_active?: boolean;
+    manager_id: string;
+    manager_name: string;
+    manager_email: string;
+    manager_department_id?: string | null;
+    manager_is_active: boolean;
+    manager_role?: string;
   };
   delete_manager: {
-    id: string;
+    manager_id: string;
   };
   get_manager_by_id: {
-    id: string;
+    manager_id: string;
+  };
+  get_all_managers: never;
+  get_metrics_by_department: {
+    department_id_param?: string;
+    date_param?: string;
   };
   get_metrics_by_department_and_date: {
     department_id?: string;
@@ -72,33 +76,82 @@ export type RpcParams = {
   get_metric_definitions: {
     department_id?: string;
   };
-  save_metric_definition: {
-    id?: string;
-    name: string;
-    description?: string;
-    department_id?: string;
-    unit: string;
-    target: number;
-    frequency?: string;
-    lower_is_better?: boolean;
-    icon_name?: string;
+  create_metric_definition: {
+    metric_name: string;
+    metric_description: string;
+    metric_department_id: string;
+    metric_unit: string;
+    metric_target: number;
+    metric_frequency?: string;
+    metric_is_active?: boolean;
+    metric_icon_name?: string;
+    metric_lower_is_better?: boolean;
+  };
+  update_metric_definition: {
+    metric_id: string;
+    metric_name: string;
+    metric_description: string;
+    metric_department_id: string;
+    metric_unit: string;
+    metric_target: number;
+    metric_frequency?: string;
+    metric_is_active?: boolean;
+    metric_icon_name?: string;
+    metric_lower_is_better?: boolean;
   };
   delete_metric_definition: {
-    id: string;
+    metric_id: string;
   };
-  save_metric_value: {
-    metric_definition_id: string;
-    value: number;
-    date?: string;
+  record_metric_value: {
+    metric_id: string;
+    metric_value: number;
+    metric_date?: string;
   };
   save_admin_dashboard_config: {
-    metric_ids: string[];
+    metrics_ids: string[];
     user_id: string;
   };
   get_admin_dashboard_config: {
     user_id_param: string;
   };
+  validate_metric_value_date: {
+    metric_id: string;
+    value_date: string;
+  };
 };
+
+// Reusable result types for better error handling
+export type CrudResult<T> = {
+  data: T | null;
+  error: boolean;
+  message: string;
+};
+
+// Export the formatCrudResult function to standardize API responses
+export function formatCrudResult<T>(data: T | null, error: any = null): CrudResult<T> {
+  if (error) {
+    console.error("Service error:", error);
+    return {
+      data: null,
+      error: true,
+      message: error.message || "An error occurred",
+    };
+  }
+
+  return {
+    data,
+    error: false,
+    message: "",
+  };
+}
+
+// Function to call Supabase RPC functions - create an alias for backwards compatibility
+export async function callRPC<T>(
+  functionName: keyof RpcParams, 
+  params: any
+): Promise<{data: T | null; error: any}> {
+  return callRpcFunction(functionName, params);
+}
 
 export function createGenericServiceResult<T>(
   data: T | null,

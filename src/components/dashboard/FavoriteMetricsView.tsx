@@ -1,75 +1,115 @@
 
-import React from 'react';
-import { Star } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import KpiCard from '@/components/KpiCard';
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { MetricDefinition } from '@/integrations/supabase/types/metric';
+import KpiCard from '@/components/KpiCard';
+import { formatCurrency } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface FavoriteMetricsViewProps {
-  selectedMetrics: string[];
-  filteredMetrics: MetricDefinition[];
-  onConfigClick: () => void;
+  metrics: MetricDefinition[];
+  isLoading: boolean;
+  dateFilter: string;
+  departmentFilter: string;
 }
 
 const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
-  selectedMetrics,
-  filteredMetrics,
-  onConfigClick,
+  metrics,
+  isLoading,
+  dateFilter,
+  departmentFilter
 }) => {
-  if (!selectedMetrics.length || !filteredMetrics.length) {
+  const { toast } = useToast();
+  const [selectedMetrics, setSelectedMetrics] = useState<MetricDefinition[]>([]);
+
+  // Group metrics by their status for easy access
+  const groupMetricsByStatus = () => {
+    const grouped: Record<string, MetricDefinition[]> = {
+      success: [],
+      warning: [],
+      danger: []
+    };
+
+    metrics.forEach(metric => {
+      if (metric.status) {
+        const status = metric.status.toLowerCase();
+        if (grouped[status]) {
+          grouped[status].push(metric);
+        }
+      }
+    });
+
+    return grouped;
+  };
+
+  // Use effect to filter and set the selected metrics
+  useEffect(() => {
+    if (metrics.length > 0) {
+      setSelectedMetrics(metrics);
+    }
+  }, [metrics]);
+
+  // Handle empty state
+  if (selectedMetrics.length === 0 && !isLoading) {
     return (
-      <Card className="p-8 text-center">
-        <h3 className="text-xl font-medium mb-2">Nenhuma métrica selecionada</h3>
-        <p className="text-muted-foreground">
-          Selecione suas métricas principais usando o botão de configuração.
-          <Button 
-            variant="link" 
-            className="p-0 h-auto ml-1"
-            onClick={onConfigClick}
-          >
-            Configurar dashboard
-          </Button>
-        </p>
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground">
+            Nenhuma métrica foi selecionada para o dashboard personalizado.
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Clique em "Editar dashboard" para selecionar as métricas que deseja visualizar.
+          </p>
+        </CardContent>
       </Card>
     );
   }
-  
-  // Find the metrics that are selected for favorites
-  const favoriteMetrics = filteredMetrics.filter(metric => 
-    selectedMetrics.includes(metric.id)
-  );
-  
-  if (!favoriteMetrics.length) {
-    return (
-      <Card className="p-8 text-center">
-        <h3 className="text-xl font-medium mb-2">Métricas não encontradas</h3>
-        <p className="text-muted-foreground">
-          As métricas selecionadas não estão disponíveis para o departamento ou período atual.
-        </p>
-      </Card>
-    );
-  }
-  
+
+  // Format the number based on metric unit
+  const formatNumber = (value: number, unit: string) => {
+    if (unit === 'R$') {
+      return formatCurrency(value);
+    } else if (unit === '%') {
+      return `${value.toFixed(1)}%`;
+    } else {
+      return value.toFixed(1);
+    }
+  };
+
+  // Define how many metrics to show per row based on count
+  const getGridClass = () => {
+    const count = selectedMetrics.length;
+    if (count <= 2) return "grid-cols-1 sm:grid-cols-2";
+    if (count <= 4) return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+    return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+  };
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-      {favoriteMetrics.map(metric => {
-        const formattedValue = metric.unit === 'R$' 
-          ? `R$ ${metric.current.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
-          : `${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`;
-          
-        return (
+    <div className={`grid ${getGridClass()} gap-4 mb-6`}>
+      {isLoading ? (
+        Array(4).fill(0).map((_, idx) => (
+          <KpiCard
+            key={idx}
+            title="Carregando..."
+            value="..."
+            subtitle="Carregando dados"
+            status="neutral"
+            isLoading={true}
+          />
+        ))
+      ) : (
+        selectedMetrics.map((metric) => (
           <KpiCard
             key={metric.id}
             title={metric.name}
-            value={formattedValue}
-            change={(Math.random() * 10 * (Math.random() > 0.5 ? 1 : -1)).toFixed(1)} // Mock change data
-            changeLabel="vs. período anterior"
-            status={metric.status as 'success' | 'warning' | 'danger'}
-            icon={<Star className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+            value={formatNumber(metric.current, metric.unit)}
+            subtitle={`Meta: ${formatNumber(metric.target, metric.unit)}`}
+            status={metric.status || 'neutral'}
+            trend={metric.trend || 'neutral'}
+            icon={metric.icon_name}
           />
-        );
-      })}
+        ))
+      )}
     </div>
   );
 };
