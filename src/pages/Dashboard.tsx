@@ -1,38 +1,40 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { BarChart3, FileText, ShoppingCart, Settings, Users, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllDepartments, getMetricsByDepartment, getAdminDashboardConfig } from '@/integrations/supabase';
 
 import PageHeader from '@/components/PageHeader';
-import KpiCard from '@/components/KpiCard';
-import PerformanceChart from '@/components/PerformanceChart';
 import { useToast } from '@/hooks/use-toast';
-import DepartmentFilter from '@/components/filters/DepartmentFilter';
-import DateFilter, { DateRangeType } from '@/components/filters/DateFilter';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import UserProfileIndicator from '@/components/UserProfileIndicator';
-import DashboardToggle from '@/components/dashboard/DashboardToggle';
+import DateFilter from '@/components/filters/DateFilter';
 import MetricSelectionDialog from '@/components/dashboard/MetricSelectionDialog';
 import { useAuth } from '@/hooks/useAuth';
-import MetricCard from '@/components/metrics/MetricCard';
+
+// Refactored components
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import FavoriteMetricsView from '@/components/dashboard/FavoriteMetricsView';
+import StandardMetricsView from '@/components/dashboard/StandardMetricsView';
+import PerformanceMetrics from '@/components/dashboard/PerformanceMetrics';
+
+// Refactored hooks
+import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useDepartmentName } from '@/hooks/useDepartmentName';
+import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
+import { useInitialDepartment } from '@/hooks/useInitialDepartment';
 
 const Dashboard = () => {
   const { toast } = useToast();
   const { user, isAdmin, userDepartmentId } = useAuth();
   
-  const [selectedDepartment, setSelectedDepartment] = useState<string>(isAdmin ? "all" : userDepartmentId || "");
+  // Dashboard state
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [dateRangeType, setDateRangeType] = useState<DateRangeType>('month');
-  
-  // Admin dashboard customization
-  const [viewMode, setViewMode] = useState<'all' | 'favorites'>('all');
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [isMetricSelectionOpen, setIsMetricSelectionOpen] = useState(false);
-  const [departmentName, setDepartmentName] = useState<string>("");
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  
+  // Custom hooks for dashboard functionality
+  const { dateRangeType, setDateRangeType, viewMode, setViewMode } = useDashboardPreferences(isAdmin);
+  const { selectedDepartment, setSelectedDepartment } = useInitialDepartment(isAdmin, userDepartmentId);
   
   // Load departments
   const { data: departments = [] } = useQuery({
@@ -44,15 +46,8 @@ const Dashboard = () => {
     }
   });
   
-  // Set department name when department is selected
-  useEffect(() => {
-    if (selectedDepartment === 'all') {
-      setDepartmentName("Todos os departamentos");
-    } else {
-      const dept = departments.find(d => d.id === selectedDepartment);
-      setDepartmentName(dept?.name || "");
-    }
-  }, [selectedDepartment, departments]);
+  // Get department name
+  const departmentName = useDepartmentName(selectedDepartment, departments);
   
   // Load admin dashboard configuration
   useQuery({
@@ -111,165 +106,8 @@ const Dashboard = () => {
     return metrics.filter(metric => selectedMetrics.includes(metric.id));
   }, [metrics, isAdmin, viewMode, selectedMetrics]);
   
-  // Process department performance data
-  const departmentPerformance = React.useMemo(() => {
-    if (!filteredMetrics.length) return [];
-    
-    // Group metrics by department and calculate average performance
-    const depPerformance = new Map<string, { total: number, count: number }>();
-    
-    filteredMetrics.forEach((metric) => {
-      if (!metric.department_name) return;
-      
-      // Calculate performance percentage against target
-      let perfValue;
-      if (metric.lower_is_better) {
-        // Lower values are better (target is maximum)
-        perfValue = metric.target > 0 ? (1 - Math.min(metric.current / metric.target, 1)) * 100 : 0;
-      } else {
-        // Higher values are better (target is goal)
-        perfValue = metric.target > 0 ? Math.min(metric.current / metric.target, 1) * 100 : 0;
-      }
-      
-      const existing = depPerformance.get(metric.department_name);
-      if (existing) {
-        existing.total += perfValue;
-        existing.count += 1;
-      } else {
-        depPerformance.set(metric.department_name, { total: perfValue, count: 1 });
-      }
-    });
-    
-    // Convert to array format for the chart
-    return Array.from(depPerformance.entries()).map(([name, { total, count }]) => ({
-      name,
-      value: Math.round(total / count),
-    }));
-  }, [filteredMetrics]);
-  
-  // Create monthly revenue data
-  const monthlyRevenue = React.useMemo(() => {
-    // Use sample data if no metrics are available
-    if (!filteredMetrics.length) {
-      return [
-        { name: 'Jan', value: 120000 },
-        { name: 'Fev', value: 140000 },
-        { name: 'Mar', value: 160000 },
-        { name: 'Abr', value: 180000 },
-        { name: 'Mai', value: 190000 },
-        { name: 'Jun', value: 170000 },
-      ];
-    }
-    
-    // Find revenue metrics
-    const revenueMetrics = filteredMetrics.filter((metric) => 
-      metric.name.toLowerCase().includes('receita') && 
-      metric.unit === 'R$'
-    );
-    
-    if (revenueMetrics.length === 0) {
-      // Use sample data if no revenue metrics available
-      return [
-        { name: 'Jan', value: 120000 },
-        { name: 'Fev', value: 140000 },
-        { name: 'Mar', value: 160000 },
-        { name: 'Abr', value: 180000 },
-        { name: 'Mai', value: 190000 },
-        { name: 'Jun', value: 170000 },
-      ];
-    }
-    
-    // Process actual revenue data if available
-    // This would need to be expanded with real historical data
-    return revenueMetrics.slice(0, 6).map((metric, index) => {
-      const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
-      return {
-        name: months[index % months.length],
-        value: Math.round(metric.current),
-      };
-    });
-    
-  }, [filteredMetrics]);
-  
-  // Load user preferences
-  useEffect(() => {
-    try {
-      const savedPrefs = localStorage.getItem('dashboardPreferences');
-      if (savedPrefs) {
-        const prefs = JSON.parse(savedPrefs);
-        
-        if (prefs.dateType) setDateRangeType(prefs.dateType);
-        if (prefs.viewMode && isAdmin) setViewMode(prefs.viewMode);
-      }
-    } catch (error) {
-      console.error("Error loading preferences", error);
-    }
-  }, [isAdmin]);
-  
-  // Save preferences
-  useEffect(() => {
-    try {
-      localStorage.setItem('dashboardPreferences', JSON.stringify({
-        dateType: dateRangeType,
-        viewMode: viewMode,
-      }));
-    } catch (error) {
-      console.error("Error saving preferences", error);
-    }
-  }, [dateRangeType, viewMode]);
-
-  // Function to render selected metrics in favorites view
-  const renderFavoriteMetrics = () => {
-    if (!selectedMetrics.length || !filteredMetrics.length) {
-      return (
-        <Card className="p-8 text-center">
-          <h3 className="text-xl font-medium mb-2">Nenhuma métrica selecionada</h3>
-          <p className="text-muted-foreground">
-            Selecione suas métricas principais usando o botão de configuração.
-            <Button 
-              variant="link" 
-              className="p-0 h-auto ml-1"
-              onClick={() => setIsMetricSelectionOpen(true)}
-            >
-              Configurar dashboard
-            </Button>
-          </p>
-        </Card>
-      );
-    }
-    
-    // Find the metrics that are selected for favorites
-    const favoriteMetrics = filteredMetrics.filter(metric => 
-      selectedMetrics.includes(metric.id)
-    );
-    
-    if (!favoriteMetrics.length) {
-      return (
-        <Card className="p-8 text-center">
-          <h3 className="text-xl font-medium mb-2">Métricas não encontradas</h3>
-          <p className="text-muted-foreground">
-            As métricas selecionadas não estão disponíveis para o departamento ou período atual.
-          </p>
-        </Card>
-      );
-    }
-    
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {favoriteMetrics.map(metric => (
-          <KpiCard
-            key={metric.id}
-            title={metric.name}
-            value={metric.unit === 'R$' ? `R$ ${metric.current.toLocaleString('pt-BR')}` : `${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`}
-            change={(Math.random() * 10 * (Math.random() > 0.5 ? 1 : -1)).toFixed(1)} // Mock change data
-            changeLabel="vs. período anterior"
-            status={metric.status as 'success' | 'warning' | 'danger'}
-            icon={<Star className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-          />
-        ))}
-      </div>
-    );
-  };
+  // Get performance metrics
+  const { departmentPerformance, monthlyRevenue } = useDashboardMetrics(filteredMetrics);
 
   // Function to check if charts should be displayed in favorites view
   const shouldShowChartsInFavorites = () => {
@@ -279,167 +117,6 @@ const Dashboard = () => {
     return selectedMetrics.length > 0 && filteredMetrics.some(m => selectedMetrics.includes(m.id));
   };
 
-  // Function to render metrics for "all" view 
-  const renderAllMetricsView = () => {
-    // This adds the default KPI cards for the "all" view
-    const hasMetricsData = filteredMetrics.length > 0;
-    
-    if (!hasMetricsData) {
-      return (
-        <Card className="p-8 text-center">
-          <h3 className="text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
-          <p className="text-muted-foreground">
-            Não há métricas disponíveis para o departamento e período selecionados.
-          </p>
-        </Card>
-      );
-    }
-    
-    // Calculate KPI metrics for all view
-    let salesTotal = 0;
-    let newCustomers = 0;
-    let conversionRate = 0;
-    let openProjects = 0;
-    
-    // Find specific metrics by name or type
-    filteredMetrics.forEach((metric) => {
-      if (metric.name.toLowerCase().includes('venda') || metric.name.toLowerCase().includes('receita')) {
-        salesTotal += metric.current;
-      } else if (metric.name.toLowerCase().includes('cliente') || metric.name.toLowerCase().includes('usuário')) {
-        newCustomers += Math.round(metric.current);
-      } else if (metric.name.toLowerCase().includes('conversão') || metric.name.toLowerCase().includes('taxa')) {
-        conversionRate = metric.current;
-      } else if (metric.name.toLowerCase().includes('projeto') || metric.name.toLowerCase().includes('tarefa')) {
-        openProjects += Math.round(metric.current);
-      }
-    });
-    
-    return (
-      <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard
-            title="Vendas totais"
-            value={`R$ ${salesTotal.toLocaleString('pt-BR')}`}
-            change={12.5}
-            changeLabel="vs. período anterior"
-            status="success"
-            icon={<ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-          />
-          
-          <KpiCard
-            title="Novos clientes"
-            value={newCustomers.toString()}
-            change={-3.2}
-            changeLabel="vs. período anterior"
-            status="warning"
-            icon={<Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-          />
-          
-          <KpiCard
-            title="Taxa de conversão"
-            value={`${conversionRate}%`}
-            change={0.5}
-            changeLabel="vs. período anterior"
-            status="success"
-            icon={<BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-          />
-          
-          <KpiCard
-            title="Projetos abertos"
-            value={openProjects.toString()}
-            change={-1}
-            changeLabel="vs. período anterior"
-            status="danger"
-            icon={<FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-          />
-        </div>
-        
-        {renderAdditionalMetrics()}
-      </>
-    );
-  };
-  
-  // Function to render additional metrics in "all" view
-  const renderAdditionalMetrics = () => {
-    // Filter metrics that are not already displayed in main KPI cards
-    const additionalMetrics = filteredMetrics.filter(metric => 
-      !metric.name.toLowerCase().includes('venda') &&
-      !metric.name.toLowerCase().includes('receita') &&
-      !metric.name.toLowerCase().includes('cliente') &&
-      !metric.name.toLowerCase().includes('usuário') &&
-      !metric.name.toLowerCase().includes('conversão') &&
-      !metric.name.toLowerCase().includes('taxa') &&
-      !metric.name.toLowerCase().includes('projeto') &&
-      !metric.name.toLowerCase().includes('tarefa')
-    );
-    
-    if (additionalMetrics.length === 0) return null;
-    
-    // Sort metrics by priority
-    const sortedMetrics = [...additionalMetrics].sort((a, b) => {
-      const priorityOrder = { 'critical': 0, 'high': 1, 'normal': 2 };
-      const aPriority = a.priority ? priorityOrder[a.priority as keyof typeof priorityOrder] || 2 : 2;
-      const bPriority = b.priority ? priorityOrder[b.priority as keyof typeof priorityOrder] || 2 : 2;
-      
-      // First sort by priority
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      
-      // Then sort by status (critical statuses first)
-      const statusOrder = { 'danger': 0, 'warning': 1, 'success': 2 };
-      return (statusOrder[a.status as keyof typeof statusOrder] || 2) - 
-             (statusOrder[b.status as keyof typeof statusOrder] || 2);
-    });
-    
-    // Group metrics by visualization type
-    const cardMetrics = sortedMetrics.filter(m => !m.visualization_type || m.visualization_type === 'card');
-    const chartMetrics = sortedMetrics.filter(m => m.visualization_type && m.visualization_type !== 'card');
-    
-    return (
-      <>
-        {/* Render card metrics in a grid */}
-        {cardMetrics.length > 0 && (
-          <>
-            <h2 className="text-xl font-semibold mb-4 mt-8">Métricas adicionais</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {cardMetrics.map(metric => (
-                <KpiCard
-                  key={metric.id}
-                  title={metric.name}
-                  value={`${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`}
-                  status={metric.status as 'success' | 'warning' | 'danger'}
-                  change={Math.random() * 10 * (Math.random() > 0.5 ? 1 : -1)} // Mock change data
-                  changeLabel="vs. período anterior"
-                />
-              ))}
-            </div>
-          </>
-        )}
-        
-        {/* Render chart metrics in a different layout */}
-        {chartMetrics.length > 0 && (
-          <>
-            <h2 className="text-xl font-semibold mb-4 mt-8">Análises de desempenho</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {chartMetrics.map(metric => (
-                <PerformanceChart
-                  key={metric.id}
-                  title={metric.name}
-                  data={[
-                    { name: 'Atual', value: metric.current },
-                    { name: 'Meta', value: metric.target }
-                  ]}
-                  type={metric.visualization_type === 'bar' ? 'bar' : 'line'}
-                  status={metric.status as 'success' | 'warning' | 'danger'}
-                  trend={Math.random() * 10 * (Math.random() > 0.5 ? 1 : -1)} // Mock trend data
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </>
-    );
-  };
-
   return (
     <div className="animate-fade-in">
       <PageHeader
@@ -447,49 +124,23 @@ const Dashboard = () => {
         subtitle="Visão geral dos indicadores de desempenho da empresa"
       />
       
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full">
-          <DepartmentFilter
-            departments={departments}
-            selectedDepartment={selectedDepartment}
-            onDepartmentChange={setSelectedDepartment}
-            className="w-full sm:w-[280px]"
-          />
-          
-          <UserProfileIndicator 
-            selectedDepartment={selectedDepartment}
-            departmentName={departmentName}
-          />
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:justify-end">
-          {isAdmin && (
-            <>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsMetricSelectionOpen(true)}
-                className="flex items-center gap-1"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Configurar dashboard</span>
-              </Button>
-              
-              <DashboardToggle 
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-              />
-            </>
-          )}
-        </div>
-      </div>
+      <DashboardHeader
+        departments={departments}
+        selectedDepartment={selectedDepartment}
+        setSelectedDepartment={setSelectedDepartment}
+        departmentName={departmentName}
+        isAdmin={isAdmin}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onConfigClick={() => setIsMetricSelectionOpen(true)}
+      />
       
       <div className="mb-6">
         <DateFilter
           selectedDate={selectedDate}
           onDateChange={setSelectedDate}
           dateRangeType={dateRangeType}
-          onDateRangeTypeChange={setDateRangeType as (type: DateRangeType) => void}
+          onDateRangeTypeChange={setDateRangeType}
         />
       </div>
       
@@ -510,33 +161,21 @@ const Dashboard = () => {
           
           {/* Conditional rendering based on view mode */}
           {viewMode === 'favorites' && isAdmin ? (
-            renderFavoriteMetrics()
+            <FavoriteMetricsView 
+              selectedMetrics={selectedMetrics} 
+              filteredMetrics={filteredMetrics}
+              onConfigClick={() => setIsMetricSelectionOpen(true)} 
+            />
           ) : (
-            renderAllMetricsView()
+            <StandardMetricsView filteredMetrics={filteredMetrics} />
           )}
           
-          {/* Charts section - only show if needed */}
-          {shouldShowChartsInFavorites() && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <PerformanceChart
-                title="Desempenho por departamento"
-                data={departmentPerformance.length > 0 ? departmentPerformance : [{ name: 'Carregando...', value: 0 }]}
-                type="bar"
-                percentage={true}
-                status="success"
-                trend={5.2}
-              />
-              
-              <PerformanceChart
-                title="Receita mensal (R$)"
-                data={monthlyRevenue}
-                color="#10b981"
-                type="line"
-                status="success"
-                trend={3.8}
-              />
-            </div>
-          )}
+          {/* Performance charts section */}
+          <PerformanceMetrics
+            departmentPerformance={departmentPerformance}
+            monthlyRevenue={monthlyRevenue}
+            shouldShowCharts={shouldShowChartsInFavorites()}
+          />
         </>
       )}
       
