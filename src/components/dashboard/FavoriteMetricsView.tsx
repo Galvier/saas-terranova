@@ -32,8 +32,12 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
     }
     
     // Only show metrics that are in the selectedMetrics list
+    // Exclude special chart IDs from this filtering
+    const chartIds = ['department_performance_chart', 'monthly_revenue_chart'];
+    const normalMetricIds = selectedMetrics.filter(id => !chartIds.includes(id));
+    
     const filtered = metrics.filter(metric => 
-      selectedMetrics.includes(metric.id)
+      normalMetricIds.includes(metric.id)
     );
     
     setDisplayedMetrics(filtered);

@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { ArrowDownIcon, ArrowUpIcon, LineChart } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, LineChart, BarChart3 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -70,12 +71,16 @@ const KpiCard: React.FC<KpiCardProps> = ({
     if (!icon) return null;
     
     if (typeof icon === 'string') {
-      // If icon is "chart-line", render the LineChart component
-      if (icon === 'chart-line') {
-        return <LineChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />;
+      // Map string icons to actual components
+      switch (icon) {
+        case 'chart-line':
+          return <LineChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />;
+        case 'bar-chart':
+          return <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />;
+        default:
+          // Try to render as text if not a known icon
+          return <span className="text-primary">{icon}</span>;
       }
-      // Otherwise just render the string icon
-      return <span className="text-primary">{icon}</span>;
     }
     
     // If it's a React node, render it directly

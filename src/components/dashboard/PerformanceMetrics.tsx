@@ -24,34 +24,28 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   viewMode
 }) => {
   // In "all" mode, always show both charts
-  // In "favorites" mode, only show charts that have related metrics selected
+  // In "favorites" mode, only show charts that have been explicitly selected
   
-  // Only show department performance chart if in "all" mode OR if at least one department metric is selected
   const shouldShowDepartmentChart = () => {
     // Always show in "all" mode
     if (viewMode === 'all') return true;
     
-    // In favorites mode, check if any selected metric is associated with a department
-    if (!selectedMetrics || !selectedMetrics.length || !metrics) return false;
+    // In favorites mode, check if any performance chart metric is explicitly selected
+    if (!selectedMetrics || !selectedMetrics.length) return false;
     
-    return metrics.some(metric => 
-      selectedMetrics.includes(metric.id) && 
-      metric.department_id !== null
-    );
+    // Check if there's a specific metric ID for department performance
+    return selectedMetrics.includes('department_performance_chart');
   };
   
-  // Only show revenue chart if in "all" mode OR if at least one revenue metric is selected
   const shouldShowRevenueChart = () => {
     // Always show in "all" mode
     if (viewMode === 'all') return true;
     
-    // In favorites mode, check if any revenue-related metric is selected
-    if (!selectedMetrics || !selectedMetrics.length || !metrics) return false;
+    // In favorites mode, check if revenue chart is explicitly selected
+    if (!selectedMetrics || !selectedMetrics.length) return false;
     
-    return metrics.some(metric => 
-      selectedMetrics.includes(metric.id) && 
-      (metric.name.toLowerCase().includes('receita') || metric.unit === 'R$')
-    );
+    // Check if there's a specific metric ID for monthly revenue
+    return selectedMetrics.includes('monthly_revenue_chart');
   };
   
   // If no charts should be shown, return null

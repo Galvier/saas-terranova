@@ -7,7 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { MetricDefinition } from '@/integrations/supabase/types/metric';
 import { saveAdminDashboardConfig } from '@/integrations/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, BarChart, LineChart } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 interface MetricSelectionDialogProps {
   open: boolean;
@@ -15,6 +16,11 @@ interface MetricSelectionDialogProps {
   metrics: MetricDefinition[];
   selectedMetrics: string[];
   onSelectionChange: (selectedIds: string[]) => void;
+  includeCharts?: boolean;
+  chartIds?: {
+    departmentPerformance: string;
+    monthlyRevenue: string;
+  };
 }
 
 const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
@@ -23,6 +29,8 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
   metrics,
   selectedMetrics,
   onSelectionChange,
+  includeCharts = false,
+  chartIds = { departmentPerformance: 'department_performance_chart', monthlyRevenue: 'monthly_revenue_chart' }
 }) => {
   const [localSelection, setLocalSelection] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -59,22 +67,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
     setIsSaving(true);
     
     try {
-      const result = await saveAdminDashboardConfig(
-        localSelection,
-        user.id
-      );
-      
-      if (result.error) {
-        throw new Error(result.message || "Erro ao salvar configuração");
-      }
-      
       onSelectionChange(localSelection);
-      
-      toast({
-        title: "Configuração salva",
-        description: "Seu dashboard personalizado foi atualizado com sucesso",
-      });
-      
       onOpenChange(false);
     } catch (error: any) {
       console.error("Erro ao salvar configuração:", error);
@@ -119,7 +112,56 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
               </div>
             ))}
             
-            {metrics.length === 0 && (
+            {includeCharts && (
+              <>
+                <Separator className="my-4" />
+                <div className="text-sm font-medium mb-2">Gráficos de desempenho</div>
+                
+                {/* Department Performance Chart Option */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`chart-${chartIds.departmentPerformance}`} 
+                    checked={localSelection.includes(chartIds.departmentPerformance)}
+                    onCheckedChange={() => handleToggleMetric(chartIds.departmentPerformance)}
+                  />
+                  <label 
+                    htmlFor={`chart-${chartIds.departmentPerformance}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer"
+                  >
+                    <div className="font-medium flex items-center gap-2">
+                      <BarChart className="h-4 w-4" />
+                      Desempenho por departamento
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Gráfico de barras comparativo
+                    </div>
+                  </label>
+                </div>
+                
+                {/* Monthly Revenue Chart Option */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`chart-${chartIds.monthlyRevenue}`} 
+                    checked={localSelection.includes(chartIds.monthlyRevenue)}
+                    onCheckedChange={() => handleToggleMetric(chartIds.monthlyRevenue)}
+                  />
+                  <label 
+                    htmlFor={`chart-${chartIds.monthlyRevenue}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer"
+                  >
+                    <div className="font-medium flex items-center gap-2">
+                      <LineChart className="h-4 w-4" />
+                      Receita mensal (R$)
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Gráfico de linha da tendência
+                    </div>
+                  </label>
+                </div>
+              </>
+            )}
+            
+            {metrics.length === 0 && !includeCharts && (
               <p className="text-center text-muted-foreground">Nenhuma métrica encontrada</p>
             )}
           </div>

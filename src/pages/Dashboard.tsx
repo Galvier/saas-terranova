@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Star } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getAllDepartments, getMetricsByDepartment, getAdminDashboardConfig } from '@/integrations/supabase';
+import { getAllDepartments, getMetricsByDepartment, getAdminDashboardConfig, saveAdminDashboardConfig } from '@/integrations/supabase';
 
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,12 @@ import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useDepartmentName } from '@/hooks/useDepartmentName';
 import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
 import { useInitialDepartment } from '@/hooks/useInitialDepartment';
+
+// Define constants for chart IDs
+const DEPARTMENT_PERFORMANCE_CHART_ID = 'department_performance_chart';
+const MONTHLY_REVENUE_CHART_ID = 'monthly_revenue_chart';
+
+const DEFAULT_METRIC_ID = 'conversion_rate'; // ID of a default metric to show for new users
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -50,7 +56,7 @@ const Dashboard = () => {
   const departmentName = useDepartmentName(selectedDepartment, departments);
   
   // Load admin dashboard configuration
-  useQuery({
+  const { data: dashboardConfig } = useQuery({
     queryKey: ['admin-dashboard-config', user?.id],
     queryFn: async () => {
       if (!user?.id || !isAdmin) return null;
@@ -60,7 +66,12 @@ const Dashboard = () => {
         if (result.error) throw new Error(result.message || "Erro ao carregar configuração");
         
         if (result.data) {
-          setSelectedMetrics(result.data.metric_ids || []);
+          // Set the selected metrics from saved configuration
+          const savedMetrics = result.data.metric_ids || [];
+          setSelectedMetrics(savedMetrics.length > 0 ? savedMetrics : [DEFAULT_METRIC_ID]);
+        } else {
+          // For new users with no configuration, set a default metric
+          setSelectedMetrics([DEFAULT_METRIC_ID]);
         }
         
         return result.data;
@@ -93,8 +104,42 @@ const Dashboard = () => {
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes cache to prevent excessive calls
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
+  
+  // Save changes to selected metrics
+  const handleSaveMetricsSelection = async (newSelectedMetrics: string[]) => {
+    if (!user?.id) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para salvar configurações",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      const result = await saveAdminDashboardConfig(newSelectedMetrics, user.id);
+      
+      if (result.error) {
+        throw new Error(result.message || "Erro ao salvar configuração");
+      }
+      
+      setSelectedMetrics(newSelectedMetrics);
+      
+      toast({
+        title: "Configuração salva",
+        description: "Seu dashboard personalizado foi atualizado com sucesso",
+      });
+    } catch (error: any) {
+      console.error("Erro ao salvar configuração:", error);
+      toast({
+        title: "Erro ao salvar configuração",
+        description: error.message || "Ocorreu um erro ao salvar a configuração",
+        variant: "destructive"
+      });
+    }
+  };
   
   // Get performance metrics
   const { departmentPerformance, monthlyRevenue } = useDashboardMetrics(metrics);
@@ -172,7 +217,12 @@ const Dashboard = () => {
           onOpenChange={setIsMetricSelectionOpen}
           metrics={metrics}
           selectedMetrics={selectedMetrics}
-          onSelectionChange={setSelectedMetrics}
+          onSelectionChange={handleSaveMetricsSelection}
+          includeCharts={true} // Enable chart selection
+          chartIds={{
+            departmentPerformance: DEPARTMENT_PERFORMANCE_CHART_ID,
+            monthlyRevenue: MONTHLY_REVENUE_CHART_ID
+          }}
         />
       )}
     </div>
