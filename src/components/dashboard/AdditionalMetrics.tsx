@@ -55,6 +55,11 @@ const AdditionalMetrics: React.FC<AdditionalMetricsProps> = ({ filteredMetrics }
                 ? `R$ ${metric.current.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
                 : `${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`;
                 
+              // Replace string icon with component
+              const iconComponent = metric.icon_name === 'chart-line' 
+                ? <LineChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /> 
+                : metric.icon_name;
+              
               return (
                 <KpiCard
                   key={metric.id}
@@ -64,7 +69,7 @@ const AdditionalMetrics: React.FC<AdditionalMetricsProps> = ({ filteredMetrics }
                   change={Math.random() * 10 * (Math.random() > 0.5 ? 1 : -1)} // Mock change data
                   changeLabel="vs. período anterior"
                   departmentName={metric.department_name || 'Sem departamento'}
-                  icon={metric.icon_name === 'chart-line' ? <LineChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /> : metric.icon_name}
+                  icon={iconComponent}
                 />
               );
             })}

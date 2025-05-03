@@ -96,18 +96,8 @@ const Dashboard = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes cache to prevent excessive calls
   });
   
-  // Filter metrics based on view mode and selected metrics
-  const filteredMetrics = React.useMemo(() => {
-    if (!isAdmin || viewMode === 'all') {
-      return metrics;
-    }
-    
-    // For favorites view, only show metrics that are in the selectedMetrics array
-    return metrics.filter(metric => selectedMetrics.includes(metric.id));
-  }, [metrics, isAdmin, viewMode, selectedMetrics]);
-  
   // Get performance metrics
-  const { departmentPerformance, monthlyRevenue } = useDashboardMetrics(filteredMetrics);
+  const { departmentPerformance, monthlyRevenue } = useDashboardMetrics(metrics);
 
   return (
     <div className="animate-fade-in">
@@ -154,31 +144,24 @@ const Dashboard = () => {
           {/* Conditional rendering based on view mode */}
           {viewMode === 'favorites' && isAdmin ? (
             <FavoriteMetricsView 
-              metrics={filteredMetrics} 
+              metrics={metrics} 
               isLoading={isLoading}
               dateFilter={format(selectedDate, 'yyyy-MM-dd')}
               departmentFilter={selectedDepartment}
+              selectedMetrics={selectedMetrics}
             />
           ) : (
-            <StandardMetricsView filteredMetrics={filteredMetrics} />
+            <StandardMetricsView filteredMetrics={metrics} />
           )}
           
-          {/* Performance charts section - now with conditional rendering based on selected metrics */}
-          {viewMode === 'favorites' && isAdmin ? (
-            <PerformanceMetrics
-              departmentPerformance={departmentPerformance}
-              monthlyRevenue={monthlyRevenue}
-              selectedMetrics={selectedMetrics}
-              metrics={metrics}
-            />
-          ) : (
-            <PerformanceMetrics
-              departmentPerformance={departmentPerformance}
-              monthlyRevenue={monthlyRevenue}
-              selectedMetrics={[]}  // Empty array for standard view - will show all charts
-              metrics={metrics}
-            />
-          )}
+          {/* Performance charts section - with proper conditional rendering */}
+          <PerformanceMetrics
+            departmentPerformance={departmentPerformance}
+            monthlyRevenue={monthlyRevenue}
+            selectedMetrics={selectedMetrics}
+            metrics={metrics}
+            viewMode={viewMode}
+          />
         </>
       )}
       

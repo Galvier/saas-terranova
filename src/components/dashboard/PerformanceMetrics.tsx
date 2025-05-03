@@ -13,30 +13,41 @@ interface PerformanceMetricsProps {
   monthlyRevenue: ChartData[];
   selectedMetrics: string[];
   metrics: MetricDefinition[];
+  viewMode: 'all' | 'favorites';
 }
 
 const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   departmentPerformance,
   monthlyRevenue,
   selectedMetrics,
-  metrics
+  metrics,
+  viewMode
 }) => {
-  // Only show department performance chart if at least one department metric is selected
+  // In "all" mode, always show both charts
+  // In "favorites" mode, only show charts that have related metrics selected
+  
+  // Only show department performance chart if in "all" mode OR if at least one department metric is selected
   const shouldShowDepartmentChart = () => {
+    // Always show in "all" mode
+    if (viewMode === 'all') return true;
+    
+    // In favorites mode, check if any selected metric is associated with a department
     if (!selectedMetrics || !selectedMetrics.length || !metrics) return false;
     
-    // Check if any selected metric is associated with a department
     return metrics.some(metric => 
       selectedMetrics.includes(metric.id) && 
       metric.department_id !== null
     );
   };
   
-  // Only show revenue chart if at least one revenue metric is selected
+  // Only show revenue chart if in "all" mode OR if at least one revenue metric is selected
   const shouldShowRevenueChart = () => {
+    // Always show in "all" mode
+    if (viewMode === 'all') return true;
+    
+    // In favorites mode, check if any revenue-related metric is selected
     if (!selectedMetrics || !selectedMetrics.length || !metrics) return false;
     
-    // Check if any selected metric contains "receita" in its name and is in the selected metrics list
     return metrics.some(metric => 
       selectedMetrics.includes(metric.id) && 
       (metric.name.toLowerCase().includes('receita') || metric.unit === 'R$')

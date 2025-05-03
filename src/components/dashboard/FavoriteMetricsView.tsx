@@ -11,28 +11,36 @@ interface FavoriteMetricsViewProps {
   isLoading: boolean;
   dateFilter: string;
   departmentFilter: string;
+  selectedMetrics: string[];
 }
 
 const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
   metrics,
   isLoading,
   dateFilter,
-  departmentFilter
+  departmentFilter,
+  selectedMetrics
 }) => {
   const { toast } = useToast();
-  const [selectedMetrics, setSelectedMetrics] = useState<MetricDefinition[]>([]);
+  const [displayedMetrics, setDisplayedMetrics] = useState<MetricDefinition[]>([]);
 
-  // Use effect to filter and set the selected metrics
+  // Filter metrics based on the selectedMetrics array
   useEffect(() => {
-    if (metrics && metrics.length > 0) {
-      setSelectedMetrics(metrics);
-    } else {
-      setSelectedMetrics([]);
+    if (!metrics || !selectedMetrics) {
+      setDisplayedMetrics([]);
+      return;
     }
-  }, [metrics]);
+    
+    // Only show metrics that are in the selectedMetrics list
+    const filtered = metrics.filter(metric => 
+      selectedMetrics.includes(metric.id)
+    );
+    
+    setDisplayedMetrics(filtered);
+  }, [metrics, selectedMetrics]);
 
   // Handle empty state
-  if (!isLoading && (!selectedMetrics || selectedMetrics.length === 0)) {
+  if (!isLoading && (!displayedMetrics || displayedMetrics.length === 0)) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
@@ -40,7 +48,7 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
             Nenhuma métrica foi selecionada para o dashboard personalizado.
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Clique em "Editar dashboard" para selecionar as métricas que deseja visualizar.
+            Clique em "Configurar dashboard" para selecionar as métricas que deseja visualizar.
           </p>
         </CardContent>
       </Card>
@@ -60,7 +68,7 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
 
   // Define how many metrics to show per row based on count
   const getGridClass = () => {
-    const count = selectedMetrics ? selectedMetrics.length : 0;
+    const count = displayedMetrics ? displayedMetrics.length : 0;
     if (count <= 2) return "grid-cols-1 sm:grid-cols-2";
     if (count <= 4) return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
     return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
@@ -80,7 +88,7 @@ const FavoriteMetricsView: React.FC<FavoriteMetricsViewProps> = ({
           />
         ))
       ) : (
-        selectedMetrics && selectedMetrics.map((metric) => (
+        displayedMetrics && displayedMetrics.map((metric) => (
           <KpiCard
             key={metric.id}
             title={metric.name}

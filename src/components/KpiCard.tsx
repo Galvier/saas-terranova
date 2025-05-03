@@ -75,7 +75,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
         return <LineChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />;
       }
       // Otherwise just render the string icon
-      return <span>{icon}</span>;
+      return <span className="text-primary">{icon}</span>;
     }
     
     // If it's a React node, render it directly
