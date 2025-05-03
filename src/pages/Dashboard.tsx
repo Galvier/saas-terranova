@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Star } from 'lucide-react';
@@ -15,6 +16,7 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import FavoriteMetricsView from '@/components/dashboard/FavoriteMetricsView';
 import StandardMetricsView from '@/components/dashboard/StandardMetricsView';
 import PerformanceMetrics from '@/components/dashboard/PerformanceMetrics';
+import CompanyOverviewMetrics from '@/components/dashboard/CompanyOverviewMetrics';
 
 // Refactored hooks
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
@@ -161,6 +163,9 @@ const Dashboard = () => {
   // Get performance metrics
   const { departmentPerformance, monthlyRevenue } = useDashboardMetrics(metrics);
 
+  // Determine if we should show the company overview metrics
+  const showCompanyOverview = isAdmin && selectedDepartment === 'all';
+
   return (
     <div className="animate-fade-in">
       <PageHeader
@@ -203,8 +208,18 @@ const Dashboard = () => {
             </div>
           )}
           
+          {/* Company overview section for admins viewing all departments */}
+          {showCompanyOverview && (
+            <div className="mb-8">
+              <CompanyOverviewMetrics 
+                metrics={metrics}
+                isLoading={isLoading}
+              />
+            </div>
+          )}
+          
           {/* Conditional rendering based on view mode */}
-          {viewMode === 'favorites' && isAdmin ? (
+          {viewMode === 'favorites' && isAdmin && !showCompanyOverview && (
             <FavoriteMetricsView 
               metrics={metrics} 
               isLoading={isLoading}
@@ -212,18 +227,22 @@ const Dashboard = () => {
               departmentFilter={selectedDepartment}
               selectedMetrics={selectedMetrics}
             />
-          ) : (
+          )}
+          
+          {(!showCompanyOverview && viewMode !== 'favorites') && (
             <StandardMetricsView filteredMetrics={metrics} />
           )}
           
-          {/* Performance charts section - with proper conditional rendering */}
-          <PerformanceMetrics
-            departmentPerformance={departmentPerformance}
-            monthlyRevenue={monthlyRevenue}
-            selectedMetrics={selectedMetrics}
-            metrics={metrics}
-            viewMode={viewMode}
-          />
+          {/* Performance charts section - Only show if not on company overview */}
+          {!showCompanyOverview && (
+            <PerformanceMetrics
+              departmentPerformance={departmentPerformance}
+              monthlyRevenue={monthlyRevenue}
+              selectedMetrics={selectedMetrics}
+              metrics={metrics}
+              viewMode={viewMode}
+            />
+          )}
         </>
       )}
       

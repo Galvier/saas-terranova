@@ -1,121 +1,149 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { createGenericServiceResult, callRpcFunction } from '@/integrations/supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { callRPC, formatCrudResult, type CrudResult, getSupabaseUrl } from '@/integrations/supabase/core';
 
-export async function runAllDiagnosticTests() {
-  try {
-    const results = [];
-    
-    // Test database connectivity
-    const dbResult = await testDatabaseConnection();
-    results.push({
-      test: "database_connection",
-      passed: dbResult.error ? false : true,
-      message: dbResult.error ? dbResult.message : "Database connection successful",
-      details: dbResult.data
-    });
-    
-    // Test table creation
-    const tableResult = await testTableCreation();
-    results.push({
-      test: "table_creation",
-      passed: tableResult.error ? false : true,
-      message: tableResult.error ? tableResult.message : "Table creation successful",
-      details: tableResult.data
-    });
-    
-    // Test writing to database
-    const writeResult = await testDatabaseWrite();
-    results.push({
-      test: "database_write",
-      passed: writeResult.error ? false : true,
-      message: writeResult.error ? writeResult.message : "Database write successful",
-      details: writeResult.data
-    });
-    
-    // Test user profile check
-    const userResult = await testUserProfileCheck();
-    results.push({
-      test: "user_profile_check",
-      passed: userResult.error ? false : true,
-      message: userResult.error ? userResult.message : "User profile check successful",
-      details: userResult.data
-    });
-    
-    return createGenericServiceResult(results);
-  } catch (error) {
-    console.error("Error running diagnostic tests:", error);
-    return createGenericServiceResult(null, error, "Error running diagnostic tests");
-  }
+// Diagnostic test result
+export interface DiagnosticTest {
+  id?: string;
+  test_id?: string;
+  success: boolean;
+  message?: string;
+  data?: any;
 }
 
-export async function testDatabaseConnection() {
-  try {
-    const { data, error } = await supabase.rpc('postgres_version');
-    
-    if (error) {
-      console.error("Database connection error:", error);
-      return createGenericServiceResult(null, error, "Failed to connect to database");
-    }
-    
-    return createGenericServiceResult(data);
-  } catch (error) {
-    console.error("Exception testing database connection:", error);
-    return createGenericServiceResult(null, error, "Exception testing database connection");
-  }
+interface DiagnosticResult {
+  general: DiagnosticTest[];
+  database: DiagnosticTest[];
+  storage: DiagnosticTest[];
+  auth: DiagnosticTest[];
 }
 
-export async function testTableCreation() {
-  try {
-    const { data, error } = await supabase.rpc('create_diagnostic_table_if_not_exists');
-    
-    if (error) {
-      console.error("Table creation error:", error);
-      return createGenericServiceResult(null, error, "Failed to create diagnostic table");
-    }
-    
-    return createGenericServiceResult(data);
-  } catch (error) {
-    console.error("Exception testing table creation:", error);
-    return createGenericServiceResult(null, error, "Exception testing table creation");
-  }
-}
+// Run basic diagnostic tests
+export async function runDiagnosticTests(): Promise<DiagnosticResult> {
+  const results: DiagnosticResult = {
+    general: [],
+    database: [],
+    storage: [],
+    auth: []
+  };
 
-export async function testDatabaseWrite() {
+  // General settings tests
   try {
+    const supabaseUrl = getSupabaseUrl();
+    
+    results.general.push({
+      success: !!supabaseUrl,
+      message: supabaseUrl ? 'Supabase URL is set' : 'Supabase URL is not set',
+      test_id: 'supabase_url',
+    });
+  } catch (error) {
+    results.general.push({
+      success: false,
+      message: 'Failed to check Supabase URL',
+      test_id: 'supabase_url',
+    });
+  }
+
+  // Database connection test
+  try {
+    const pgVersion = await callRPC('postgres_version');
+    
+    results.database.push({
+      success: !pgVersion.error && !!pgVersion.data,
+      message: pgVersion.error 
+        ? `Database connection failed: ${pgVersion.error.message}` 
+        : `Database connected: ${pgVersion.data}`,
+      test_id: 'db_connection',
+      data: pgVersion.data
+    });
+  } catch (error) {
+    results.database.push({
+      success: false,
+      message: 'Database connection test failed',
+      test_id: 'db_connection',
+    });
+  }
+
+  // Database read test
+  try {
+    const tableCheck = await callRPC('check_table_exists_and_count', { 
+      table_name: 'departments' 
+    });
+    
+    results.database.push({
+      success: !tableCheck.error && !!tableCheck.data,
+      message: tableCheck.error 
+        ? `Database read failed: ${tableCheck.error.message}` 
+        : `Database read success: Table ${tableCheck.data?.exists ? 'exists' : 'does not exist'}`,
+      test_id: 'db_read',
+      data: tableCheck.data
+    });
+  } catch (error) {
+    results.database.push({
+      success: false,
+      message: 'Database read test failed',
+      test_id: 'db_read',
+    });
+  }
+
+  // Database write test
+  try {
+    // Generate a unique test ID
     const testId = uuidv4();
-    const { data, error } = await callRpcFunction('run_diagnostic_write_test', { 
-      test_id_param: testId 
+    
+    const writeResult = await callRPC('run_diagnostic_write_test', {
+      test_id_param: testId
     });
     
-    if (error) {
-      console.error("Database write error:", error);
-      return createGenericServiceResult(null, error, "Failed to write to database");
-    }
-    
-    return createGenericServiceResult(data);
-  } catch (error) {
-    console.error("Exception testing database write:", error);
-    return createGenericServiceResult(null, error, "Exception testing database write");
+    results.database.push({
+      success: !writeResult.error && !!writeResult.data,
+      message: writeResult.error 
+        ? `Database write failed: ${writeResult.error.message}` 
+        : 'Database write successful',
+      test_id: 'db_write',
+      data: writeResult.data
+    });
+  } catch (error: any) {
+    results.database.push({
+      success: false,
+      message: `Database write test failed: ${error?.message || 'Unknown error'}`,
+      test_id: 'db_write',
+    });
   }
+
+  // Adding more tests for user profiles, but using a safe function that exists
+  try {
+    // Use check_table_exists_and_count for this test instead
+    const profileCheck = await callRPC('check_table_exists_and_count', { 
+      table_name: 'profiles' 
+    });
+    
+    results.auth.push({
+      success: !profileCheck.error,
+      message: profileCheck.error 
+        ? `User profile check failed: ${profileCheck.error.message}` 
+        : `User profiles table ${profileCheck.data?.exists ? 'exists' : 'does not exist'}`,
+      test_id: 'user_profiles',
+      data: profileCheck.data
+    });
+  } catch (error: any) {
+    results.auth.push({
+      success: false,
+      message: `User profile check failed: ${error?.message || 'Unknown error'}`,
+      test_id: 'user_profiles',
+    });
+  }
+
+  return results;
 }
 
-export async function testUserProfileCheck() {
-  try {
-    // Fixed: Use the callRpcFunction with string literal for now
-    const { data, error } = await supabase.rpc('check_user_profile', { 
-      email: 'test@example.com' 
-    });
-    
-    if (error) {
-      console.error("User profile check error:", error);
-      return createGenericServiceResult(null, error, "Failed to check user profile");
-    }
-    
-    return createGenericServiceResult(data);
-  } catch (error) {
-    console.error("Exception testing user profile check:", error);
-    return createGenericServiceResult(null, error, "Exception testing user profile check");
+export function formatDiagnosticTest(test?: DiagnosticTest): CrudResult<DiagnosticTest> {
+  if (!test) {
+    return formatCrudResult(null, { message: 'No test result', code: '', details: '', hint: '' });
   }
+  
+  return formatCrudResult(
+    test, 
+    test.success ? null : { message: test.message || 'Test failed', code: '', details: '', hint: '' }
+  );
 }
