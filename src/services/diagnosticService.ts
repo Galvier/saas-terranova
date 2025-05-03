@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { createGenericServiceResult } from '@/integrations/supabase';
+import { createGenericServiceResult, callRpcFunction } from '@/integrations/supabase';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function runAllDiagnosticTests() {
   try {
@@ -83,8 +84,8 @@ export async function testTableCreation() {
 
 export async function testDatabaseWrite() {
   try {
-    const testId = crypto.randomUUID();
-    const { data, error } = await supabase.rpc('run_diagnostic_write_test', { 
+    const testId = uuidv4();
+    const { data, error } = await callRpcFunction('run_diagnostic_write_test', { 
       test_id_param: testId 
     });
     
@@ -102,7 +103,7 @@ export async function testDatabaseWrite() {
 
 export async function testUserProfileCheck() {
   try {
-    // Fixed: Using a different parameter name
+    // Fixed: Use the callRpcFunction with string literal for now
     const { data, error } = await supabase.rpc('check_user_profile', { 
       email: 'test@example.com' 
     });

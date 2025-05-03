@@ -1,38 +1,58 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrudResult } from '@/integrations/supabase';
+import { formatCrudResult, type CrudResult } from '@/integrations/supabase';
 
+/**
+ * Set of authentication recovery services
+ */
 export const authRecovery = {
-  resetPassword: async (email: string): Promise<CrudResult<null>> => {
+  /**
+   * Request a password reset email
+   */
+  requestPasswordReset: async (email: string): Promise<CrudResult<null>> => {
     try {
-      console.log('[AuthRecovery] Iniciando processo de reset de senha para:', email);
-      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/reset-password',
+        redirectTo: `${window.location.origin}/reset-password`,
       });
-      
+
       if (error) {
-        console.error('[AuthRecovery] Erro ao solicitar reset de senha:', error);
-        return {
-          data: null,
-          error: true,
-          message: error.message || 'Erro ao solicitar reset de senha'
-        };
+        console.error('Error requesting password reset:', error);
+        return formatCrudResult(null, error);
       }
-      
-      console.log('[AuthRecovery] Solicitação de reset de senha enviada com sucesso');
+
       return {
         data: null,
         error: false,
-        message: 'Link para redefinição de senha enviado para seu email'
+        message: 'Foi enviado um email de recuperação de senha. Por favor, verifique sua caixa de entrada.',
       };
     } catch (error) {
-      console.error('[AuthRecovery] Erro não tratado no reset de senha:', error);
+      console.error('Exception requesting password reset:', error);
+      return formatCrudResult(null, error);
+    }
+  },
+
+  /**
+   * Reset password with token from email
+   */
+  resetPassword: async (newPassword: string): Promise<CrudResult<null>> => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        console.error('Error resetting password:', error);
+        return formatCrudResult(null, error);
+      }
+
       return {
         data: null,
-        error: true,
-        message: error instanceof Error ? error.message : 'Erro ao solicitar reset de senha'
+        error: false,
+        message: 'Senha alterada com sucesso. Você pode fazer login agora.',
       };
+    } catch (error) {
+      console.error('Exception resetting password:', error);
+      return formatCrudResult(null, error);
     }
-  }
+  },
 };

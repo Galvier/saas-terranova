@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,7 @@ const FirstAccess = () => {
           throw new Error(result.message || 'Erro ao carregar departamentos');
         }
         setDepartments(result.data || []);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Erro ao carregar departamentos:', error);
         toast({
           title: 'Erro ao carregar departamentos',

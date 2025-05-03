@@ -20,6 +20,9 @@ export type RpcParams = {
   check_user_profile: { 
     email: string;
   };
+  get_user_profile_by_id: {
+    user_id_param: string;
+  };
   postgres_version: never;
   create_diagnostic_table: {
     table_name?: string;
@@ -87,6 +90,9 @@ export type RpcParams = {
     metric_is_active?: boolean;
     metric_icon_name?: string;
     metric_lower_is_better?: boolean;
+    metric_visualization_type?: string;
+    metric_priority?: string;
+    metric_default_period?: string;
   };
   update_metric_definition: {
     metric_id: string;
@@ -99,6 +105,9 @@ export type RpcParams = {
     metric_is_active?: boolean;
     metric_icon_name?: string;
     metric_lower_is_better?: boolean;
+    metric_visualization_type?: string;
+    metric_priority?: string;
+    metric_default_period?: string;
   };
   delete_metric_definition: {
     metric_id: string;
@@ -219,7 +228,7 @@ export async function callRpcFunction<K extends keyof RpcParams>(
 export async function checkUserProfileByEmail(email: string) {
   try {
     // Fixed: Use a different parameter name to avoid confusion with the column
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await callRpcFunction<"check_user_profile">(
       "check_user_profile", 
       { email } as RpcParams["check_user_profile"]
     );
@@ -244,9 +253,9 @@ export function getSupabaseUrl(): string {
 }
 
 // Type-safe version for table operations
-type KnownTable = "managers" | "departments" | "metrics_definition" | 
-                  "admin_dashboard_config" | "diagnostic_tests" | "logs" | 
-                  "metrics" | "metrics_values" | "profiles" | "settings" | "users";
+export type KnownTable = "managers" | "departments" | "metrics_definition" | 
+                 "admin_dashboard_config" | "diagnostic_tests" | "logs" | 
+                 "metrics" | "metrics_values" | "profiles" | "settings" | "users";
 
 export async function getTableData<T = any>(
   tableName: KnownTable,
