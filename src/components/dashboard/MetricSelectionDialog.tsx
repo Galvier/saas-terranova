@@ -40,7 +40,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
   // Initialize local selection when dialog opens
   useEffect(() => {
     if (open) {
-      setLocalSelection(selectedMetrics);
+      setLocalSelection([...selectedMetrics]);
     }
   }, [open, selectedMetrics]);
 
@@ -67,6 +67,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
     setIsSaving(true);
     
     try {
+      // Call the parent's selection change handler
       onSelectionChange(localSelection);
       onOpenChange(false);
     } catch (error: any) {

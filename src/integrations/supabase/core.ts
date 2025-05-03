@@ -1,3 +1,4 @@
+
 import { supabase } from "./client";
 
 type Tables = {
@@ -175,9 +176,11 @@ export function createGenericServiceResult<T>(
 }
 
 export async function getTableCount(tableName: string) {
-  const { data, error } = await supabase.rpc("check_table_exists_and_count", {
-    table_name: tableName,
-  } as RpcParams["check_table_exists_and_count"]);
+  const { data, error } = await supabase.rpc(
+    "check_table_exists_and_count" as keyof RpcParams,
+    {
+      table_name: tableName,
+    } as RpcParams["check_table_exists_and_count"]);
 
   if (error) {
     console.error("Error checking table:", error);
@@ -236,8 +239,13 @@ export function getSupabaseUrl(): string {
   return url;
 }
 
+// Type-safe version for table operations
+type KnownTable = "managers" | "departments" | "metrics_definition" | 
+                  "admin_dashboard_config" | "diagnostic_tests" | "logs" | 
+                  "metrics" | "metrics_values" | "profiles" | "settings" | "users";
+
 export async function getTableData<T = any>(
-  tableName: string,
+  tableName: KnownTable,
   columns: string = "*",
   options?: {
     filters?: { column: string; value: any; operator?: string }[];
@@ -296,7 +304,7 @@ export async function getTableData<T = any>(
 }
 
 export async function getRecordById<T = any>(
-  tableName: string,
+  tableName: KnownTable,
   id: string,
   columns: string = "*"
 ) {
@@ -323,13 +331,13 @@ export async function getRecordById<T = any>(
 }
 
 export async function insertRecord<T = any>(
-  tableName: string,
+  tableName: KnownTable,
   record: Record<string, any>
 ) {
   try {
     const { data, error } = await supabase
       .from(tableName)
-      .insert(record)
+      .insert(record as any)
       .select();
 
     if (error) {
@@ -345,14 +353,14 @@ export async function insertRecord<T = any>(
 }
 
 export async function updateRecord<T = any>(
-  tableName: string,
+  tableName: KnownTable,
   id: string,
   record: Record<string, any>
 ) {
   try {
     const { data, error } = await supabase
       .from(tableName)
-      .update(record)
+      .update(record as any)
       .eq("id", id)
       .select();
 
@@ -368,7 +376,7 @@ export async function updateRecord<T = any>(
   }
 }
 
-export async function deleteRecord(tableName: string, id: string) {
+export async function deleteRecord(tableName: KnownTable, id: string) {
   try {
     const { error } = await supabase.from(tableName).delete().eq("id", id);
 
