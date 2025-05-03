@@ -115,6 +115,10 @@ export type RpcParams = {
   get_admin_dashboard_config: {
     user_id_param: string;
   };
+  get_metric_history: {
+    metric_id_param: string;
+    limit_param?: number;
+  };
   validate_metric_value_date: {
     metric_id: string;
     value_date: string;

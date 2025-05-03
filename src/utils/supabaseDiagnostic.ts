@@ -161,7 +161,7 @@ export const runFullDiagnostic = async (tablesToCheck: string[]): Promise<{
   if (connection.connected) {
     const writeResult = await testDatabaseWrite();
     writeTest = {
-      status: writeResult.status === 'success' ? 'success' : 'error',
+      status: writeResult.error ? 'error' : 'success',
       message: writeResult.message,
       timestamp: new Date(),
       details: writeResult.data

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -162,7 +161,7 @@ const Settings = () => {
         // Test write operation
         const writeResult = await testDatabaseWrite();
         
-        if (writeResult.status === 'success') {
+        if (!writeResult.error) {
           toast({
             title: "Teste de escrita",
             description: "Operação de escrita realizada com sucesso"

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CrudResult } from '@/integrations/supabase';
 
@@ -14,8 +15,7 @@ export const authRecovery = {
         console.error('[AuthRecovery] Erro ao solicitar reset de senha:', error);
         return {
           data: null,
-          error,
-          status: 'error',
+          error: true,
           message: error.message || 'Erro ao solicitar reset de senha'
         };
       }
@@ -23,16 +23,14 @@ export const authRecovery = {
       console.log('[AuthRecovery] Solicitação de reset de senha enviada com sucesso');
       return {
         data: null,
-        error: null,
-        status: 'success',
+        error: false,
         message: 'Link para redefinição de senha enviado para seu email'
       };
     } catch (error) {
       console.error('[AuthRecovery] Erro não tratado no reset de senha:', error);
       return {
         data: null,
-        error,
-        status: 'error',
+        error: true,
         message: error instanceof Error ? error.message : 'Erro ao solicitar reset de senha'
       };
     }
