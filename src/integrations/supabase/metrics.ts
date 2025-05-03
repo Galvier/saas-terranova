@@ -1,4 +1,3 @@
-
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { MetricDefinition, MetricHistory, AdminDashboardConfig } from './types/metric';
 
@@ -144,21 +143,27 @@ export const getMetricHistory = async (
 };
 
 // Function to save admin dashboard configuration
-export const saveAdminDashboardConfig = async (
-  metricIds: string[],
-  userId: string
-): Promise<CrudResult<string>> => {
+export async function saveAdminDashboardConfig(metricIds: string[], userId: string) {
   try {
-    const { data, error } = await callRPC<string>('save_admin_dashboard_config', {
+    console.log('Saving dashboard config:', { metricIds, userId });
+    
+    // Call the RPC function with the correct parameter names
+    const { data, error } = await callRPC('save_admin_dashboard_config', {
       metrics_ids: metricIds,
       user_id: userId
     });
-    return formatCrudResult(data, error);
+
+    if (error) {
+      console.error('Error saving admin dashboard config:', error);
+      return formatCrudResult(null, error);
+    }
+
+    return formatCrudResult(data);
   } catch (error) {
-    console.error('Error saving admin dashboard config:', error);
+    console.error('Exception saving admin dashboard config:', error);
     return formatCrudResult(null, error);
   }
-};
+}
 
 // Function to get admin dashboard configuration
 export const getAdminDashboardConfig = async (

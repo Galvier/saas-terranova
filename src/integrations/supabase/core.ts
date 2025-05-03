@@ -181,10 +181,10 @@ export function createGenericServiceResult<T>(
 
 export async function getTableCount(tableName: string) {
   const { data, error } = await supabase.rpc(
-    "check_table_exists_and_count" as keyof RpcParams,
+    "check_table_exists_and_count",
     {
       table_name: tableName,
-    } as RpcParams["check_table_exists_and_count"]);
+    });
 
   if (error) {
     console.error("Error checking table:", error);
@@ -220,7 +220,7 @@ export async function checkUserProfileByEmail(email: string) {
   try {
     // Fixed: Use a different parameter name to avoid confusion with the column
     const { data, error } = await supabase.rpc(
-      "check_user_profile" as keyof RpcParams, 
+      "check_user_profile", 
       { email } as RpcParams["check_user_profile"]
     );
 
@@ -239,7 +239,7 @@ export async function checkUserProfileByEmail(email: string) {
 // Add the getSupabaseUrl function
 export function getSupabaseUrl(): string {
   // Get the URL from the supabase client configuration
-  const url = process.env.SUPABASE_URL || 'https://wjuzzjitpkhjjxujxftm.supabase.co';
+  const url = 'https://wjuzzjitpkhjjxujxftm.supabase.co';
   return url;
 }
 

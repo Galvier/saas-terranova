@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Star } from 'lucide-react';
@@ -119,13 +118,31 @@ const Dashboard = () => {
     }
     
     try {
-      const result = await saveAdminDashboardConfig(newSelectedMetrics, user.id);
+      console.log('Saving metrics selection:', newSelectedMetrics);
+      
+      // Ensure we're passing proper UUIDs as metric_ids
+      // Filter out any non-UUID values like chart IDs
+      const validUuids = newSelectedMetrics.filter(id => 
+        // Basic UUID validation (should be 36 chars with hyphens)
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+      );
+      
+      // Keep chart IDs for UI display purposes but don't send to the database
+      const chartIds = newSelectedMetrics.filter(id => 
+        id === DEPARTMENT_PERFORMANCE_CHART_ID || id === MONTHLY_REVENUE_CHART_ID
+      );
+      
+      console.log('Valid UUIDs to save:', validUuids);
+      
+      // Save only valid UUIDs to the database
+      const result = await saveAdminDashboardConfig(validUuids, user.id);
       
       if (result.error) {
         throw new Error(result.message || "Erro ao salvar configuração");
       }
       
-      setSelectedMetrics(newSelectedMetrics);
+      // Set selected metrics to include both valid UUIDs and chart IDs
+      setSelectedMetrics([...validUuids, ...chartIds]);
       
       toast({
         title: "Configuração salva",

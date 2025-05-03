@@ -5,10 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { MetricDefinition } from '@/integrations/supabase/types/metric';
-import { saveAdminDashboardConfig } from '@/integrations/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, BarChart, LineChart } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+
+// Define default metric constants
+export const DEPARTMENT_PERFORMANCE_CHART_ID = 'department_performance_chart';
+export const MONTHLY_REVENUE_CHART_ID = 'monthly_revenue_chart';
+export const DEFAULT_METRIC_ID = '7c77a8a1-5623-4964-9f79-c887af3ed934'; // Substitute with a real UUID from your database
 
 interface MetricSelectionDialogProps {
   open: boolean;
@@ -30,7 +34,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
   selectedMetrics,
   onSelectionChange,
   includeCharts = false,
-  chartIds = { departmentPerformance: 'department_performance_chart', monthlyRevenue: 'monthly_revenue_chart' }
+  chartIds = { departmentPerformance: DEPARTMENT_PERFORMANCE_CHART_ID, monthlyRevenue: MONTHLY_REVENUE_CHART_ID }
 }) => {
   const [localSelection, setLocalSelection] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
