@@ -270,7 +270,7 @@ export async function callRPC<T = any>(
     
     if (error) {
       console.error(`Error in RPC call to ${functionName}:`, error);
-      console.error(`Params used:`, params);
+      console.error(`Params used:`, formattedParams);
       return { data: null, error };
     }
     

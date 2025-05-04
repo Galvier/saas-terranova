@@ -37,7 +37,7 @@ export const createMetricDefinition = async (metric: {
   try {
     console.log('Creating metric with params:', metric);
     
-    // First check if the function exists in the database and show what parameters it expects
+    // Order and structure parameters exactly as the database function expects them
     const { data, error } = await callRPC<string>('create_metric_definition', {
       metric_name: metric.name,
       metric_description: metric.description,

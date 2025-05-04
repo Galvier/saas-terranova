@@ -93,3 +93,6 @@ export const checkDatabaseTables = async (): Promise<{[tableName: string]: {exis
     return { error: { exists: false, error: error?.message || "Unknown error" } };
   }
 };
+
+// Export the supabase instance for use throughout the application
+export { supabase } from './core';

@@ -29,16 +29,19 @@ export const useMetricsDialogs = () => {
   };
 
   const handleAddValueClick = (metric: MetricDefinition) => {
+    console.log('Registering value for metric:', metric);
     setSelectedMetric(metric);
     setIsValueDialogOpen(true);
   };
 
   const handleEditClick = (metric: MetricDefinition) => {
+    console.log('Editing metric:', metric);
     setSelectedMetric(metric);
     setIsEditDialogOpen(true);
   };
 
   const handleDeleteClick = (metric: MetricDefinition) => {
+    console.log('Deleting metric:', metric);
     setSelectedMetric(metric);
     setIsDeleteDialogOpen(true);
   };
@@ -47,6 +50,7 @@ export const useMetricsDialogs = () => {
     if (!selectedMetric) return;
 
     try {
+      console.log('Confirming deletion of metric:', selectedMetric.id);
       const result = await deleteMetricDefinition(selectedMetric.id);
       if (result.error) {
         toast({
