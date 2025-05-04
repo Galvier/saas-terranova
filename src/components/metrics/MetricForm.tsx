@@ -42,6 +42,8 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      console.log("Submitting form with values:", values);
+      
       let result;
       
       if (isEditing && metric) {
@@ -77,7 +79,8 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
       }
 
       if (result.error) {
-        throw new Error(result.message);
+        console.error("Error from API:", result.error);
+        throw new Error(result.error.message || "Erro ao processar operação");
       }
 
       toast({
@@ -87,9 +90,10 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
 
       onSuccess();
     } catch (error: any) {
+      console.error("Exception in form submission:", error);
       toast({
         title: `Erro ao ${isEditing ? 'atualizar' : 'criar'} métrica`,
-        description: error.message,
+        description: error.message || "Erro desconhecido ao processar a operação",
         variant: 'destructive'
       });
     }

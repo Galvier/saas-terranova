@@ -1,3 +1,4 @@
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { PostgrestError } from '@supabase/supabase-js';
 
@@ -237,18 +238,28 @@ export async function callRPC<T = any>(
   try {
     console.log(`Calling RPC: ${functionName} with params:`, params);
     
+    // Check if supabase client is initialized
+    if (!supabase || !supabase.rpc) {
+      console.error('Supabase client is not properly initialized');
+      throw new Error('Database client is not properly initialized. Please check connection settings.');
+    }
+    
     // Validate function name exists
     if (!functionName) {
       throw new Error('Function name is required');
     }
     
+    // Make the RPC call with debugging info
+    console.time(`RPC call: ${functionName}`);
     const { data, error } = await supabase.rpc(functionName, params);
+    console.timeEnd(`RPC call: ${functionName}`);
     
     if (error) {
       console.error(`Error in RPC call to ${functionName}:`, error);
       return { data: null, error };
     }
     
+    console.log(`RPC call ${functionName} succeeded with result:`, data);
     return { data, error: null };
   } catch (error: any) {
     console.error(`Exception in RPC call to ${functionName}:`, error);

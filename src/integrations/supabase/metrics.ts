@@ -1,3 +1,4 @@
+
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { MetricDefinition, MetricHistory, AdminDashboardConfig } from './types/metric';
 
@@ -34,23 +35,31 @@ export const createMetricDefinition = async (metric: {
   default_period?: string;
 }): Promise<CrudResult<string>> => {
   try {
+    console.log('Creating metric with params:', metric);
+    
     const { data, error } = await callRPC<string>('create_metric_definition', {
       metric_name: metric.name,
       metric_description: metric.description,
       metric_unit: metric.unit,
       metric_target: metric.target,
       metric_department_id: metric.department_id,
-      metric_frequency: metric.frequency,
-      metric_is_active: metric.is_active,
-      metric_icon_name: metric.icon_name,
-      metric_lower_is_better: metric.lower_is_better,
+      metric_frequency: metric.frequency || 'monthly',
+      metric_is_active: metric.is_active ?? true,
+      metric_icon_name: metric.icon_name || 'chart-line',
+      metric_lower_is_better: metric.lower_is_better ?? false,
       metric_visualization_type: metric.visualization_type || 'card',
       metric_priority: metric.priority || 'normal',
       metric_default_period: metric.default_period || 'month'
     });
-    return formatCrudResult(data, error);
+    
+    if (error) {
+      console.error('Error in createMetricDefinition:', error);
+      return formatCrudResult(null, error);
+    }
+    
+    return formatCrudResult(data, null);
   } catch (error) {
-    console.error('Error creating metric:', error);
+    console.error('Exception in createMetricDefinition:', error);
     return formatCrudResult(null, error);
   }
 };
@@ -78,14 +87,19 @@ export const updateMetricDefinition = async (metricId: string, metric: {
       metric_unit: metric.unit,
       metric_target: metric.target,
       metric_department_id: metric.department_id,
-      metric_frequency: metric.frequency,
-      metric_is_active: metric.is_active,
-      metric_icon_name: metric.icon_name,
-      metric_lower_is_better: metric.lower_is_better,
-      metric_visualization_type: metric.visualization_type,
-      metric_priority: metric.priority,
-      metric_default_period: metric.default_period
+      metric_frequency: metric.frequency || 'monthly',
+      metric_is_active: metric.is_active ?? true,
+      metric_icon_name: metric.icon_name || 'chart-line',
+      metric_lower_is_better: metric.lower_is_better ?? false,
+      metric_visualization_type: metric.visualization_type || 'card',
+      metric_priority: metric.priority || 'normal',
+      metric_default_period: metric.default_period || 'month'
     });
+    
+    if (error) {
+      console.error('Error in updateMetricDefinition:', error);
+    }
+    
     return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error updating metric:', error);
