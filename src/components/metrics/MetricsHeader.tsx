@@ -3,22 +3,18 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/PageHeader';
-import { Department } from '@/integrations/supabase';
 import DepartmentFilter from '@/components/filters/DepartmentFilter';
+import { useMetricsContext } from '@/contexts/MetricsContext';
 
 interface MetricsHeaderProps {
-  departments: Department[];
-  selectedDepartment: string;
-  setSelectedDepartment: (value: string) => void;
   setIsCreateDialogOpen: (value: boolean) => void;
 }
 
 const MetricsHeader: React.FC<MetricsHeaderProps> = ({
-  departments,
-  selectedDepartment,
-  setSelectedDepartment,
   setIsCreateDialogOpen,
 }) => {
+  const { departments, selectedDepartment, setSelectedDepartment } = useMetricsContext();
+
   return (
     <>
       <PageHeader 
