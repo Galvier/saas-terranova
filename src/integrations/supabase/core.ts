@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Simple type to represent CRUD operation results
@@ -120,19 +119,45 @@ export type RpcParams = {
   };
 };
 
+// Create a Supabase instance
+export const supabase = supabase;
+
 // Function to call RPC methods with proper typing
 export const callRPC = async <T = any>(
   functionName: keyof RpcParams, 
   params: RpcParams[typeof functionName]
 ): Promise<{ data: T | null; error: any }> => {
   try {
-    const { data, error } = await supabase.rpc(functionName, params);
+    console.log(`Calling RPC function: ${functionName} with params:`, params);
+    
+    // Clone the params to avoid modifying the original object
+    const formattedParams = { ...params };
+    
+    // Format boolean values to be compatible with PostgreSQL
+    Object.keys(formattedParams).forEach(key => {
+      const value = formattedParams[key];
+      if (typeof value === 'boolean') {
+        formattedParams[key] = value;
+      }
+    });
+    
+    const { data, error } = await supabase.rpc(functionName, formattedParams);
+    
+    if (error) {
+      console.error(`Error in RPC call to ${functionName}:`, error);
+      console.error(`Params used:`, formattedParams);
+      return { data: null, error };
+    }
+    
     let parsedData = data;
     if (data && typeof data === "string") {
       try {
         parsedData = JSON.parse(data);
-      } catch {}
+      } catch {
+        // If parsing fails, keep the original data
+      }
     }
+    
     return { data: parsedData as T, error };
   } catch (error) {
     console.error(`Error calling RPC function ${functionName}:`, error);

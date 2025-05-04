@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import UserProfileIndicator from '@/components/UserProfileIndicator';
 import DashboardToggle from '@/components/dashboard/DashboardToggle';
 import MetricSelectionDialog from '@/components/dashboard/MetricSelectionDialog';
+import AnalyticsDashboard from '@/components/dashboard/AnalyticsDashboard';
 import { useAuth } from '@/hooks/useAuth';
 
 const Dashboard = () => {
@@ -32,6 +33,9 @@ const Dashboard = () => {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [isMetricSelectionOpen, setIsMetricSelectionOpen] = useState(false);
   const [departmentName, setDepartmentName] = useState<string>("");
+  
+  // Determine if we should show the analytics dashboard
+  const showAnalyticsDashboard = viewMode === 'all' && selectedDepartment === 'all' && isAdmin;
   
   // Load departments
   const { data: departments = [] } = useQuery({
@@ -415,65 +419,72 @@ const Dashboard = () => {
             </div>
           )}
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <KpiCard
-              title="Vendas totais"
-              value={`R$ ${kpiData.salesTotal.toLocaleString('pt-BR')}`}
-              change={12.5}
-              changeLabel="vs. período anterior"
-              status="success"
-              icon={<ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-            />
-            
-            <KpiCard
-              title="Novos clientes"
-              value={kpiData.newCustomers.toString()}
-              change={-3.2}
-              changeLabel="vs. período anterior"
-              status="warning"
-              icon={<Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-            />
-            
-            <KpiCard
-              title="Taxa de conversão"
-              value={`${kpiData.conversionRate}%`}
-              change={0.5}
-              changeLabel="vs. período anterior"
-              status="success"
-              icon={<BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-            />
-            
-            <KpiCard
-              title="Projetos abertos"
-              value={kpiData.openProjects.toString()}
-              change={-1}
-              changeLabel="vs. período anterior"
-              status="danger"
-              icon={<FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <PerformanceChart
-              title="Desempenho por departamento"
-              data={departmentPerformance.length > 0 ? departmentPerformance : [{ name: 'Carregando...', value: 0 }]}
-              type="bar"
-              percentage={true}
-              status="success"
-              trend={5.2}
-            />
-            
-            <PerformanceChart
-              title="Receita mensal (R$)"
-              data={monthlyRevenue}
-              color="#10b981"
-              type="line"
-              status="success"
-              trend={3.8}
-            />
-          </div>
-          
-          {renderMetricCards()}
+          {/* Conditional rendering of dashboards based on viewMode and selectedDepartment */}
+          {showAnalyticsDashboard ? (
+            <AnalyticsDashboard metrics={metrics} />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <KpiCard
+                  title="Vendas totais"
+                  value={`R$ ${kpiData.salesTotal.toLocaleString('pt-BR')}`}
+                  change={12.5}
+                  changeLabel="vs. período anterior"
+                  status="success"
+                  icon={<ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+                />
+                
+                <KpiCard
+                  title="Novos clientes"
+                  value={kpiData.newCustomers.toString()}
+                  change={-3.2}
+                  changeLabel="vs. período anterior"
+                  status="warning"
+                  icon={<Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+                />
+                
+                <KpiCard
+                  title="Taxa de conversão"
+                  value={`${kpiData.conversionRate}%`}
+                  change={0.5}
+                  changeLabel="vs. período anterior"
+                  status="success"
+                  icon={<BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+                />
+                
+                <KpiCard
+                  title="Projetos abertos"
+                  value={kpiData.openProjects.toString()}
+                  change={-1}
+                  changeLabel="vs. período anterior"
+                  status="danger"
+                  icon={<FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <PerformanceChart
+                  title="Desempenho por departamento"
+                  data={departmentPerformance.length > 0 ? departmentPerformance : [{ name: 'Carregando...', value: 0 }]}
+                  type="bar"
+                  percentage={true}
+                  status="success"
+                  trend={5.2}
+                />
+                
+                <PerformanceChart
+                  title="Receita mensal (R$)"
+                  data={monthlyRevenue}
+                  color="#10b981"
+                  type="line"
+                  status="success"
+                  trend={3.8}
+                />
+              </div>
+              
+              {renderMetricCards()}
+            </>
+          )}
         </>
       )}
       
