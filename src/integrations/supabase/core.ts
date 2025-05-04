@@ -81,7 +81,7 @@ export function formatCrudResult<T>(data: T | null, error: PostgrestError | any 
         details: error.details || '',
         hint: error.hint || '',
         code: error.code || '',
-        name: error.name || 'Error' // Include name to match PostgrestError
+        name: error.name || 'Error' 
       },
       message: message || error.message || 'Error occurred'
     };
@@ -268,11 +268,6 @@ export async function callRPC<T = any>(
     if (!supabase || !supabase.rpc) {
       console.error('Supabase client is not properly initialized');
       throw new Error('Database client is not properly initialized. Please check connection settings.');
-    }
-    
-    // Validate function name exists
-    if (!functionName) {
-      throw new Error('Function name is required');
     }
     
     // Make the RPC call with debugging info
