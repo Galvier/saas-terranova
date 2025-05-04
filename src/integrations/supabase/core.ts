@@ -1,4 +1,5 @@
-import { supabase } from './client';
+
+import { supabase as supabaseClient } from './client';
 
 // Simple type to represent CRUD operation results
 export interface CrudResult<T> {
@@ -119,8 +120,8 @@ export type RpcParams = {
   };
 };
 
-// Create a Supabase instance
-export const supabase = supabase;
+// Export the Supabase instance
+export const supabase = supabaseClient;
 
 // Function to call RPC methods with proper typing
 export const callRPC = async <T = any>(
@@ -141,7 +142,7 @@ export const callRPC = async <T = any>(
       }
     });
     
-    const { data, error } = await supabase.rpc(functionName, formattedParams);
+    const { data, error } = await supabaseClient.rpc(functionName, formattedParams);
     
     if (error) {
       console.error(`Error in RPC call to ${functionName}:`, error);
