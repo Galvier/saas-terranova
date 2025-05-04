@@ -1,3 +1,4 @@
+
 import { CrudResult, formatCrudResult, callRPC } from '@/integrations/supabase';
 import { supabase } from '@/integrations/supabase/client';
 import { getSupabaseUrl } from '@/integrations/supabase';
@@ -177,9 +178,7 @@ export const diagnosticService = {
       // Since we cannot query profiles directly due to type limitations,
       // we'll use a more generic approach with proper typing
       try {
-        const { data, error } = await callRPC<boolean>('check_user_profile', { 
-          user_id: user.id 
-        });
+        const { data, error } = await callRPC<boolean>('check_user_profile', {});
         
         if (error) {
           return formatCrudResult(false, error);

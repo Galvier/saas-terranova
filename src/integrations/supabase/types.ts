@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_dashboard_config: {
+        Row: {
+          created_at: string
+          id: string
+          metric_ids: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric_ids?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric_ids?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           created_at: string | null
@@ -408,11 +432,11 @@ export type Database = {
       get_admin_dashboard_config: {
         Args: { user_id_param: string }
         Returns: {
-          id: string
-          user_id: string
-          metric_ids: string[]
           created_at: string
+          id: string
+          metric_ids: string[]
           updated_at: string
+          user_id: string
         }[]
       }
       get_all_departments: {
@@ -493,6 +517,10 @@ export type Database = {
       run_diagnostic_write_test: {
         Args: { test_id_param: string }
         Returns: Json
+      }
+      save_admin_dashboard_config: {
+        Args: { metrics_ids: string[]; user_id: string }
+        Returns: string
       }
       update_manager: {
         Args: {
