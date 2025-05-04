@@ -23,7 +23,13 @@ export async function getUserProfileById(userId: string) {
 
     if (error) {
       console.error('Error getting user profile:', error);
-      return formatCrudResult(null, error);
+      return formatCrudResult(null, {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        name: error.name
+      });
     }
 
     return formatCrudResult(data);
@@ -60,7 +66,13 @@ export async function createUserProfile(profile: UserProfile) {
 
     if (error) {
       console.error('Error creating user profile:', error);
-      return formatCrudResult(null, error);
+      return formatCrudResult(null, {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        name: error.name
+      });
     }
 
     return formatCrudResult(data);
@@ -94,7 +106,13 @@ export async function updateUserProfile(userId: string, profile: Partial<UserPro
 
     if (error) {
       console.error('Error updating user profile:', error);
-      return formatCrudResult(null, error);
+      return formatCrudResult(null, {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        name: error.name
+      });
     }
 
     return formatCrudResult(data);

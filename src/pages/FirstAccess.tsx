@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -74,7 +73,7 @@ const FirstAccess = () => {
     
     try {
       const response = await createUserProfile({
-        user_id: user.id,
+        id: user.id,
         full_name: name,
         department_id: department || null,
         role: role || 'user',
