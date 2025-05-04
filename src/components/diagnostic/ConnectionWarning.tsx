@@ -32,4 +32,5 @@ const ConnectionWarning = ({ visible, message, details }: ConnectionWarningProps
   );
 };
 
+export { ConnectionWarning };
 export default ConnectionWarning;

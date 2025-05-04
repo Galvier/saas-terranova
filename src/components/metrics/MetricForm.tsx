@@ -12,6 +12,9 @@ import MetricValueFields from './form/MetricValueFields';
 import MetricConfigFields from './form/MetricConfigFields';
 import VisualizationConfigFields from './form/VisualizationConfigFields';
 import { z } from 'zod';
+import { ConnectionWarning } from '@/components/diagnostic/ConnectionWarning';
+import { useQuery } from '@tanstack/react-query';
+import { testSupabaseConnection } from '@/integrations/supabase/client';
 
 interface MetricFormProps {
   departments: Department[];
@@ -22,6 +25,25 @@ interface MetricFormProps {
 const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric }) => {
   const { toast } = useToast();
   const isEditing = !!metric;
+  const [connectionError, setConnectionError] = React.useState<{message: string, details: string} | null>(null);
+  
+  // Check database connection
+  const { isLoading: isCheckingConnection } = useQuery({
+    queryKey: ['connection-test'],
+    queryFn: async () => {
+      const result = await testSupabaseConnection();
+      if (!result.success) {
+        setConnectionError({
+          message: 'Unable to connect to the database',
+          details: result.message || 'Unknown error'
+        });
+      } else {
+        setConnectionError(null);
+      }
+      return result;
+    },
+    staleTime: 5000 // Check every 5 seconds
+  });
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,6 +65,23 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       console.log("Submitting form with values:", values);
+      
+      if (isCheckingConnection) {
+        toast({
+          title: 'Please wait',
+          description: 'Checking database connection...'
+        });
+        return;
+      }
+      
+      if (connectionError) {
+        toast({
+          title: 'Connection error',
+          description: 'Cannot connect to the database. Please try again later.',
+          variant: 'destructive'
+        });
+        return;
+      }
       
       let result;
       
@@ -101,13 +140,23 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
 
   return (
     <Form {...form}>
+      <ConnectionWarning 
+        visible={!!connectionError} 
+        message={connectionError?.message}
+        details={connectionError?.details}
+      />
+      
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <BasicMetricFields form={form} />
         <MetricValueFields form={form} />
         <MetricConfigFields form={form} departments={departments} />
         <VisualizationConfigFields form={form} />
         
-        <Button type="submit" className="w-full">
+        <Button 
+          type="submit" 
+          className="w-full"
+          disabled={isCheckingConnection || !!connectionError}
+        >
           {isEditing ? 'Atualizar Métrica' : 'Criar Métrica'}
         </Button>
       </form>

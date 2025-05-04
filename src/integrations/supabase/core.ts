@@ -1,4 +1,3 @@
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { PostgrestError } from '@supabase/supabase-js';
 
@@ -6,11 +5,38 @@ import { PostgrestError } from '@supabase/supabase-js';
 const SUPABASE_URL = "https://wjuzzjitpkhjjxujxftm.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqdXp6aml0cGtoamp4dWp4ZnRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNDY0ODcsImV4cCI6MjA2MDkyMjQ4N30.AxEUABuJzJaTQ9GZryiAfOkmHRBReYw4M798E_Z43Qc";
 
-// Inicializa o cliente Supabase diretamente para garantir disponibilidade
-export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Inicializa o cliente Supabase com tratamento de erro
+let supabaseInstance: SupabaseClient | null = null;
+
+try {
+  supabaseInstance = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  console.log('Supabase client initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize Supabase client:', error);
+}
+
+// Se a inicialização falhar, tentamos novamente
+if (!supabaseInstance) {
+  try {
+    supabaseInstance = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    console.log('Supabase client re-initialized successfully');
+  } catch (error) {
+    console.error('Failed to re-initialize Supabase client:', error);
+    // Último recurso: criar um cliente vazio
+    // @ts-ignore
+    supabaseInstance = { rpc: () => Promise.resolve({ data: null, error: new Error('Client initialization failed') }) };
+  }
+}
+
+// Exporta o cliente Supabase
+export const supabase = supabaseInstance;
 
 // Função para obter o cliente Supabase (manter compatibilidade com código existente)
 export const getSupabase = (): SupabaseClient => {
+  if (!supabase) {
+    console.error('Supabase client not initialized');
+    throw new Error('Supabase client not initialized');
+  }
   return supabase;
 };
 
@@ -256,6 +282,7 @@ export async function callRPC<T = any>(
     
     if (error) {
       console.error(`Error in RPC call to ${functionName}:`, error);
+      console.error(`Params used:`, params);
       return { data: null, error };
     }
     
@@ -263,6 +290,7 @@ export async function callRPC<T = any>(
     return { data, error: null };
   } catch (error: any) {
     console.error(`Exception in RPC call to ${functionName}:`, error);
+    console.error(`Params used:`, params);
     return { 
       data: null, 
       error: {

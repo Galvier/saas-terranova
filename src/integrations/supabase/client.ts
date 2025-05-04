@@ -14,9 +14,20 @@ export { supabase };
 export const testSupabaseConnection = async (): Promise<{success: boolean; message: string; responseTime?: number}> => {
   const startTime = performance.now();
   try {
+    if (!supabase || !supabase.rpc) {
+      console.error('Supabase client not properly initialized');
+      throw new Error('Database client is not properly initialized');
+    }
+    
     // Call RPC for postgres_version, expect data to be string
     const { data, error } = await supabase.rpc('postgres_version');
-    if (error) throw error;
+    
+    if (error) {
+      console.error('Error in connection test:', error);
+      throw error;
+    }
+    
+    console.log('Connection test successful:', data);
     return {
       success: true,
       message: "Connection established successfully",
