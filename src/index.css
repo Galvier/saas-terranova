@@ -14,16 +14,16 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.1 83.2% 9.8%;
+    --primary: 220 100% 19%; /* Terranova blue */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 30% 96%;
+    --secondary-foreground: 220 70% 22%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 220 30% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    --accent: 220 30% 96%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -32,12 +32,22 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
 
-    --ring: 222.1 83.2% 9.8%;
+    --ring: 220 100% 19%; /* Terranova blue */
 
     --radius: 0.5rem;
 
     --content-spacing: 1rem;
     --input-height: 2.25rem;
+    
+    /* Sidebar variables */
+    --sidebar-background: 220 100% 19%; /* Terranova blue */
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 220 100% 19%;
+    --sidebar-accent: 220 70% 30%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 50% 30%;
+    --sidebar-ring: 220 50% 50%;
   }
  
   .dark {
@@ -50,8 +60,8 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.1 83.2% 9.8%;
+    --primary: 217 80% 80%;
+    --primary-foreground: 220 100% 19%; /* Terranova blue */
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -69,6 +79,16 @@
     --input: 217.2 32.6% 17.5%;
 
     --ring: 212.7 26.8% 83.9%;
+    
+    /* Sidebar variables in dark mode */
+    --sidebar-background: 220 100% 12%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 217 80% 80%;
+    --sidebar-primary-foreground: 220 100% 12%;
+    --sidebar-accent: 220 50% 25%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 220 30% 20%;
+    --sidebar-ring: 220 50% 50%;
   }
 }
 

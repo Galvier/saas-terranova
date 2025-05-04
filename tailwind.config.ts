@@ -78,6 +78,11 @@ export default {
 				info: {
 					DEFAULT: '#3b82f6',
 					foreground: '#ffffff'
+				},
+				"terranova-blue": {
+					DEFAULT: '#001f5f',
+					light: '#1a3d7c',
+					dark: '#00163d'
 				}
 			},
 			borderRadius: {

@@ -1,4 +1,3 @@
-
 import { supabase as supabaseClient } from './client';
 
 // Simple type to represent CRUD operation results
@@ -142,7 +141,7 @@ export const callRPC = async <T = any>(
       }
     });
     
-    const { data, error } = await supabaseClient.rpc(functionName, formattedParams);
+    const { data, error } = await supabaseClient.rpc(functionName as string, formattedParams);
     
     if (error) {
       console.error(`Error in RPC call to ${functionName}:`, error);
