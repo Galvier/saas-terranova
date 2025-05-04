@@ -15,6 +15,7 @@ import {
   getSupabaseUrlUtil 
 } from '@/utils/supabaseDiagnostic';
 import { CustomBadge } from '@/components/ui/custom-badge';
+import ConnectionWarning from '@/components/diagnostic/ConnectionWarning';
 
 const ESSENTIAL_TABLES = [
   'users',
@@ -33,9 +34,12 @@ const Diagnostic = () => {
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [writeTest, setWriteTest] = useState<DiagnosticResult | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const runDiagnostic = async () => {
     setIsLoading(true);
+    setConnectionError(null);
+    
     try {
       const results = await runFullDiagnostic(ESSENTIAL_TABLES);
       
@@ -44,14 +48,22 @@ const Diagnostic = () => {
       setWriteTest(results.writeTest);
       setLastUpdate(new Date());
       
-      toast({
-        title: 'Diagnóstico concluído',
-        description: results.connection.connected 
-          ? 'Conexão com o Supabase estabelecida com sucesso.' 
-          : 'Problemas detectados na conexão com o Supabase.'
-      });
-    } catch (error) {
+      if (!results.connection.connected) {
+        setConnectionError('Não foi possível estabelecer conexão com o banco de dados.');
+        toast({
+          title: 'Problema de conexão',
+          description: 'Não foi possível conectar ao Supabase. Verifique sua conexão com a internet.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Diagnóstico concluído',
+          description: 'Conexão com o Supabase estabelecida com sucesso.'
+        });
+      }
+    } catch (error: any) {
       console.error('Error running diagnostic:', error);
+      setConnectionError(error?.message || 'Erro ao executar diagnóstico');
       toast({
         title: 'Erro no diagnóstico',
         description: 'Não foi possível completar todos os testes de diagnóstico.',
@@ -96,6 +108,11 @@ const Diagnostic = () => {
       <PageHeader 
         title="Diagnóstico do Sistema" 
         subtitle="Verifique a conexão com o banco de dados e o estado das tabelas" 
+      />
+      
+      <ConnectionWarning 
+        visible={!!connectionError} 
+        message={connectionError || undefined} 
       />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

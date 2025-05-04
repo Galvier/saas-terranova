@@ -1,14 +1,14 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
+import { supabase } from './core';
 
+// Define URL e chave do Supabase para o projeto
 const SUPABASE_URL = "https://wjuzzjitpkhjjxujxftm.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqdXp6aml0cGtoamp4dWp4ZnRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNDY0ODcsImV4cCI6MjA2MDkyMjQ4N30.AxEUABuJzJaTQ9GZryiAfOkmHRBReYw4M798E_Z43Qc";
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Exportamos o cliente já inicializado de core.ts
+export { supabase };
 
 // Test the connection to Supabase
 export const testSupabaseConnection = async (): Promise<{success: boolean; message: string; responseTime?: number}> => {

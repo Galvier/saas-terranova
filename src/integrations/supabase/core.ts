@@ -1,47 +1,26 @@
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { PostgrestError } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-let supabase: SupabaseClient;
+// Define o URL e a chave do Supabase para o projeto
+const SUPABASE_URL = "https://wjuzzjitpkhjjxujxftm.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqdXp6aml0cGtoamp4dWp4ZnRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNDY0ODcsImV4cCI6MjA2MDkyMjQ4N30.AxEUABuJzJaTQ9GZryiAfOkmHRBReYw4M798E_Z43Qc";
 
-// Function to initialize Supabase client
-export const initSupabase = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Inicializa o cliente Supabase diretamente para garantir disponibilidade
+export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase URL and Key are required');
-  }
-
-  supabase = createClient(supabaseUrl, supabaseKey);
-  return supabase;
-};
-
-// Call this function to get the Supabase client instance
+// Função para obter o cliente Supabase (manter compatibilidade com código existente)
 export const getSupabase = (): SupabaseClient => {
-  if (!supabase) {
-    initSupabase();
-  }
   return supabase;
 };
 
-// Function to get Supabase URL
+// Função para obter Supabase URL
 export const getSupabaseUrl = (): string => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl) {
-    throw new Error('Supabase URL is required');
-  }
-  return supabaseUrl;
+  return SUPABASE_URL;
 };
 
-// Function to get Supabase Key
+// Função para obter Supabase Key
 export const getSupabaseKey = (): string => {
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseKey) {
-    throw new Error('Supabase Key is required');
-  }
-  return supabaseKey;
+  return SUPABASE_PUBLISHABLE_KEY;
 };
 
 // Define known table names
@@ -65,19 +44,19 @@ export type CrudResult<T> = {
 };
 
 // Function to format CRUD result
-export function formatCrudResult<T>(data: T | null, error: PostgrestError | null = null, message?: string): CrudResult<T> {
+export function formatCrudResult<T>(data: T | null, error: PostgrestError | any = null, message?: string): CrudResult<T> {
   if (error) {
     console.error('CRUD Error:', error);
     return {
       data: null,
       error: {
-        message: error.message,
+        message: error.message || 'Unknown error',
         details: error.details || '',
         hint: error.hint || '',
         code: error.code || '',
-        name: error.name // Include name to match PostgrestError
+        name: error.name || 'Error' // Include name to match PostgrestError
       },
-      message: message || error.message
+      message: message || error.message || 'Error occurred'
     };
   }
   
@@ -91,7 +70,7 @@ export function formatCrudResult<T>(data: T | null, error: PostgrestError | null
 // Function to insert a record into a table
 export async function insertRecord<T>(tableName: KnownTable, record: T): Promise<CrudResult<T>> {
   try {
-    const { data, error } = await getSupabase()
+    const { data, error } = await supabase
       .from(tableName)
       .insert([record])
       .select()
@@ -105,20 +84,14 @@ export async function insertRecord<T>(tableName: KnownTable, record: T): Promise
     return formatCrudResult(data);
   } catch (error: any) {
     console.error(`Exception inserting record into ${tableName}:`, error);
-    return formatCrudResult(null, {
-      message: error.message || 'Unknown error occurred',
-      details: '',
-      hint: '',
-      code: '',
-      name: 'Error' // Added name property to match PostgrestError
-    } as PostgrestError);
+    return formatCrudResult(null, error);
   }
 }
 
 // Function to update a record in a table
 export async function updateRecord<T>(tableName: KnownTable, id: string, record: T): Promise<CrudResult<T>> {
     try {
-        const { data, error } = await getSupabase()
+        const { data, error } = await supabase
             .from(tableName)
             .update(record)
             .eq('id', id)
@@ -133,20 +106,14 @@ export async function updateRecord<T>(tableName: KnownTable, id: string, record:
         return formatCrudResult(data);
     } catch (error: any) {
         console.error(`Exception updating record in ${tableName}:`, error);
-        return formatCrudResult(null, {
-            message: error.message || 'Unknown error occurred',
-            details: '',
-            hint: '',
-            code: '',
-            name: 'Error' // Added name property to match PostgrestError
-        } as PostgrestError);
+        return formatCrudResult(null, error);
     }
 }
 
 // Function to delete a record from a table
 export async function deleteRecord<T>(tableName: KnownTable, id: string): Promise<CrudResult<T>> {
     try {
-        const { data, error } = await getSupabase()
+        const { data, error } = await supabase
             .from(tableName)
             .delete()
             .eq('id', id)
@@ -161,13 +128,7 @@ export async function deleteRecord<T>(tableName: KnownTable, id: string): Promis
         return formatCrudResult(data);
     } catch (error: any) {
         console.error(`Exception deleting record from ${tableName}:`, error);
-        return formatCrudResult(null, {
-            message: error.message || 'Unknown error occurred',
-            details: '',
-            hint: '',
-            code: '',
-            name: 'Error' // Added name property to match PostgrestError
-        } as PostgrestError);
+        return formatCrudResult(null, error);
     }
 }
 
@@ -298,11 +259,8 @@ export async function callRPC<T = any>(
         details: '',
         hint: '',
         code: '',
-        name: 'Error' // Added name property to match PostgrestError
+        name: 'Error'
       } as PostgrestError
     };
   }
 }
-
-// Export the initialized supabase instance
-export { supabase };
