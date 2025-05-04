@@ -1,55 +1,64 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { User, Session } from '@supabase/supabase-js';
-import { formatCrudResult } from '@/integrations/supabase';
+import { getSupabase, formatCrudResult } from '@/integrations/supabase/core';
 
-export interface AuthSession {
-  user: User | null;
-  session: Session | null;
+/**
+ * Get current session
+ */
+export async function getCurrentSession() {
+  try {
+    const { data, error } = await getSupabase().auth.getSession();
+
+    if (error) {
+      console.error('Get session error:', error);
+      return formatCrudResult(null, {
+        message: error.message,
+        details: '',
+        hint: '',
+        code: '',
+        name: 'AuthError'  // Added name property
+      });
+    }
+
+    return formatCrudResult(data);
+  } catch (error: any) {
+    console.error('Get session exception:', error);
+    return formatCrudResult(null, {
+      message: error.message || 'Failed to get session',
+      details: '',
+      hint: '',
+      code: '',
+      name: 'Error'  // Added name property
+    });
+  }
 }
 
-export const authCore = {
-  getSession: async (): Promise<AuthSession> => {
-    try {
-      console.log('[AuthCore] Verificando sessão ativa');
-      const { data } = await supabase.auth.getSession();
-      
-      console.log('[AuthCore] Sessão encontrada:', data.session ? 'Sim' : 'Não');
-      
-      return {
-        session: data.session,
-        user: data.session?.user || null
-      };
-    } catch (error) {
-      console.error('[AuthCore] Erro ao verificar sessão:', error);
-      return { session: null, user: null };
-    }
-  },
+/**
+ * Sign out user
+ */
+export async function signOut() {
+  try {
+    const { error } = await getSupabase().auth.signOut();
 
-  onAuthStateChange: (callback: (event: string, session: Session | null) => void) => {
-    console.log('[AuthCore] Configurando listener para mudanças de autenticação');
-    
-    return supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AuthCore] Mudança no estado de autenticação:', event);
-      callback(event, session);
+    if (error) {
+      console.error('Sign out error:', error);
+      return formatCrudResult(null, {
+        message: error.message,
+        details: '',
+        hint: '',
+        code: '',
+        name: 'AuthError'  // Added name property
+      });
+    }
+
+    return formatCrudResult(true);
+  } catch (error: any) {
+    console.error('Sign out exception:', error);
+    return formatCrudResult(null, {
+      message: error.message || 'Failed to sign out',
+      details: '',
+      hint: '',
+      code: '',
+      name: 'Error'  // Added name property
     });
-  },
-
-  logout: async () => {
-    try {
-      console.log('[AuthCore] Iniciando processo de logout');
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('[AuthCore] Erro ao realizar logout:', error);
-        return formatCrudResult(null, error);
-      }
-      
-      console.log('[AuthCore] Logout realizado com sucesso');
-      return formatCrudResult(null, null);
-    } catch (error) {
-      console.error('[AuthCore] Erro não tratado no logout:', error);
-      return formatCrudResult(null, error);
-    }
   }
-};
+}

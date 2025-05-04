@@ -1,54 +1,111 @@
 
-import { callRPC, formatCrudResult, type CrudResult } from './core';
-import { insertRecord, KnownTable } from './core';
+import { getSupabase, formatCrudResult } from './core';
 
 export interface UserProfile {
   id: string;
-  user_id: string;
-  full_name: string;
-  department_id: string | null;
-  role: string;
   email: string;
-  created_at?: string;
-  updated_at?: string;
+  full_name?: string;
+  first_name?: string;
+  last_name?: string; 
+  avatar_url?: string;
+  department_id?: string | null;
+  role?: string;
 }
 
-// Function to create a user profile
-export const createUserProfile = async (profile: {
-  user_id: string;
-  full_name: string;
-  department_id: string | null;
-  role: string;
-  email: string;
-}): Promise<CrudResult<UserProfile>> => {
+/**
+ * Get user profile by ID
+ */
+export async function getUserProfileById(userId: string) {
   try {
-    console.log('Creating user profile:', profile);
-    
-    const result = await insertRecord<UserProfile>('profiles' as KnownTable, {
-      user_id: profile.user_id,
-      full_name: profile.full_name,
-      department_id: profile.department_id,
-      role: profile.role,
-      email: profile.email
-    });
-    
-    return result;
-  } catch (error) {
-    console.error('Error creating user profile:', error);
-    return formatCrudResult(null, error);
-  }
-};
-
-// Function to get a user profile by user ID
-export const getUserProfileById = async (userId: string): Promise<CrudResult<UserProfile>> => {
-  try {
-    const { data, error } = await callRPC<UserProfile>('get_user_profile_by_id', {
+    const { data, error } = await getSupabase().rpc('get_user_profile_by_id', {
       user_id_param: userId
     });
-    
-    return formatCrudResult(data, error);
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    return formatCrudResult(null, error);
+
+    if (error) {
+      console.error('Error getting user profile:', error);
+      return formatCrudResult(null, error);
+    }
+
+    return formatCrudResult(data);
+  } catch (error: any) {
+    console.error('Exception getting user profile:', error);
+    return formatCrudResult(null, {
+      message: error.message || 'Failed to get user profile',
+      details: '',
+      hint: '',
+      code: '',
+      name: 'Error'
+    });
   }
-};
+}
+
+/**
+ * Create user profile 
+ */
+export async function createUserProfile(profile: UserProfile) {
+  try {
+    // Insert into profiles table
+    const { data, error } = await getSupabase()
+      .from('profiles')
+      .insert([
+        {
+          id: profile.id, 
+          first_name: profile.first_name || profile.full_name,
+          last_name: profile.last_name,
+          avatar_url: profile.avatar_url
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating user profile:', error);
+      return formatCrudResult(null, error);
+    }
+
+    return formatCrudResult(data);
+  } catch (error: any) {
+    console.error('Exception creating user profile:', error);
+    return formatCrudResult(null, {
+      message: error.message || 'Failed to create user profile',
+      details: '',
+      hint: '',
+      code: '',
+      name: 'Error'
+    });
+  }
+}
+
+/**
+ * Update user profile
+ */
+export async function updateUserProfile(userId: string, profile: Partial<UserProfile>) {
+  try {
+    const { data, error } = await getSupabase()
+      .from('profiles')
+      .update({
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        avatar_url: profile.avatar_url
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating user profile:', error);
+      return formatCrudResult(null, error);
+    }
+
+    return formatCrudResult(data);
+  } catch (error: any) {
+    console.error('Exception updating user profile:', error);
+    return formatCrudResult(null, {
+      message: error.message || 'Failed to update user profile',
+      details: '',
+      hint: '',
+      code: '',
+      name: 'Error'
+    });
+  }
+}

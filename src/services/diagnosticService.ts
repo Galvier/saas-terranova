@@ -139,11 +139,23 @@ export async function runDiagnosticTests(): Promise<DiagnosticResult> {
 
 export function formatDiagnosticTest(test?: DiagnosticTest): CrudResult<DiagnosticTest> {
   if (!test) {
-    return formatCrudResult(null, { message: 'No test result', code: '', details: '', hint: '' });
+    return formatCrudResult(null, { 
+      message: 'No test result', 
+      code: '', 
+      details: '', 
+      hint: '',
+      name: 'Error'  // Added name property to match PostgrestError
+    } as any);
   }
   
   return formatCrudResult(
     test, 
-    test.success ? null : { message: test.message || 'Test failed', code: '', details: '', hint: '' }
+    test.success ? null : { 
+      message: test.message || 'Test failed', 
+      code: '', 
+      details: '', 
+      hint: '',
+      name: 'Error'  // Added name property to match PostgrestError
+    } as any
   );
 }

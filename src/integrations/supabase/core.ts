@@ -1,3 +1,4 @@
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { PostgrestError } from '@supabase/supabase-js';
 
@@ -58,6 +59,7 @@ export type CrudResult<T> = {
     details: string;
     hint: string;
     code: string;
+    name?: string; // Added name property to match PostgrestError
   } | null;
   message?: string;
 };
@@ -72,7 +74,8 @@ export function formatCrudResult<T>(data: T | null, error: PostgrestError | null
         message: error.message,
         details: error.details || '',
         hint: error.hint || '',
-        code: error.code || ''
+        code: error.code || '',
+        name: error.name // Include name to match PostgrestError
       },
       message: message || error.message
     };
@@ -106,8 +109,9 @@ export async function insertRecord<T>(tableName: KnownTable, record: T): Promise
       message: error.message || 'Unknown error occurred',
       details: '',
       hint: '',
-      code: ''
-    });
+      code: '',
+      name: 'Error' // Added name property to match PostgrestError
+    } as PostgrestError);
   }
 }
 
@@ -133,8 +137,9 @@ export async function updateRecord<T>(tableName: KnownTable, id: string, record:
             message: error.message || 'Unknown error occurred',
             details: '',
             hint: '',
-            code: ''
-        });
+            code: '',
+            name: 'Error' // Added name property to match PostgrestError
+        } as PostgrestError);
     }
 }
 
@@ -160,8 +165,9 @@ export async function deleteRecord<T>(tableName: KnownTable, id: string): Promis
             message: error.message || 'Unknown error occurred',
             details: '',
             hint: '',
-            code: ''
-        });
+            code: '',
+            name: 'Error' // Added name property to match PostgrestError
+        } as PostgrestError);
     }
 }
 
@@ -283,7 +289,7 @@ export async function callRPC<T = any>(
     }
     
     return { data, error: null };
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Exception in RPC call to ${functionName}:`, error);
     return { 
       data: null, 
@@ -291,18 +297,12 @@ export async function callRPC<T = any>(
         message: error instanceof Error ? error.message : 'Unknown error occurred',
         details: '',
         hint: '',
-        code: ''
-      } 
+        code: '',
+        name: 'Error' // Added name property to match PostgrestError
+      } as PostgrestError
     };
   }
 }
 
-// Export functions
-export {
-  getSupabase,
-  formatCrudResult,
-  insertRecord,
-  updateRecord,
-  deleteRecord,
-  supabase
-};
+// Export the initialized supabase instance
+export { supabase };
