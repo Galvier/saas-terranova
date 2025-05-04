@@ -16,9 +16,9 @@ export interface MetricDefinition {
   is_active: boolean;
   icon_name: string | null;
   lower_is_better: boolean;
-  visualization_type?: VisualizationType;
-  priority?: Priority;
-  default_period?: DefaultPeriod;
+  visualization_type: VisualizationType;
+  priority: Priority;
+  default_period: DefaultPeriod;
 }
 
 export interface MetricHistory {

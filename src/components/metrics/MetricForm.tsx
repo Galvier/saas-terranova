@@ -26,6 +26,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
   const { toast } = useToast();
   const isEditing = !!metric;
   const [connectionError, setConnectionError] = React.useState<{message: string, details: string} | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   
   // Check database connection
   const { isLoading: isCheckingConnection } = useQuery({
@@ -64,6 +65,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      setIsSubmitting(true);
       console.log("Submitting form with values:", values);
       
       if (isCheckingConnection) {
@@ -135,6 +137,8 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
         description: error.message || "Erro desconhecido ao processar a operação",
         variant: 'destructive'
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -155,9 +159,9 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
         <Button 
           type="submit" 
           className="w-full"
-          disabled={isCheckingConnection || !!connectionError}
+          disabled={isSubmitting || isCheckingConnection || !!connectionError}
         >
-          {isEditing ? 'Atualizar Métrica' : 'Criar Métrica'}
+          {isSubmitting ? 'Enviando...' : isEditing ? 'Atualizar Métrica' : 'Criar Métrica'}
         </Button>
       </form>
     </Form>

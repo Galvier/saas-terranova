@@ -5,9 +5,8 @@ import { PostgrestError } from '@supabase/supabase-js';
 const SUPABASE_URL = "https://wjuzzjitpkhjjxujxftm.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqdXp6aml0cGtoamp4dWp4ZnRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNDY0ODcsImV4cCI6MjA2MDkyMjQ4N30.AxEUABuJzJaTQ9GZryiAfOkmHRBReYw4M798E_Z43Qc";
 
-// Inicializa o cliente Supabase com tratamento de erro
+// Inicializa o cliente Supabase
 let supabaseInstance: SupabaseClient | null = null;
-
 try {
   supabaseInstance = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   console.log('Supabase client initialized successfully');
@@ -15,28 +14,11 @@ try {
   console.error('Failed to initialize Supabase client:', error);
 }
 
-// Se a inicialização falhar, tentamos novamente
-if (!supabaseInstance) {
-  try {
-    supabaseInstance = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-    console.log('Supabase client re-initialized successfully');
-  } catch (error) {
-    console.error('Failed to re-initialize Supabase client:', error);
-    // Último recurso: criar um cliente vazio
-    // @ts-ignore
-    supabaseInstance = { rpc: () => Promise.resolve({ data: null, error: new Error('Client initialization failed') }) };
-  }
-}
+// Export the client for use in the app
+export const supabase = supabaseInstance || createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Exporta o cliente Supabase
-export const supabase = supabaseInstance;
-
-// Função para obter o cliente Supabase (manter compatibilidade com código existente)
+// Function to get Supabase client
 export const getSupabase = (): SupabaseClient => {
-  if (!supabase) {
-    console.error('Supabase client not initialized');
-    throw new Error('Supabase client not initialized');
-  }
   return supabase;
 };
 
@@ -55,6 +37,8 @@ export type KnownTable =
   | 'departments'
   | 'managers'
   | 'metrics'
+  | 'metrics_definition'
+  | 'metrics_values'
   | 'profiles';
 
 // Type for generic CRUD result
@@ -65,7 +49,7 @@ export type CrudResult<T> = {
     details: string;
     hint: string;
     code: string;
-    name?: string; // Added name property to match PostgrestError
+    name?: string;
   } | null;
   message?: string;
 };
@@ -81,7 +65,7 @@ export function formatCrudResult<T>(data: T | null, error: PostgrestError | any 
         details: error.details || '',
         hint: error.hint || '',
         code: error.code || '',
-        name: error.name || 'Error' 
+        name: error.name || 'Error'
       },
       message: message || error.message || 'Error occurred'
     };
@@ -272,7 +256,16 @@ export async function callRPC<T = any>(
     
     // Make the RPC call with debugging info
     console.time(`RPC call: ${functionName}`);
-    const { data, error } = await supabase.rpc(functionName, params);
+    
+    // Create a new object for parameters to ensure all keys are properly formatted
+    const formattedParams = {};
+    for (const key in params) {
+      if (Object.prototype.hasOwnProperty.call(params, key)) {
+        formattedParams[key] = params[key];
+      }
+    }
+    
+    const { data, error } = await supabase.rpc(functionName, formattedParams);
     console.timeEnd(`RPC call: ${functionName}`);
     
     if (error) {

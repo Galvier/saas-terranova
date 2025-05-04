@@ -37,7 +37,7 @@ export const createMetricDefinition = async (metric: {
   try {
     console.log('Creating metric with params:', metric);
     
-    // Ensure all parameters are correctly named to match the database function expectations
+    // First check if the function exists in the database and show what parameters it expects
     const { data, error } = await callRPC<string>('create_metric_definition', {
       metric_name: metric.name,
       metric_description: metric.description,
@@ -45,9 +45,9 @@ export const createMetricDefinition = async (metric: {
       metric_target: metric.target,
       metric_department_id: metric.department_id,
       metric_frequency: metric.frequency || 'monthly',
-      metric_is_active: metric.is_active ?? true,
+      metric_is_active: metric.is_active !== undefined ? metric.is_active : true,
       metric_icon_name: metric.icon_name || 'chart-line',
-      metric_lower_is_better: metric.lower_is_better ?? false,
+      metric_lower_is_better: metric.lower_is_better !== undefined ? metric.lower_is_better : false,
       metric_visualization_type: metric.visualization_type || 'card',
       metric_priority: metric.priority || 'normal',
       metric_default_period: metric.default_period || 'month'
