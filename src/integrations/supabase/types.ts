@@ -419,6 +419,20 @@ export type Database = {
               metric_icon_name?: string
               metric_lower_is_better?: boolean
             }
+          | {
+              metric_name: string
+              metric_description: string
+              metric_unit: string
+              metric_target: number
+              metric_department_id: string
+              metric_frequency?: string
+              metric_is_active?: boolean
+              metric_icon_name?: string
+              metric_lower_is_better?: boolean
+              metric_visualization_type?: string
+              metric_priority?: string
+              metric_default_period?: string
+            }
         Returns: string
       }
       delete_manager: {
@@ -556,6 +570,21 @@ export type Database = {
               metric_is_active?: boolean
               metric_icon_name?: string
               metric_lower_is_better?: boolean
+            }
+          | {
+              metric_id: string
+              metric_name: string
+              metric_description: string
+              metric_unit: string
+              metric_target: number
+              metric_department_id: string
+              metric_frequency?: string
+              metric_is_active?: boolean
+              metric_icon_name?: string
+              metric_lower_is_better?: boolean
+              metric_visualization_type?: string
+              metric_priority?: string
+              metric_default_period?: string
             }
         Returns: string
       }

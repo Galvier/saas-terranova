@@ -29,14 +29,15 @@ const AppSidebar = () => {
   const getUserDisplayName = () => {
     if (!user) return '';
     
-    // First try to get display name from user_metadata
+    // First prioritize display_name from user_metadata
     if (user.user_metadata && user.user_metadata.display_name) {
       return user.user_metadata.display_name;
     }
     
-    // Then try to get name from user_metadata
-    if (user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) {
-      return user.user_metadata.name || user.user_metadata.full_name;
+    // Then try other name fields from user_metadata
+    if (user.user_metadata) {
+      if (user.user_metadata.full_name) return user.user_metadata.full_name;
+      if (user.user_metadata.name) return user.user_metadata.name;
     }
     
     // If no name in metadata, use email and extract the part before @

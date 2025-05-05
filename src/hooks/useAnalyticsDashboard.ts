@@ -69,8 +69,9 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
         deptData.achieved++;
       }
       
-      // Determine if metric is critical (below 60% of target)
-      if (healthPercentage < 60) {
+      // Determine if metric is critical (status is 'danger' or health below 60%)
+      // Corrected: Now also checking status === 'danger'
+      if (healthPercentage < 60 || metric.status === 'danger') {
         criticalCount++;
         criticalMetricsArray.push({
           ...metric,
