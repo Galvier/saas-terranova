@@ -128,11 +128,8 @@ export const checkUserProfile = async (
 
 // Export the Supabase URL for utility functions
 export const getSupabaseUrl = (): string => {
-  // Use a method that doesn't access protected properties
-  return supabase.auth.getSession().then(() => {
-    // Use a method that's publicly accessible
-    return supabase.authUrl ?? '';
-  }) as unknown as string;
+  // Use the URL directly from the client configuration instead of accessing protected properties
+  return import.meta.env.VITE_SUPABASE_URL || "https://wjuzzjitpkhjjxujxftm.supabase.co";
 };
 
 export { supabase };
