@@ -35,7 +35,7 @@ const MetricsHeader: React.FC<MetricsHeaderProps> = ({
         />
 
         <Button 
-          className="flex items-center gap-2 w-full sm:w-auto"
+          className="flex items-center gap-2 w-full sm:w-auto bg-terranova-blue hover:bg-terranova-blue-light"
           onClick={() => setIsCreateDialogOpen(true)}
         >
           <Plus className="h-4 w-4" />

@@ -1,154 +1,170 @@
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { MetricDefinition } from '@/integrations/supabase';
 
-export interface DashboardSummary {
+interface AnalyticsDashboardData {
   percentAchievingTarget: number;
   metricsAchievingTarget: number;
   metricsWithTargets: number;
   averageHealth: number;
   criticalMetricsCount: number;
-  criticalMetrics: MetricDefinition[];
-  departmentPerformance: { name: string; value: number }[];
-  statusDistribution: { name: string; value: number; color: string }[];
-  metricsByDepartment: { name: string; value: number }[];
+  criticalMetrics: Array<MetricDefinition & { health?: number }>;
+  departmentPerformance: Array<{ name: string; value: number }>;
+  statusDistribution: Array<{ name: string; value: number; color: string }>;
+  metricsByDepartment: Array<{ name: string; value: number }>;
   metricsWithoutTarget: number;
   metricsWithoutCurrentValue: number;
 }
 
-const useAnalyticsDashboard = (metrics: MetricDefinition[]): DashboardSummary => {
+const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardData => {
+  // Calculate all dashboard statistics based on metrics
   return useMemo(() => {
-    // Calculate targets achieved
-    const totalMetrics = metrics.length;
-    const metricsWithTargets = metrics.filter(m => m.target > 0).length;
-    const metricsWithValues = metrics.filter(m => m.current !== undefined && m.current !== null).length;
-    const metricsAchievingTarget = metrics.filter(m => {
-      if (m.target <= 0 || m.current === undefined || m.current === null) return false;
-      return m.lower_is_better 
-        ? m.current <= m.target 
-        : m.current >= m.target;
-    }).length;
+    // Group metrics by department for easier processing
+    const departmentMap = new Map<string, { metrics: MetricDefinition[], total: number, achieved: number }>();
     
-    const percentAchievingTarget = metricsWithTargets > 0 
-      ? Math.round((metricsAchievingTarget / metricsWithTargets) * 100) 
-      : 0;
-    
-    // Calculate overall health
-    const overallHealth = metrics.reduce((acc, metric) => {
-      if (metric.target <= 0 || metric.current === undefined || metric.current === null) return acc;
-      
-      let performanceRatio;
-      if (metric.lower_is_better) {
-        // Lower is better, 100% when current <= target
-        performanceRatio = metric.current <= metric.target 
-          ? 100 
-          : Math.max(0, 100 - ((metric.current - metric.target) / metric.target * 100));
-      } else {
-        // Higher is better, 100% when current >= target
-        performanceRatio = metric.target > 0 
-          ? Math.min(100, (metric.current / metric.target * 100)) 
-          : 0;
-      }
-      return acc + performanceRatio;
-    }, 0);
-    
-    const averageHealth = metrics.filter(m => m.target > 0).length > 0 
-      ? Math.round(overallHealth / metrics.filter(m => m.target > 0).length) 
-      : 0;
+    // Calculate metrics achieving target
+    let achieving = 0;
+    let totalWithTargets = 0;
+    let totalHealth = 0;
+    let criticalCount = 0;
+    const criticalMetricsArray: Array<MetricDefinition & { health?: number }> = [];
 
-    // Critical metrics (performing below 60%)
-    const criticalMetrics = metrics.filter(m => {
-      if (m.target <= 0 || m.current === undefined || m.current === null) return false;
-      
-      if (m.lower_is_better) {
-        // Lower is better, critical if current > 160% of target
-        return m.current > (m.target * 1.6);
-      } else {
-        // Higher is better, critical if current < 60% of target
-        return m.current < (m.target * 0.6);
-      }
-    });
-
-    // Department performance
-    const deptMap = new Map<string, { total: number; count: number }>();
+    // Count metrics without target or current value
+    let withoutTarget = 0;
+    let withoutCurrentValue = 0;
     
+    // Process metrics to calculate performance values
     metrics.forEach(metric => {
-      if (!metric.department_name || metric.target <= 0 || metric.current === undefined) return;
+      // Get department data
+      const deptName = metric.department_name || 'Unknown';
+      if (!departmentMap.has(deptName)) {
+        departmentMap.set(deptName, { metrics: [], total: 0, achieved: 0 });
+      }
+      const deptData = departmentMap.get(deptName)!;
+      deptData.metrics.push(metric);
+      deptData.total++;
       
-      let performanceRatio;
-      if (metric.lower_is_better) {
-        performanceRatio = metric.current <= metric.target 
-          ? 100 
-          : Math.max(0, 100 - ((metric.current - metric.target) / metric.target * 100));
-      } else {
-        performanceRatio = Math.min(100, (metric.current / metric.target * 100));
+      // Count metrics without targets
+      if (!metric.target) {
+        withoutTarget++;
+        return;
       }
       
-      const existing = deptMap.get(metric.department_name);
-      if (existing) {
-        existing.total += performanceRatio;
-        existing.count += 1;
-      } else {
-        deptMap.set(metric.department_name, { total: performanceRatio, count: 1 });
+      // Count metrics without current values
+      if (!metric.current && metric.current !== 0) {
+        withoutCurrentValue++;
+        return;
+      }
+      
+      // Count metrics with targets
+      totalWithTargets++;
+      
+      // Calculate health percentage
+      const healthPercentage = calculateHealthPercentage(metric);
+      totalHealth += healthPercentage;
+      
+      // Determine if metric is achieving target
+      if (isAchievingTarget(metric)) {
+        achieving++;
+        deptData.achieved++;
+      }
+      
+      // Determine if metric is critical (status is 'danger' or health below 60%)
+      // Corrected: Now also checking status === 'danger'
+      if (healthPercentage < 60 || metric.status === 'danger') {
+        criticalCount++;
+        criticalMetricsArray.push({
+          ...metric,
+          health: healthPercentage
+        });
       }
     });
+
+    // Calculate metrics achieving target percentage
+    const percentAchieving = totalWithTargets > 0 
+      ? Math.round((achieving / totalWithTargets) * 100) 
+      : 0;
     
-    const departmentPerformance = Array.from(deptMap.entries())
-      .map(([name, { total, count }]) => ({
+    // Calculate average health
+    const avgHealth = totalWithTargets > 0 
+      ? Math.round(totalHealth / totalWithTargets) 
+      : 0;
+    
+    // Sort critical metrics by health (ascending)
+    const sortedCriticalMetrics = criticalMetricsArray.sort((a, b) => 
+      (a.health || 0) - (b.health || 0)
+    );
+    
+    // Calculate department performance
+    const deptPerformance = Array.from(departmentMap.entries())
+      .filter(([name, data]) => data.total > 0)
+      .map(([name, data]) => ({
         name,
-        value: Math.round(total / count)
+        value: Math.round((data.achieved / data.total) * 100)
       }))
       .sort((a, b) => b.value - a.value);
-
-    // Status distribution
-    const counts = { success: 0, warning: 0, danger: 0 };
     
-    metrics.forEach(metric => {
-      if (metric.status === 'success') counts.success++;
-      else if (metric.status === 'warning') counts.warning++;
-      else if (metric.status === 'danger') counts.danger++;
-    });
+    // Calculate status distribution
+    const successCount = metrics.filter(m => m.status === 'success').length;
+    const warningCount = metrics.filter(m => m.status === 'warning').length;
+    const dangerCount = metrics.filter(m => m.status === 'danger').length;
     
-    const statusDistribution = [
-      { name: 'Ótimo', value: counts.success, color: '#10b981' },
-      { name: 'Atenção', value: counts.warning, color: '#f97316' },
-      { name: 'Crítico', value: counts.danger, color: '#ef4444' }
+    const statusDist = [
+      { name: 'Success', value: successCount, color: '#10b981' },
+      { name: 'Warning', value: warningCount, color: '#f59e0b' },
+      { name: 'Critical', value: dangerCount, color: '#ef4444' }
     ];
-
-    // Metrics by department
-    const deptCounts = new Map<string, number>();
     
-    metrics.forEach(metric => {
-      if (!metric.department_name) return;
-      
-      const count = deptCounts.get(metric.department_name) || 0;
-      deptCounts.set(metric.department_name, count + 1);
-    });
-    
-    const metricsByDepartment = Array.from(deptCounts.entries())
-      .map(([name, count]) => ({
+    // Calculate metrics by department
+    const metricsByDept = Array.from(departmentMap.entries())
+      .map(([name, data]) => ({
         name,
-        value: count
-      }));
-
-    // Metrics without targets and values
-    const metricsWithoutTarget = metrics.filter(m => !m.target || m.target <= 0).length;
-    const metricsWithoutCurrentValue = metrics.filter(m => m.current === undefined || m.current === null).length;
-
+        value: data.metrics.length
+      }))
+      .sort((a, b) => b.value - a.value);
+    
     return {
-      percentAchievingTarget,
-      metricsAchievingTarget,
-      metricsWithTargets,
-      averageHealth,
-      criticalMetricsCount: criticalMetrics.length,
-      criticalMetrics,
-      departmentPerformance,
-      statusDistribution,
-      metricsByDepartment,
-      metricsWithoutTarget,
-      metricsWithoutCurrentValue
+      percentAchievingTarget: percentAchieving,
+      metricsAchievingTarget: achieving,
+      metricsWithTargets: totalWithTargets,
+      averageHealth: avgHealth,
+      criticalMetricsCount: criticalCount,
+      criticalMetrics: sortedCriticalMetrics,
+      departmentPerformance: deptPerformance,
+      statusDistribution: statusDist,
+      metricsByDepartment: metricsByDept,
+      metricsWithoutTarget: withoutTarget,
+      metricsWithoutCurrentValue: withoutCurrentValue
     };
   }, [metrics]);
+};
+
+// Helper function to calculate health percentage
+const calculateHealthPercentage = (metric: MetricDefinition): number => {
+  if (!metric.target || (metric.current === undefined || metric.current === null)) {
+    return 0;
+  }
+  
+  const ratio = metric.lower_is_better 
+    ? metric.target / (metric.current || 1) // Lower values are better (e.g., error rates)
+    : (metric.current || 0) / metric.target; // Higher values are better (e.g., revenue)
+  
+  return Math.min(Math.round(ratio * 100), 100);
+};
+
+// Helper function to determine if a metric is achieving its target
+const isAchievingTarget = (metric: MetricDefinition): boolean => {
+  if (!metric.target || (metric.current === undefined || metric.current === null)) {
+    return false;
+  }
+  
+  if (metric.lower_is_better) {
+    // Lower is better: current should be <= target
+    return metric.current <= metric.target;
+  } else {
+    // Higher is better: current should be >= target
+    return metric.current >= metric.target;
+  }
 };
 
 export default useAnalyticsDashboard;

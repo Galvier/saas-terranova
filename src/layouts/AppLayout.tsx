@@ -26,7 +26,7 @@ const AppLayout = () => {
         {isLoading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 transition-opacity duration-300">
             <div className="flex flex-col items-center gap-3">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <Loader2 className="h-10 w-10 animate-spin text-terranova-blue" />
               <span className="text-sm text-muted-foreground animate-pulse">Carregando...</span>
             </div>
           </div>
