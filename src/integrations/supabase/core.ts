@@ -27,8 +27,10 @@ export const callRPC = async <T>(
   params: Record<string, any> = {}
 ): Promise<{ data: T | null; error: Error | null }> => {
   try {
-    const { data, error } = await supabase.rpc(functionName, params);
-    return { data, error };
+    // Use type assertion to allow any function name
+    const { data, error } = await supabase.rpc(functionName as any, params);
+    // Use type assertion for the return data
+    return { data: data as T, error };
   } catch (error: any) {
     return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
   }
@@ -126,7 +128,11 @@ export const checkUserProfile = async (
 
 // Export the Supabase URL for utility functions
 export const getSupabaseUrl = (): string => {
-  return supabase.auth.getSession().then(() => supabase.supabaseUrl) as unknown as string;
+  // Use a method that doesn't access protected properties
+  return supabase.auth.getSession().then(() => {
+    // Use a method that's publicly accessible
+    return supabase.authUrl ?? '';
+  }) as unknown as string;
 };
 
 export { supabase };

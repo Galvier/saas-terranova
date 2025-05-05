@@ -25,11 +25,16 @@ const AppSidebar = () => {
   const navigate = useNavigate();
   const { logout, user, isAdmin } = useAuth();
   
-  // Format user display name from email or user metadata
+  // Format user display name from user metadata or email
   const getUserDisplayName = () => {
     if (!user) return '';
     
-    // First try to get name from user_metadata
+    // First try to get display name from user_metadata
+    if (user.user_metadata && user.user_metadata.display_name) {
+      return user.user_metadata.display_name;
+    }
+    
+    // Then try to get name from user_metadata
     if (user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) {
       return user.user_metadata.name || user.user_metadata.full_name;
     }
