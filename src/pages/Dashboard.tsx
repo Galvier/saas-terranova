@@ -250,8 +250,38 @@ const Dashboard = () => {
     }
   }, [dateRangeType, viewMode]);
 
+  // Function to render metric cards for selected favorites
+  const renderFavoriteMetricCards = () => {
+    if (viewMode !== 'favorites' || !selectedMetrics.length) return null;
+    
+    // Get only metrics that are in the selected favorites list
+    const favoriteMetrics = filteredMetrics.filter(metric => 
+      selectedMetrics.includes(metric.id)
+    );
+    
+    if (favoriteMetrics.length === 0) return null;
+    
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+        {favoriteMetrics.map(metric => (
+          <KpiCard
+            key={metric.id}
+            title={metric.name}
+            value={`${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`}
+            status={metric.status as 'success' | 'warning' | 'danger'}
+            changeLabel={metric.department_name ? `${metric.department_name}` : ''}
+            icon={null}
+          />
+        ))}
+      </div>
+    );
+  };
+
   // Function to render metric cards based on priority and visualization type
   const renderMetricCards = () => {
+    // Only render these cards in 'all' view mode
+    if (viewMode === 'favorites') return null;
+    
     // Filter metrics that are not already displayed in main KPI cards
     const additionalMetrics = filteredMetrics.filter(metric => 
       !metric.name.toLowerCase().includes('venda') &&
@@ -422,6 +452,9 @@ const Dashboard = () => {
           {/* Conditional rendering of dashboards based on viewMode and selectedDepartment */}
           {showAnalyticsDashboard ? (
             <AnalyticsDashboard metrics={metrics} />
+          ) : viewMode === 'favorites' ? (
+            /* Only show selected metrics in favorites view */
+            renderFavoriteMetricCards()
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
