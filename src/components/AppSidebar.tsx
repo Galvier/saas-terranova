@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, ClipboardList, Home, LogOut, Settings, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,34 @@ const navItems: SidebarItem[] = [
 const AppSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user, isAdmin } = useAuth();
+  
+  // Format user display name from email or user metadata
+  const getUserDisplayName = () => {
+    if (!user) return '';
+    
+    // First try to get name from user_metadata
+    if (user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) {
+      return user.user_metadata.name || user.user_metadata.full_name;
+    }
+    
+    // If no name in metadata, use email and extract the part before @
+    if (user.email) {
+      const namePart = user.email.split('@')[0];
+      // Capitalize first letter of each word separated by dot, underscore, or hyphen
+      return namePart
+        .split(/[._-]/)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    }
+    
+    return 'Usuário';
+  };
+
+  // Get user role text
+  const getUserRole = () => {
+    return isAdmin ? 'Administrador' : 'Gestor';
+  };
   
   const handleLogout = async () => {
     try {
@@ -68,8 +95,8 @@ const AppSidebar = () => {
       
       <div className="p-4 border-t border-terranova-blue-light mt-auto">
         <div className="mb-4">
-          <div className="text-sm font-medium">Maria Silva</div>
-          <div className="text-xs text-gray-300">Administradora</div>
+          <div className="text-sm font-medium">{getUserDisplayName()}</div>
+          <div className="text-xs text-gray-300">{getUserRole()}</div>
         </div>
         <Button
           variant="outline"
