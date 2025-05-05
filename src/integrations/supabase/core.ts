@@ -1,5 +1,5 @@
 
-import { supabaseClient } from './client';
+import { supabase } from './client';
 import { Database } from './types';
 
 export type CrudResult<T = any> = {
@@ -27,7 +27,7 @@ export const callRPC = async <T>(
   params: Record<string, any> = {}
 ): Promise<{ data: T | null; error: Error | null }> => {
   try {
-    const { data, error } = await supabaseClient.rpc(functionName, params);
+    const { data, error } = await supabase.rpc(functionName, params);
     return { data, error };
   } catch (error: any) {
     return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
@@ -126,7 +126,7 @@ export const checkUserProfile = async (
 
 // Export the Supabase URL for utility functions
 export const getSupabaseUrl = (): string => {
-  return supabaseClient.auth.getSession().then(() => supabaseClient.supabaseUrl) as unknown as string;
+  return supabase.auth.getSession().then(() => supabase.supabaseUrl) as unknown as string;
 };
 
-export { supabaseClient as supabase };
+export { supabase };

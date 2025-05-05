@@ -42,3 +42,8 @@ export const updateUserPassword = async (newPassword: string): Promise<CrudResul
     return formatCrudResult(null, error);
   }
 };
+
+export const authRecovery = {
+  requestPasswordReset,
+  updateUserPassword
+};
