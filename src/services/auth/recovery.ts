@@ -1,40 +1,44 @@
-import { supabase } from '@/integrations/supabase/client';
-import { CrudResult } from '@/integrations/supabase';
 
-export const authRecovery = {
-  resetPassword: async (email: string): Promise<CrudResult<null>> => {
-    try {
-      console.log('[AuthRecovery] Iniciando processo de reset de senha para:', email);
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/reset-password',
-      });
-      
-      if (error) {
-        console.error('[AuthRecovery] Erro ao solicitar reset de senha:', error);
-        return {
-          data: null,
-          error,
-          status: 'error',
-          message: error.message || 'Erro ao solicitar reset de senha'
-        };
-      }
-      
-      console.log('[AuthRecovery] Solicitação de reset de senha enviada com sucesso');
-      return {
-        data: null,
-        error: null,
-        status: 'success',
-        message: 'Link para redefinição de senha enviado para seu email'
-      };
-    } catch (error) {
-      console.error('[AuthRecovery] Erro não tratado no reset de senha:', error);
-      return {
-        data: null,
-        error,
-        status: 'error',
-        message: error instanceof Error ? error.message : 'Erro ao solicitar reset de senha'
-      };
+import { supabase } from '@/integrations/supabase/client';
+import { CrudResult, formatCrudResult } from '@/integrations/supabase';
+import { useToast } from '@/hooks/use-toast';
+
+export interface UserRecoveryOptions {
+  email: string;
+}
+
+// Request a password reset email
+export const requestPasswordReset = async (options: UserRecoveryOptions): Promise<CrudResult<null>> => {
+  try {
+    const { email } = options;
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password',
+    });
+    
+    if (error) {
+      return formatCrudResult(null, error);
     }
+    
+    return formatCrudResult(null, null);
+  } catch (error: any) {
+    return formatCrudResult(null, error);
+  }
+};
+
+// Update user's password after reset
+export const updateUserPassword = async (newPassword: string): Promise<CrudResult<null>> => {
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) {
+      return formatCrudResult(null, error);
+    }
+    
+    return formatCrudResult(null, null);
+  } catch (error: any) {
+    return formatCrudResult(null, error);
   }
 };

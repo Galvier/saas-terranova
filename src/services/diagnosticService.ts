@@ -1,9 +1,11 @@
+
 import { supabase } from '@/integrations/supabase/client';
+import { callRPC } from '@/integrations/supabase/core';
 
 // Function to check if a table exists
 export const checkTableExists = async (tableName: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('check_table_exists', {
+    const { data, error } = await callRPC<boolean>('check_table_exists', {
       table_name: tableName,
     });
 
@@ -22,7 +24,7 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
 // Function to check if a user profile exists
 export const checkUserProfileExists = async (userId: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('check_user_profile', {
+    const { data, error } = await callRPC<{ exists: boolean }>('check_user_profile', {
       user_id: userId
     });
 
