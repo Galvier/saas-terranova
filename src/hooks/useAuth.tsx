@@ -3,11 +3,13 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client'; 
 import { useToast } from './use-toast';
-import { useNavigate } from 'react-router-dom';
+import { Manager } from '@/integrations/supabase/types/manager';
+import { getCurrentUserManager } from '@/integrations/supabase/managers';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  manager: Manager | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -20,6 +22,7 @@ interface AuthContextType {
 const defaultAuthContext: AuthContextType = {
   user: null,
   session: null,
+  manager: null,
   isLoading: true,
   isAuthenticated: false,
   isAdmin: false,
@@ -33,12 +36,42 @@ const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [manager, setManager] = useState<Manager | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userDepartmentId, setUserDepartmentId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Determine if the user is an admin based on metadata
-  const isAdmin = user?.user_metadata?.user_type === 'admin';
+  // Determine if the user is an admin based on the manager role
+  const isAdmin = manager?.role === 'admin';
+
+  // Get the manager record for the current user
+  const fetchManagerData = async () => {
+    if (!user) {
+      setManager(null);
+      setUserDepartmentId(null);
+      return;
+    }
+
+    try {
+      const { data: managerData, error } = await getCurrentUserManager();
+      
+      if (error) {
+        console.error("Error fetching manager data:", error);
+        return;
+      }
+      
+      if (managerData) {
+        setManager(managerData);
+        
+        // Set the department ID if the manager has one
+        if (managerData.department_id) {
+          setUserDepartmentId(managerData.department_id);
+        }
+      }
+    } catch (error) {
+      console.error("Error in fetchManagerData:", error);
+    }
+  };
 
   useEffect(() => {
     // Set up subscription for auth changes
@@ -46,24 +79,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user || null);
       
-      // Fetch or determine user's department if they're logged in
-      if (session?.user) {
-        // In a real app, fetch the user's department from their profile
-        if (!isAdmin && session.user.user_metadata?.department_id) {
-          setUserDepartmentId(session.user.user_metadata.department_id);
-        }
-      } else {
-        setUserDepartmentId(null);
-      }
-      
       if (event === 'SIGNED_IN') {
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao Business Manager"
         });
+        
+        // Fetch manager data on sign in
+        if (session?.user) {
+          setTimeout(() => {
+            fetchManagerData();
+          }, 0);
+        }
       }
       
       if (event === 'SIGNED_OUT') {
+        setManager(null);
+        setUserDepartmentId(null);
+        
         toast({
           title: "Desconectado",
           description: "Sessão encerrada com sucesso"
@@ -81,11 +114,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(data.session);
         setUser(data.session?.user || null);
         
-        // Fetch or determine user's department if they're logged in
+        // Fetch manager data if user is logged in
         if (data.session?.user) {
-          if (!isAdmin && data.session.user.user_metadata?.department_id) {
-            setUserDepartmentId(data.session.user.user_metadata.department_id);
-          }
+          await fetchManagerData();
         }
       } catch (error) {
         console.error('Erro ao verificar sessão:', error);
@@ -99,7 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast, isAdmin]);
+  }, [toast]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -155,6 +186,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{
       user,
       session,
+      manager,
       isLoading,
       isAuthenticated,
       isAdmin,
