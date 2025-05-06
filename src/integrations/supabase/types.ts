@@ -390,6 +390,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_function_exists: {
+        Args: { function_name: string }
+        Returns: Json
+      }
       check_table_exists_and_count: {
         Args: { table_name: string }
         Returns: Json

@@ -98,17 +98,17 @@ const Login = () => {
         <div className="flex justify-center mb-8">
           <AppLogo />
         </div>
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Entrar</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl font-bold text-center">Entrar</CardTitle>
+            <CardDescription className="text-center">
               Entre com suas credenciais para acessar o sistema
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               {loginError && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="text-sm">
                   <AlertCircle className="h-4 w-4 mr-2" />
                   <AlertDescription>{loginError}</AlertDescription>
                 </Alert>
@@ -122,15 +122,17 @@ const Login = () => {
                   placeholder="nome@empresa.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                   required
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Senha</Label>
-                  <a 
-                    href="#" 
-                    className="text-sm text-primary underline-offset-4 hover:underline"
+                  <button 
+                    type="button"
+                    className="text-xs text-primary underline-offset-4 hover:underline"
                     onClick={(e) => {
                       e.preventDefault();
                       toast({
@@ -140,7 +142,7 @@ const Login = () => {
                     }}
                   >
                     Esqueceu a senha?
-                  </a>
+                  </button>
                 </div>
                 <div className="relative">
                   <Input
@@ -149,19 +151,18 @@ const Login = () => {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
                     required
                     minLength={6}
-                    className="pr-10"
+                    className="pr-10 w-full"
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
                     className="absolute right-0 top-0 h-full px-3 py-1 text-muted-foreground"
                     onClick={toggleShowPassword}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+                  </button>
                 </div>
               </div>
             </CardContent>
@@ -179,7 +180,7 @@ const Login = () => {
                 ) : 'Entrar'}
               </Button>
               
-              <div className="flex justify-center w-full">
+              <div className="flex justify-center w-full mt-4">
                 <Button
                   type="button"
                   variant="outline"
@@ -204,7 +205,7 @@ const Login = () => {
               
               {diagnosticResult && (
                 <div className="text-xs mt-2 p-2 bg-muted rounded-md max-h-32 overflow-y-auto">
-                  <pre className="whitespace-pre-wrap break-all">
+                  <pre className="whitespace-pre-wrap break-all text-[10px]">
                     {JSON.stringify(diagnosticResult, null, 2)}
                   </pre>
                 </div>
