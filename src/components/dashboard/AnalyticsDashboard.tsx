@@ -1,11 +1,13 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, AlertTriangle, TrendingUp, Activity, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertTriangle, TrendingUp, Activity, AlertCircle, Calendar } from 'lucide-react';
 import KpiCard from '@/components/KpiCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { MetricDefinition } from '@/integrations/supabase';
 import useAnalyticsDashboard from '@/hooks/useAnalyticsDashboard';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface AnalyticsDashboardProps {
   metrics: MetricDefinition[];
@@ -25,6 +27,15 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ metrics }) => {
     metricsWithoutTarget,
     metricsWithoutCurrentValue
   } = useAnalyticsDashboard(metrics);
+
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return "Nenhum registro";
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+    } catch (error) {
+      return "Data inválida";
+    }
+  };
 
   return (
     <div className="animate-fade-in">
@@ -58,7 +69,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ metrics }) => {
         {/* Departamentos com Melhor Desempenho */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base sm:text-lg">Departamentos com Melhor Desempenho</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Setores com Melhor Desempenho</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[250px] sm:h-[280px]">
@@ -123,7 +134,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ metrics }) => {
         {/* Distribuição de Indicadores por Departamento */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base sm:text-lg">Distribuição de Indicadores por Departamento</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Distribuição de Indicadores por Setor</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[250px] sm:h-[280px]">
@@ -162,6 +173,10 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ metrics }) => {
                         <div>
                           <h4 className="font-medium">{metric.name}</h4>
                           <p className="text-sm text-muted-foreground">{metric.department_name}</p>
+                          <div className="text-xs text-muted-foreground flex items-center mt-1">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {formatDate(metric.last_value_date)}
+                          </div>
                         </div>
                         <div className="text-right">
                           <div className="font-bold">

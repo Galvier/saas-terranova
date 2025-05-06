@@ -1,13 +1,15 @@
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client'; 
-import { useToast } from './use-toast';
-import { useNavigate } from 'react-router-dom';
+import { Manager } from '@/integrations/supabase/types/manager';
+import { useAuthSession } from './useAuthSession';
+import { useManagerData } from './useManagerData';
+import { useAuthMethods } from './useAuthMethods';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  manager: Manager | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -20,6 +22,7 @@ interface AuthContextType {
 const defaultAuthContext: AuthContextType = {
   user: null,
   session: null,
+  manager: null,
   isLoading: true,
   isAuthenticated: false,
   isAdmin: false,
@@ -31,130 +34,27 @@ const defaultAuthContext: AuthContextType = {
 const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userDepartmentId, setUserDepartmentId] = useState<string | null>(null);
-  const { toast } = useToast();
+  // Usar hooks separados para gerenciar partes específicas da autenticação
+  const { user, session, isLoading: isSessionLoading, error: sessionError } = useAuthSession();
+  const { manager, userDepartmentId, isAdmin, isLoading: isManagerLoading } = useManagerData(user);
+  const { isAuthenticating, login, logout } = useAuthMethods();
 
-  // Determine if the user is an admin based on metadata
-  const isAdmin = user?.user_metadata?.user_type === 'admin';
+  // Combinar carregamentos
+  const isLoading = isSessionLoading || isManagerLoading || isAuthenticating;
 
-  useEffect(() => {
-    // Set up subscription for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user || null);
-      
-      // Fetch or determine user's department if they're logged in
-      if (session?.user) {
-        // In a real app, fetch the user's department from their profile
-        if (!isAdmin && session.user.user_metadata?.department_id) {
-          setUserDepartmentId(session.user.user_metadata.department_id);
-        }
-      } else {
-        setUserDepartmentId(null);
-      }
-      
-      if (event === 'SIGNED_IN') {
-        toast({
-          title: "Login realizado com sucesso",
-          description: "Bem-vindo ao Business Manager"
-        });
-      }
-      
-      if (event === 'SIGNED_OUT') {
-        toast({
-          title: "Desconectado",
-          description: "Sessão encerrada com sucesso"
-        });
-      }
-
-      // Update loading state
-      setIsLoading(false);
-    });
-
-    // Check current session
-    const checkSession = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        setSession(data.session);
-        setUser(data.session?.user || null);
-        
-        // Fetch or determine user's department if they're logged in
-        if (data.session?.user) {
-          if (!isAdmin && data.session.user.user_metadata?.department_id) {
-            setUserDepartmentId(data.session.user.user_metadata.department_id);
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao verificar sessão:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkSession();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [toast, isAdmin]);
-
-  const login = async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (error) {
-        console.error('Erro durante login:', error);
-        toast({
-          title: "Erro no login",
-          description: error.message || "Credenciais inválidas. Por favor, verifique seu email e senha.",
-          variant: "destructive"
-        });
-        return false;
-      }
-      
-      return true;
-    } catch (error: any) {
-      console.error('Erro durante login:', error);
-      toast({
-        title: "Erro no login",
-        description: error.message || "Ocorreu um erro ao fazer login. Por favor, tente novamente.",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      setIsLoading(true);
-      await supabase.auth.signOut();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao desconectar",
-        description: error.message || "Falha ao fazer logout",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Consider user as authenticated if user object exists and not loading
+  // Considerar usuário como autenticado se o objeto de usuário existir e não estiver carregando
   const isAuthenticated = !!user && !isLoading;
+
+  // Log de debug para facilitar identificação de problemas
+  if (sessionError) {
+    console.error('[AuthProvider] Erro na sessão:', sessionError);
+  }
 
   return (
     <AuthContext.Provider value={{
       user,
       session,
+      manager,
       isLoading,
       isAuthenticated,
       isAdmin,
@@ -170,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    console.warn('useAuth was called outside of AuthProvider. Using default auth context.');
+    console.warn('useAuth foi chamado fora do AuthProvider. Usando contexto de autenticação padrão.');
     return defaultAuthContext;
   }
   return context;

@@ -1,180 +1,228 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { testSupabaseConnection, checkDatabaseTables } from '@/integrations/supabase/client';
-import { CrudResult, formatCrudResult, callRPC, getSupabaseUrl } from '@/integrations/supabase';
 
-export interface DiagnosticTest {
-  id: string;
-  test_id: string;
-  test_type?: string;
-  created_at?: string;
-  created_by?: string;
-}
-
-export interface ConnectionInfo {
-  connected: boolean;
-  responseTime: number;
-  url: string;
-  timestamp: Date;
-  message: string;
-}
-
-export interface TableInfo {
-  name: string;
-  status: 'ok' | 'empty' | 'error';
-  recordCount: number | null;
-  message: string | null;
-}
-
+// Interface para os resultados de diagnóstico
 export interface DiagnosticResult {
-  status: 'success' | 'error' | 'pending';
+  status: 'success' | 'error';
   message: string;
   timestamp: Date;
   details?: any;
 }
 
-export interface DiagnosticResults {
-  connectionTest: {
-    success: boolean;
-    message: string;
-    responseTime?: number;
-  };
-  tablesCheck: {
-    [tableName: string]: {
-      exists: boolean;
-      count?: number;
-      error?: string;
-    };
-  };
-  writeTest: {
-    success: boolean;
-    message: string;
-    timeTaken?: number;
-    testId?: string;
-  };
+// Interface para informações de conexão
+export interface ConnectionInfo {
+  connected: boolean;
+  url: string;
+  responseTime: number;
+  timestamp: Date;
+  error?: string;
+  success?: boolean; // Adicionado para compatibilidade com Settings.tsx
+  message?: string; // Adicionado para compatibilidade com Settings.tsx
 }
 
-// Tests the connection to Supabase
-export const testConnection = async (): Promise<{success: boolean; message: string; responseTime?: number}> => {
-  return await testSupabaseConnection();
-};
+// Interface para informações de tabela
+export interface TableInfo {
+  name: string;
+  status: 'ok' | 'empty' | 'error';
+  recordCount: number | null;
+  message?: string;
+  exists?: boolean; // Adicionado para compatibilidade com Settings.tsx
+}
 
-// Tests if the tables exist and returns their row counts
-export const testTables = async (): Promise<{[tableName: string]: {exists: boolean; count?: number; error?: string}}> => {
-  return await checkDatabaseTables();
-};
-
-// Tests writing to the database by creating a diagnostic_test record
-export const testDatabaseWrite = async (): Promise<CrudResult<DiagnosticTest>> => {
+// Função para testar a conexão com o Supabase
+export async function testConnection(): Promise<ConnectionInfo> {
+  const startTime = performance.now();
   try {
-    const startTime = performance.now();
-    console.log('Testing database write...');
-
-    // First try to create the table if it doesn't exist
-    const { error: rpcError } = await callRPC('create_diagnostic_table_if_not_exists', {});
+    const url = getSupabaseUrlUtil();
+    const { data, error } = await supabase.rpc('postgres_version');
     
-    if (rpcError) {
-      console.error('Error creating diagnostic table:', rpcError);
-      return formatCrudResult(null, rpcError);
-    }
+    if (error) throw error;
     
-    // Generate a test ID
-    const testId = `test_${Date.now()}`;
-    
-    // Try to insert a record using a function to avoid RLS issues
-    const { data, error } = await callRPC<{id: string}>('run_diagnostic_write_test', { 
-      test_id_param: testId 
-    });
-    
-    const timeTaken = Math.round(performance.now() - startTime);
-    
-    if (error) {
-      console.error('Error in write test:', error);
-      return formatCrudResult(null, error);
-    }
-    
-    console.log(`Write test successful (${timeTaken}ms)`);
-    return formatCrudResult({
-      id: data?.id || 'unknown',
-      test_id: testId,
-      test_type: 'write_test',
-    }, null);
-    
-  } catch (error) {
-    console.error('Unexpected error in write test:', error);
-    return formatCrudResult(null, error);
+    return {
+      connected: true,
+      url,
+      responseTime: Math.round(performance.now() - startTime),
+      timestamp: new Date(),
+      success: true // Adicionado para compatibilidade com Settings.tsx
+    };
+  } catch (error: any) {
+    console.error('Erro na conexão:', error);
+    return {
+      connected: false,
+      url: getSupabaseUrlUtil(),
+      responseTime: Math.round(performance.now() - startTime),
+      timestamp: new Date(),
+      error: error.message || 'Erro desconhecido na conexão',
+      success: false, // Adicionado para compatibilidade com Settings.tsx
+      message: error.message || 'Erro desconhecido na conexão' // Adicionado para compatibilidade com Settings.tsx
+    };
   }
-};
+}
 
-// Run all diagnostic tests - this is the function we need to implement and export
-export const runFullDiagnostic = async (tablesToCheck: string[]): Promise<{
-  connection: ConnectionInfo;
-  tables: TableInfo[];
-  writeTest: DiagnosticResult;
-}> => {
-  // Initialize result objects
-  const connectionResult = await testConnection();
-  const connection: ConnectionInfo = {
-    connected: connectionResult.success,
-    responseTime: connectionResult.responseTime || 0,
-    url: getSupabaseUrl(),
-    timestamp: new Date(),
-    message: connectionResult.message
-  };
+// Função para verificar o status das tabelas
+export async function checkTables(essentialTables: string[]): Promise<TableInfo[]> {
+  const results: TableInfo[] = [];
   
-  const tableResults = await testTables();
-  const tables: TableInfo[] = [];
-  
-  // Process table check results
-  for (const tableName in tableResults) {
-    const tableCheck = tableResults[tableName];
-    tables.push({
-      name: tableName,
-      status: tableCheck.exists 
-        ? (tableCheck.count && tableCheck.count > 0 ? 'ok' : 'empty') 
-        : 'error',
-      recordCount: tableCheck.exists ? (tableCheck.count || 0) : null,
-      message: tableCheck.error || null
-    });
-  }
-  
-  // Add any missing tables from the provided list
-  for (const tableName of tablesToCheck) {
-    if (!tables.some(t => t.name === tableName)) {
-      tables.push({
+  for (const tableName of essentialTables) {
+    try {
+      const { data, error } = await supabase.rpc('check_table_exists_and_count', {
+        table_name: tableName
+      });
+      
+      if (error) {
+        results.push({
+          name: tableName,
+          status: 'error',
+          recordCount: null,
+          message: error.message
+        });
+        continue;
+      }
+      
+      // Converter o resultado para o formato esperado
+      const result = typeof data === 'string' ? JSON.parse(data) : data;
+      
+      if (!result.exists) {
+        results.push({
+          name: tableName,
+          status: 'error',
+          recordCount: null,
+          message: 'Tabela não encontrada',
+          exists: false
+        });
+      } else if (result.count === 0) {
+        results.push({
+          name: tableName,
+          status: 'empty',
+          recordCount: 0,
+          message: 'Tabela está vazia',
+          exists: true
+        });
+      } else {
+        results.push({
+          name: tableName,
+          status: 'ok',
+          recordCount: result.count,
+          message: null,
+          exists: true
+        });
+      }
+    } catch (error: any) {
+      results.push({
         name: tableName,
         status: 'error',
         recordCount: null,
-        message: 'Table not found in database'
+        message: error.message || 'Erro ao verificar tabela',
+        exists: false
       });
     }
   }
   
-  // Only perform write test if connection successful
-  let writeTest: DiagnosticResult = {
-    status: 'pending',
-    message: 'Write test not performed due to connection issues',
-    timestamp: new Date()
-  };
+  return results;
+}
+
+// Função para executar teste de escrita
+export async function testDiagnosticWrite(): Promise<DiagnosticResult> {
+  const testId = `test-${new Date().getTime()}`;
   
-  if (connection.connected) {
-    const writeResult = await testDatabaseWrite();
-    writeTest = {
-      status: writeResult.status === 'success' ? 'success' : 'error',
-      message: writeResult.message || '',
+  try {
+    // Primeiro, criar a tabela de diagnóstico se não existir
+    await supabase.rpc('create_diagnostic_table_if_not_exists');
+    
+    // Agora, testar a escrita
+    const { data, error } = await supabase.rpc('run_diagnostic_write_test', {
+      test_id_param: testId
+    });
+    
+    if (error) throw error;
+    
+    return {
+      status: 'success',
+      message: 'Teste de escrita realizado com sucesso',
       timestamp: new Date(),
-      details: writeResult.data
+      details: data
+    };
+  } catch (error: any) {
+    console.error('Erro no teste de escrita:', error);
+    return {
+      status: 'error',
+      message: error.message || 'Erro desconhecido no teste de escrita',
+      timestamp: new Date()
     };
   }
+}
+
+// Função para verificar sincronização entre auth.users e managers
+export async function checkAuthUsersSyncStatus(): Promise<DiagnosticResult> {
+  try {
+    const { data, error } = await supabase.rpc('diagnose_auth_sync_issues');
+    
+    if (error) throw error;
+    
+    return {
+      status: 'success',
+      message: 'Verificação de sincronização concluída',
+      timestamp: new Date(),
+      details: data
+    };
+  } catch (error: any) {
+    console.error('Erro ao verificar sincronização:', error);
+    return {
+      status: 'error',
+      message: error.message || 'Erro ao verificar sincronização',
+      timestamp: new Date()
+    };
+  }
+}
+
+// Função para obter a URL do Supabase para diagnóstico
+export function getSupabaseUrlUtil(): string {
+  return import.meta.env.VITE_SUPABASE_URL || 'https://wjuzzjitpkhjjxujxftm.supabase.co';
+}
+
+// Função principal de diagnóstico que executa todos os testes
+export async function runFullDiagnostic(essentialTables: string[]) {
+  const connection = await testConnection();
+  const tables = await checkTables(essentialTables);
+  const writeTest = await testDiagnosticWrite();
+  const syncStatus = await checkAuthUsersSyncStatus();
   
   return {
     connection,
     tables,
-    writeTest
+    writeTest,
+    syncStatus
   };
+}
+
+// Funções para compatibilidade com Settings.tsx
+export const testTables = async () => {
+  const essentialTables = [
+    'users',
+    'profiles',
+    'departments',
+    'managers',
+    'metrics',
+    'settings',
+    'logs'
+  ];
+  
+  const tablesResult = await checkTables(essentialTables);
+  
+  // Converter para o formato esperado pelo Settings.tsx
+  const result: Record<string, { exists: boolean, count?: number }> = {};
+  
+  tablesResult.forEach(table => {
+    result[table.name] = {
+      exists: table.status !== 'error',
+      count: table.recordCount || 0
+    };
+  });
+  
+  return result;
 };
 
-// Helper function to get Supabase URL - renamed to avoid conflict
-export const getSupabaseUrlUtil = (): string => {
-  return getSupabaseUrl();
+export const testDatabaseWrite = async () => {
+  const result = await testDiagnosticWrite();
+  return result;
 };

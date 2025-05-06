@@ -1,4 +1,3 @@
-
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { MetricDefinition, MetricHistory, AdminDashboardConfig } from './types/metric';
 

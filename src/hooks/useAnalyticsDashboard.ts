@@ -36,7 +36,7 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
     // Process metrics to calculate performance values
     metrics.forEach(metric => {
       // Get department data
-      const deptName = metric.department_name || 'Unknown';
+      const deptName = metric.department_name || 'Desconhecido';
       if (!departmentMap.has(deptName)) {
         departmentMap.set(deptName, { metrics: [], total: 0, achieved: 0 });
       }

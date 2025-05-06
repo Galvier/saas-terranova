@@ -64,11 +64,11 @@ const DepartmentFilter: React.FC<DepartmentFilterProps> = ({
       disabled={!isAdmin && userDepartmentId !== null}
     >
       <SelectTrigger className={`w-full ${className}`}>
-        <SelectValue placeholder="Selecione um departamento" />
+        <SelectValue placeholder="Selecione um setor" />
       </SelectTrigger>
       <SelectContent>
         {/* Only show "All departments" for admins */}
-        {isAdmin && <SelectItem value="all">Todos os departamentos</SelectItem>}
+        {isAdmin && <SelectItem value="all">Todos os setores</SelectItem>}
         
         {departments.map((dept) => {
           // For non-admins, only show their department

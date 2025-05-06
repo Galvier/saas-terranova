@@ -19,6 +19,7 @@ export interface MetricDefinition {
   visualization_type?: VisualizationType;
   priority?: Priority;
   default_period?: DefaultPeriod;
+  last_value_date?: string | null;
 }
 
 export interface MetricHistory {

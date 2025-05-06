@@ -2,10 +2,12 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, BarChart3, LineChart, PieChart, LayoutGrid } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, BarChart3, LineChart, PieChart, LayoutGrid, Calendar } from 'lucide-react';
 import { CustomBadge } from '@/components/ui/custom-badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MetricDefinition } from '@/integrations/supabase';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface MetricsTableProps {
   metrics: MetricDefinition[];
@@ -54,15 +56,12 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     }
   };
   
-  const getPriorityBadge = (priority?: string) => {
-    switch (priority) {
-      case 'critical':
-        return <CustomBadge variant="destructive">Crítica</CustomBadge>;
-      case 'high':
-        return <CustomBadge variant="secondary">Alta</CustomBadge>;
-      case 'normal':
-      default:
-        return <CustomBadge variant="outline">Normal</CustomBadge>;
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return "Nenhum registro";
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+    } catch (error) {
+      return "Data inválida";
     }
   };
 
@@ -72,13 +71,13 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
         <TableHeader>
           <TableRow>
             <TableHead>Métrica</TableHead>
-            <TableHead>Departamento</TableHead>
+            <TableHead>Setor</TableHead>
             <TableHead>Meta</TableHead>
             <TableHead>Atual</TableHead>
             <TableHead className="text-center">Tendência</TableHead>
             <TableHead>Frequência</TableHead>
             <TableHead className="text-center">Visualização</TableHead>
-            <TableHead className="text-center">Prioridade</TableHead>
+            <TableHead className="text-center">Último Registro</TableHead>
             <TableHead className="text-center">Status</TableHead>
             <TableHead className="text-center">Ações</TableHead>
           </TableRow>
@@ -93,7 +92,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                     {metric.name}
                   </div>
                 </TableCell>
-                <TableCell>{metric.department_name || 'Sem departamento'}</TableCell>
+                <TableCell>{metric.department_name || 'Sem setor'}</TableCell>
                 <TableCell>
                   {isCurrencyUnit ? `R$ ${metric.target}` : `${metric.target} ${metric.unit}`}
                 </TableCell>
@@ -135,7 +134,19 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                   </TooltipProvider>
                 </TableCell>
                 <TableCell className="text-center">
-                  {getPriorityBadge(metric.priority)}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <div className="flex items-center justify-center gap-1">
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-sm">{formatDate(metric.last_value_date)}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Data do último valor registrado</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </TableCell>
                 <TableCell className="text-center">
                   <CustomBadge variant={getStatusVariant(metric.status)}>

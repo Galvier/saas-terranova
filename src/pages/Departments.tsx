@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -52,7 +53,7 @@ const Departments = () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       setIsDialogOpen(false);
       toast({
-        title: "Departamento criado",
+        title: "Setor criado",
         description: `${newDepartment.name} foi adicionado com sucesso`,
       });
       setNewDepartment({
@@ -63,10 +64,10 @@ const Departments = () => {
       });
     },
     onError: (error) => {
-      console.error('Erro ao criar departamento:', error);
+      console.error('Erro ao criar setor:', error);
       toast({
-        title: "Erro ao criar departamento",
-        description: error instanceof Error ? error.message : "Ocorreu um erro ao salvar o departamento",
+        title: "Erro ao criar setor",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao salvar o setor",
         variant: "destructive"
       });
     }
@@ -95,21 +96,21 @@ const Departments = () => {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Departamentos" subtitle="Gerencie os departamentos da empresa" />
+      <PageHeader title="Setores" subtitle="Gerencie os setores da empresa" />
       <div className="flex justify-end mb-6">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              Novo Departamento
+              Novo Setor
             </Button>
           </DialogTrigger>
           <DialogContent>
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Criar Departamento</DialogTitle>
+                <DialogTitle>Criar Setor</DialogTitle>
                 <DialogDescription>
-                  Adicione um novo departamento à empresa.
+                  Adicione um novo setor à empresa.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -178,15 +179,15 @@ const Departments = () => {
         </Dialog>
       </div>
       {isLoading ? (
-        <div className="flex justify-center p-8">Carregando departamentos...</div>
+        <div className="flex justify-center p-8">Carregando setores...</div>
       ) : error ? (
-        <div className="text-center p-8 text-red-500">Erro ao carregar departamentos</div>
+        <div className="text-center p-8 text-red-500">Erro ao carregar setores</div>
       ) : (
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Departamento</TableHead>
+                <TableHead>Setor</TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Gestor Responsável</TableHead>
                 <TableHead className="text-center">Status</TableHead>
@@ -209,7 +210,7 @@ const Departments = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-6">
-                    Nenhum departamento encontrado
+                    Nenhum setor encontrado
                   </TableCell>
                 </TableRow>
               )}

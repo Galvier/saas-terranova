@@ -93,3 +93,18 @@ export const getManagerById = async (id: string): Promise<CrudResult<Manager>> =
     return formatCrudResult(null, error);
   }
 };
+
+export const getCurrentUserManager = async (): Promise<CrudResult<Manager>> => {
+  try {
+    const { data, error } = await callRPC<Manager[]>('get_current_user_manager', {});
+    
+    // The function should return either one manager or none if the user is not a manager
+    const manager = Array.isArray(data) && data.length > 0 ? data[0] : null;
+    console.log("Current user manager data:", manager);
+    
+    return formatCrudResult(manager, error);
+  } catch (error) {
+    console.error('Error fetching current user manager:', error);
+    return formatCrudResult(null, error);
+  }
+};

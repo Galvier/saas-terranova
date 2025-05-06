@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, ClipboardList, Home, LogOut, Settings, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ type SidebarItem = {
 
 const navItems: SidebarItem[] = [
   { title: 'Dashboard', path: '/dashboard', icon: Home },
-  { title: 'Departamentos', path: '/departments', icon: ClipboardList },
+  { title: 'Setores', path: '/setores', icon: ClipboardList },
   { title: 'Gestores', path: '/managers', icon: Users },
   { title: 'Métricas', path: '/metrics', icon: BarChart3 },
   { title: 'Configurações', path: '/settings', icon: Settings },
@@ -23,13 +23,18 @@ const navItems: SidebarItem[] = [
 const AppSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, user, isAdmin } = useAuth();
+  const { logout, user, manager, isAdmin } = useAuth();
   
-  // Format user display name from user metadata or email
+  // Format user display name from manager data, user metadata, or email
   const getUserDisplayName = () => {
+    // First prioritize manager name if available
+    if (manager && manager.name) {
+      return manager.name;
+    }
+    
     if (!user) return '';
     
-    // First prioritize display_name from user_metadata
+    // Then try display_name from user_metadata
     if (user.user_metadata && user.user_metadata.display_name) {
       return user.user_metadata.display_name;
     }
@@ -55,7 +60,11 @@ const AppSidebar = () => {
 
   // Get user role text
   const getUserRole = () => {
-    return isAdmin ? 'Administrador' : 'Gestor';
+    if (manager && manager.role) {
+      return manager.role === 'admin' ? 'Administrador' : 
+             manager.role === 'manager' ? 'Gestor' : 'Visualizador';
+    }
+    return isAdmin ? 'Administrador' : 'Usuário';
   };
   
   const handleLogout = async () => {

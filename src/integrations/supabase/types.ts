@@ -126,6 +126,7 @@ export type Database = {
           name: string
           role: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -136,6 +137,7 @@ export type Database = {
           name: string
           role?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -146,6 +148,7 @@ export type Database = {
           name?: string
           role?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -156,6 +159,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      managers_backup: {
+        Row: {
+          created_at: string | null
+          department_id: string | null
+          email: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department_id?: string | null
+          email?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department_id?: string | null
+          email?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       metrics: {
         Row: {
@@ -354,6 +390,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_function_exists: {
+        Args: { function_name: string }
+        Returns: Json
+      }
       check_table_exists_and_count: {
         Args: { table_name: string }
         Returns: Json
@@ -443,6 +483,10 @@ export type Database = {
         Args: { metric_id: string }
         Returns: string
       }
+      diagnose_auth_sync_issues: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_admin_dashboard_config: {
         Args: { user_id_param: string }
         Returns: {
@@ -479,6 +523,20 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_current_user_manager: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string | null
+          department_id: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          name: string
+          role: string | null
+          updated_at: string | null
+          user_id: string | null
+        }[]
+      }
       get_manager_by_id: {
         Args: { manager_id: string }
         Returns: {
@@ -490,6 +548,7 @@ export type Database = {
           name: string
           role: string | null
           updated_at: string | null
+          user_id: string | null
         }[]
       }
       get_metric_history: {
@@ -518,6 +577,10 @@ export type Database = {
           is_active: boolean
           icon_name: string
           lower_is_better: boolean
+          visualization_type: string
+          priority: string
+          default_period: string
+          last_value_date: string
         }[]
       }
       postgres_version: {
@@ -537,13 +600,22 @@ export type Database = {
         Returns: string
       }
       update_manager: {
-        Args: {
-          manager_id: string
-          manager_name: string
-          manager_email: string
-          manager_department_id: string
-          manager_is_active: boolean
-        }
+        Args:
+          | {
+              manager_id: string
+              manager_name: string
+              manager_email: string
+              manager_department_id: string
+              manager_is_active: boolean
+            }
+          | {
+              manager_id: string
+              manager_name: string
+              manager_email: string
+              manager_department_id: string
+              manager_is_active: boolean
+              manager_role?: string
+            }
         Returns: Json
       }
       update_metric_definition: {

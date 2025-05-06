@@ -21,8 +21,8 @@ export const DepartmentsSelect: React.FC<DepartmentsSelectProps> = ({
   departments,
   value,
   onChange,
-  label = "Departamento",
-  description = "Selecione o departamento",
+  label = "Setor",
+  description = "Selecione o setor",
   form,
   name = "department_id",
   required = false,
@@ -35,7 +35,7 @@ export const DepartmentsSelect: React.FC<DepartmentsSelectProps> = ({
         <label className="text-sm font-medium">{label}{required && <span className="text-destructive ml-1">*</span>}</label>
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger className={error ? "border-destructive" : ""}>
-            <SelectValue placeholder="Selecione um departamento" />
+            <SelectValue placeholder="Selecione um setor" />
           </SelectTrigger>
           <SelectContent>
             {departments.map((department) => (
@@ -60,7 +60,7 @@ export const DepartmentsSelect: React.FC<DepartmentsSelectProps> = ({
           <Select onValueChange={field.onChange} defaultValue={field.value}>
             <FormControl>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione um departamento" />
+                <SelectValue placeholder="Selecione um setor" />
               </SelectTrigger>
             </FormControl>
             <SelectContent>

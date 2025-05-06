@@ -24,6 +24,9 @@ const managerUpdateSchema = z.object({
     message: "Selecione um departamento.",
   }),
   is_active: z.boolean().default(true),
+  role: z.enum(['admin', 'manager', 'viewer'], {
+    required_error: "Selecione uma função",
+  }).default('manager'),
 });
 
 export type ManagerUpdateValues = z.infer<typeof managerUpdateSchema>;
@@ -50,6 +53,7 @@ export const ManagerInfoForm: React.FC<ManagerInfoFormProps> = ({
       email: manager?.email || "",
       department_id: manager?.department_id || "",
       is_active: manager?.is_active ?? true,
+      role: (manager?.role as 'admin' | 'manager' | 'viewer') || "manager",
     },
   });
 
@@ -116,6 +120,31 @@ export const ManagerInfoForm: React.FC<ManagerInfoFormProps> = ({
                   </Select>
                   <FormDescription>
                     Selecione o departamento ao qual o gerente pertence.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Função</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma função" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="manager">Gestor</SelectItem>
+                      <SelectItem value="viewer">Visualizador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Defina o nível de acesso do gerente no sistema.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
