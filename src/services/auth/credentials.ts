@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { CrudResult, formatCrudResult } from '@/integrations/supabase';
@@ -90,12 +89,11 @@ export const authCredentials = {
       };
       console.log('[AuthCredentials] Verificação de tabelas:', tablesCheck);
       
-      // Verificação de funções RPC
+      // Verificação de funções RPC - Removendo a verificação de funções que não existem
       const functionsCheck = {
-        sync_auth_user_to_manager: await supabase.rpc('check_function_exists', { function_name: 'sync_auth_user_to_manager' }),
-        sync_manager_to_auth_user: await supabase.rpc('check_function_exists', { function_name: 'sync_manager_to_auth_user' })
+        sync_auth_user_to_manager: { error: "Verificação não disponível" },
+        sync_manager_to_auth_user: { error: "Verificação não disponível" }
       };
-      console.log('[AuthCredentials] Verificação de funções:', functionsCheck);
       
       // Resultado do diagnóstico
       const diagnosticResult = {

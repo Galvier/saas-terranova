@@ -17,7 +17,7 @@ const ManagersUpdate = () => {
     fetchManager,
     fetchDepartments,
     handleUpdateManager
-  } = useManagerData(id);
+  } = useManagerData(id || '');  // Passando uma string vazia se id for undefined
 
   useEffect(() => {
     if (id) {
