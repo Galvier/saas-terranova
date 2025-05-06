@@ -515,6 +515,20 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_current_user_manager: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string | null
+          department_id: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          name: string
+          role: string | null
+          updated_at: string | null
+          user_id: string | null
+        }[]
+      }
       get_manager_by_id: {
         Args: { manager_id: string }
         Returns: {
