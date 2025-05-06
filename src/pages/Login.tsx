@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import AppLogo from '@/components/AppLogo';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface LocationState {
   email?: string;
@@ -20,6 +21,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -43,6 +45,7 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setLoginError(null);
 
     try {
       const success = await login(email, password);
@@ -53,6 +56,9 @@ const Login = () => {
         const redirectTo = state?.from || '/dashboard';
         navigate(redirectTo, { replace: true });
       }
+    } catch (error: any) {
+      console.error("Erro de login não capturado:", error);
+      setLoginError(error.message || "Ocorreu um erro inesperado. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +79,13 @@ const Login = () => {
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
+              {loginError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  <AlertDescription>{loginError}</AlertDescription>
+                </Alert>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input

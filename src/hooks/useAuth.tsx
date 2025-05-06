@@ -53,51 +53,83 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
+      console.log('Buscando dados do manager para o usuário:', user.id);
       const result = await getCurrentUserManager();
+      
+      if (result.error) {
+        console.error('Erro ao buscar dados do manager:', result.error);
+        // Não definimos o manager como null aqui para evitar loops infinitos de autenticação
+        return;
+      }
+      
       if (result.data) {
+        console.log('Dados do manager encontrados:', result.data);
         setManager(result.data);
         if (result.data.department_id) {
           setUserDepartmentId(result.data.department_id);
         }
       } else {
+        console.log('Nenhum registro de manager encontrado para este usuário');
         setManager(null);
       }
     } catch (error) {
-      console.error('Error fetching manager data:', error);
-      setManager(null);
+      console.error('Erro ao buscar dados do manager:', error);
+      // Não definimos o manager como null aqui para evitar loops infinitos de autenticação
     }
   };
 
   useEffect(() => {
-    // Set up subscription for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user || null);
-      
-      if (event === 'SIGNED_IN') {
-        toast({
-          title: "Login realizado com sucesso",
-          description: "Bem-vindo ao Business Manager"
-        });
-      }
-      
-      if (event === 'SIGNED_OUT') {
-        toast({
-          title: "Desconectado",
-          description: "Sessão encerrada com sucesso"
-        });
-        setManager(null);
-        setUserDepartmentId(null);
-      }
+    let authSubscription: {
+      subscription: { unsubscribe: () => void };
+      data: { subscription: { unsubscribe: () => void } };
+    };
+    
+    // Função para configurar a inscrição de eventos de autenticação
+    const setupAuthSubscription = () => {
+      // Set up subscription for auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+        console.log('[AuthProvider] Evento de autenticação:', event);
+        
+        // Não atualize o estado se o evento for um refresh de token
+        if (event === 'TOKEN_REFRESHED') {
+          return;
+        }
+        
+        setSession(newSession);
+        setUser(newSession?.user || null);
+        
+        if (event === 'SIGNED_IN') {
+          toast({
+            title: "Login realizado com sucesso",
+            description: "Bem-vindo ao Business Manager"
+          });
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          toast({
+            title: "Desconectado",
+            description: "Sessão encerrada com sucesso"
+          });
+          setManager(null);
+          setUserDepartmentId(null);
+        }
 
-      // Update loading state
-      setIsLoading(false);
-    });
+        // Update loading state
+        setIsLoading(false);
+      });
+
+      return { subscription, data: { subscription } };
+    };
+
+    // Configurar a inscrição e armazenar a referência para limpeza
+    authSubscription = setupAuthSubscription();
 
     // Check current session
     const checkSession = async () => {
       try {
+        console.log('[AuthProvider] Verificando sessão existente');
         const { data } = await supabase.auth.getSession();
+        console.log('[AuthProvider] Sessão encontrada:', !!data.session);
         setSession(data.session);
         setUser(data.session?.user || null);
       } catch (error) {
@@ -109,15 +141,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     checkSession();
 
+    // Cleanup function to unsubscribe
     return () => {
-      subscription.unsubscribe();
+      if (authSubscription?.data?.subscription) {
+        console.log('[AuthProvider] Cancelando inscrição de autenticação');
+        authSubscription.data.subscription.unsubscribe();
+      } else if (authSubscription?.subscription) {
+        console.log('[AuthProvider] Cancelando inscrição alternativa de autenticação');
+        authSubscription.subscription.unsubscribe();
+      }
     };
   }, [toast]);
 
   // Fetch manager data whenever the user changes
   useEffect(() => {
     if (user) {
-      fetchManagerData();
+      // Use setTimeout para evitar deadlock com auth state change
+      setTimeout(() => {
+        fetchManagerData();
+      }, 0);
     } else {
       setManager(null);
       setUserDepartmentId(null);
@@ -127,6 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
