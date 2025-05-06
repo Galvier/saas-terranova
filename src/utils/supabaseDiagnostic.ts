@@ -16,6 +16,8 @@ export interface ConnectionInfo {
   responseTime: number;
   timestamp: Date;
   error?: string;
+  success?: boolean; // Adicionado para compatibilidade com Settings.tsx
+  message?: string; // Adicionado para compatibilidade com Settings.tsx
 }
 
 // Interface para informações de tabela
@@ -24,6 +26,7 @@ export interface TableInfo {
   status: 'ok' | 'empty' | 'error';
   recordCount: number | null;
   message?: string;
+  exists?: boolean; // Adicionado para compatibilidade com Settings.tsx
 }
 
 // Função para testar a conexão com o Supabase
@@ -39,7 +42,8 @@ export async function testConnection(): Promise<ConnectionInfo> {
       connected: true,
       url,
       responseTime: Math.round(performance.now() - startTime),
-      timestamp: new Date()
+      timestamp: new Date(),
+      success: true // Adicionado para compatibilidade com Settings.tsx
     };
   } catch (error: any) {
     console.error('Erro na conexão:', error);
@@ -48,7 +52,9 @@ export async function testConnection(): Promise<ConnectionInfo> {
       url: getSupabaseUrlUtil(),
       responseTime: Math.round(performance.now() - startTime),
       timestamp: new Date(),
-      error: error.message || 'Erro desconhecido na conexão'
+      error: error.message || 'Erro desconhecido na conexão',
+      success: false, // Adicionado para compatibilidade com Settings.tsx
+      message: error.message || 'Erro desconhecido na conexão' // Adicionado para compatibilidade com Settings.tsx
     };
   }
 }
@@ -81,21 +87,24 @@ export async function checkTables(essentialTables: string[]): Promise<TableInfo[
           name: tableName,
           status: 'error',
           recordCount: null,
-          message: 'Tabela não encontrada'
+          message: 'Tabela não encontrada',
+          exists: false
         });
       } else if (result.count === 0) {
         results.push({
           name: tableName,
           status: 'empty',
           recordCount: 0,
-          message: 'Tabela está vazia'
+          message: 'Tabela está vazia',
+          exists: true
         });
       } else {
         results.push({
           name: tableName,
           status: 'ok',
           recordCount: result.count,
-          message: null
+          message: null,
+          exists: true
         });
       }
     } catch (error: any) {
@@ -103,7 +112,8 @@ export async function checkTables(essentialTables: string[]): Promise<TableInfo[
         name: tableName,
         status: 'error',
         recordCount: null,
-        message: error.message || 'Erro ao verificar tabela'
+        message: error.message || 'Erro ao verificar tabela',
+        exists: false
       });
     }
   }
@@ -184,3 +194,35 @@ export async function runFullDiagnostic(essentialTables: string[]) {
     syncStatus
   };
 }
+
+// Funções para compatibilidade com Settings.tsx
+export const testTables = async () => {
+  const essentialTables = [
+    'users',
+    'profiles',
+    'departments',
+    'managers',
+    'metrics',
+    'settings',
+    'logs'
+  ];
+  
+  const tablesResult = await checkTables(essentialTables);
+  
+  // Converter para o formato esperado pelo Settings.tsx
+  const result: Record<string, { exists: boolean, count?: number }> = {};
+  
+  tablesResult.forEach(table => {
+    result[table.name] = {
+      exists: table.status !== 'error',
+      count: table.recordCount || 0
+    };
+  });
+  
+  return result;
+};
+
+export const testDatabaseWrite = async () => {
+  const result = await testDiagnosticWrite();
+  return result;
+};

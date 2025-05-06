@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -144,7 +143,7 @@ const Settings = () => {
       // Test connection to Supabase
       const connectionResult = await testConnection();
       
-      if (connectionResult.success) {
+      if (connectionResult.connected) {
         toast({
           title: "Diagnóstico concluído",
           description: `Conexão com o banco de dados estabelecida em ${connectionResult.responseTime}ms`
@@ -178,7 +177,7 @@ const Settings = () => {
       } else {
         toast({
           title: "Erro de conexão",
-          description: connectionResult.message,
+          description: connectionResult.message || "Não foi possível conectar ao banco de dados",
           variant: "destructive"
         });
       }
@@ -651,7 +650,7 @@ const Settings = () => {
                           Verifique a conexão com o banco de dados
                         </CardDescription>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="flex flex-col gap-2">
                         <Button 
                           className="w-full" 
                           variant="secondary" 
@@ -669,6 +668,15 @@ const Settings = () => {
                               Verificar Conexão
                             </>
                           )}
+                        </Button>
+                        
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={handleNavigateToDiagnostic}
+                        >
+                          <Settings2 className="mr-2 h-4 w-4" />
+                          Diagnóstico Avançado
                         </Button>
                       </CardContent>
                     </Card>
