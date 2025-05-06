@@ -6,17 +6,18 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import PageHeader from '@/components/PageHeader';
 import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDown, Home } from 'lucide-react';
 import { 
   runFullDiagnostic, 
   ConnectionInfo, 
   TableInfo, 
   DiagnosticResult,
-  getSupabaseUrlUtil 
+  getSupabaseUrlUtil,
+  checkAuthUsersSyncStatus
 } from '@/utils/supabaseDiagnostic';
 import { CustomBadge } from '@/components/ui/custom-badge';
 import { Link } from 'react-router-dom';
+import { TriggerCard } from '@/components/diagnostic/TriggerCard';
 
 const ESSENTIAL_TABLES = [
   'users',
@@ -34,7 +35,9 @@ const Diagnostic = () => {
   const [connection, setConnection] = useState<ConnectionInfo | null>(null);
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [writeTest, setWriteTest] = useState<DiagnosticResult | null>(null);
+  const [syncStatus, setSyncStatus] = useState<DiagnosticResult | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [triggerFixed, setTriggerFixed] = useState(false);
 
   const runDiagnostic = async () => {
     setIsLoading(true);
@@ -44,7 +47,14 @@ const Diagnostic = () => {
       setConnection(results.connection);
       setTables(results.tables);
       setWriteTest(results.writeTest);
+      setSyncStatus(results.syncStatus);
       setLastUpdate(new Date());
+      
+      // Verificar se o problema dos triggers foi resolvido
+      const syncDetails = results.syncStatus?.details;
+      if (syncDetails && syncDetails.auth_triggers > 0 && syncDetails.manager_triggers > 0) {
+        setTriggerFixed(true);
+      }
       
       toast({
         title: 'Diagnóstico concluído',
@@ -74,6 +84,7 @@ const Diagnostic = () => {
       connection,
       tables,
       writeTest,
+      syncStatus,
       supabaseUrl: getSupabaseUrlUtil()
     };
     
@@ -95,19 +106,41 @@ const Diagnostic = () => {
 
   return (
     <div className="animate-fade-in space-y-6 p-4 md:p-8 min-h-screen bg-muted/30">
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start flex-col sm:flex-row gap-4">
         <div>
           <h1 className="text-2xl font-bold">Diagnóstico do Sistema</h1>
           <p className="text-muted-foreground">
             Verifique a conexão com o banco de dados e o estado das tabelas
           </p>
         </div>
-        <Button variant="outline" asChild className="flex items-center gap-2">
-          <Link to="/login">
-            <Home className="h-4 w-4" />
-            <span>Voltar para o Login</span>
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild className="flex items-center gap-2">
+            <Link to="/login">
+              <Home className="h-4 w-4" />
+              <span className="hidden md:inline">Voltar para o Login</span>
+              <span className="inline md:hidden">Login</span>
+            </Link>
+          </Button>
+          <Button 
+            onClick={runDiagnostic}
+            disabled={isLoading}
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="hidden md:inline">Atualizando...</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                <span className="hidden md:inline">Atualizar</span>
+                <span className="inline md:hidden">Atualizar</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -219,73 +252,52 @@ const Diagnostic = () => {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center">
-              <CheckCircle className="mr-2 h-5 w-5" />
-              Resumo
-            </CardTitle>
-            <CardDescription>
-              Visão geral do diagnóstico
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!tables.length ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Tabelas verificadas:</span>
-                  <span className="text-sm">{tables.length}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Tabelas OK:</span>
-                  <span className="text-sm">{tables.filter(t => t.status === "ok").length}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Tabelas vazias:</span>
-                  <span className="text-sm">{tables.filter(t => t.status === "empty").length}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Tabelas com erro:</span>
-                  <span className="text-sm">{tables.filter(t => t.status === "error").length}</span>
-                </div>
-                
-                {lastUpdate && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Última atualização:</span>
-                    <span className="text-sm">{lastUpdate.toLocaleTimeString()}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <TriggerCard syncStatus={syncStatus} isLoading={isLoading} />
       </div>
 
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Erro de login detectado</AlertTitle>
-        <AlertDescription>
-          <p className="mb-2">
-            Foi detectado um problema de recursão nos triggers de sincronização entre as tabelas auth.users e managers.
-            Este problema faz com que ocorra o erro "stack depth limit exceeded" durante o login.
-          </p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>
-              O erro "Database error granting user" ocorre devido a uma recursão infinita entre os triggers.
-            </li>
-            <li>
-              O sistema não consegue atualizar os metadados do usuário durante o login.
-            </li>
-          </ul>
-        </AlertDescription>
-      </Alert>
+      {triggerFixed ? (
+        <Alert variant="success" className="bg-green-50 border-green-200">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <AlertTitle>Problema resolvido</AlertTitle>
+          <AlertDescription>
+            <p className="mb-2">
+              A recursão nos triggers de sincronização entre as tabelas auth.users e managers foi corrigida.
+              Agora você deve conseguir fazer login normalmente.
+            </p>
+            <div className="mt-4">
+              <Button asChild variant="outline" size="sm">
+                <Link to="/login">
+                  Voltar para a tela de login
+                </Link>
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erro de login detectado</AlertTitle>
+          <AlertDescription>
+            <p className="mb-2">
+              Foi detectado um problema de recursão nos triggers de sincronização entre as tabelas auth.users e managers.
+              Este problema faz com que ocorra o erro "stack depth limit exceeded" durante o login.
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                O erro "Database error granting user" ocorre devido a uma recursão infinita entre os triggers.
+              </li>
+              <li>
+                O sistema não consegue atualizar os metadados do usuário durante o login.
+              </li>
+            </ul>
+            <div className="mt-4">
+              <Button onClick={runDiagnostic} variant="outline" size="sm">
+                Verificar correção
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       
       <Card>
         <CardHeader>
@@ -300,49 +312,51 @@ const Diagnostic = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tabela</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Registros</TableHead>
-                  <TableHead>Mensagem</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tables.map((table) => (
-                  <TableRow key={table.name}>
-                    <TableCell className="font-medium">{table.name}</TableCell>
-                    <TableCell>
-                      <CustomBadge 
-                        variant={
-                          table.status === "ok" 
-                            ? "success" 
-                            : table.status === "empty" 
-                              ? "outline" 
-                              : "destructive"
-                        }
-                      >
-                        {table.status === "ok" 
-                          ? "OK" 
-                          : table.status === "empty" 
-                            ? "Vazia" 
-                            : "Erro"}
-                      </CustomBadge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {table.recordCount !== null ? table.recordCount : "N/A"}
-                    </TableCell>
-                    <TableCell className="truncate max-w-[300px]" title={table.message || ""}>
-                      {table.message || "-"}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tabela</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Registros</TableHead>
+                    <TableHead>Mensagem</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {tables.map((table) => (
+                    <TableRow key={table.name}>
+                      <TableCell className="font-medium">{table.name}</TableCell>
+                      <TableCell>
+                        <CustomBadge 
+                          variant={
+                            table.status === "ok" 
+                              ? "success" 
+                              : table.status === "empty" 
+                                ? "outline" 
+                                : "destructive"
+                          }
+                        >
+                          {table.status === "ok" 
+                            ? "OK" 
+                            : table.status === "empty" 
+                              ? "Vazia" 
+                              : "Erro"}
+                        </CustomBadge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {table.recordCount !== null ? table.recordCount : "N/A"}
+                      </TableCell>
+                      <TableCell className="truncate max-w-[300px]" title={table.message || ""}>
+                        {table.message || "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
-        <CardFooter className="border-t bg-muted/50 px-6 py-4 flex justify-between">
+        <CardFooter className="border-t bg-muted/50 px-6 py-4 flex justify-between flex-col sm:flex-row gap-2">
           <Button 
             variant="outline"
             onClick={generateReport}

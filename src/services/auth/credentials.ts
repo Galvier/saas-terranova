@@ -33,22 +33,7 @@ export const authCredentials = {
         return formatCrudResult(null, new Error('Erro de conexão com o servidor. Verifique sua conexão e tente novamente.'));
       }
       
-      // Verificar se a tabela managers existe antes do login
-      try {
-        const { data: tableCheck } = await supabase.rpc('check_table_exists_and_count', {
-          table_name: 'managers'
-        });
-        console.log('[AuthCredentials] Verificação da tabela managers:', tableCheck);
-        
-        if (!tableCheck || !(tableCheck as any).exists) {
-          console.error('[AuthCredentials] Tabela managers não existe');
-          return formatCrudResult(null, new Error('Configuração do banco de dados incompleta. A tabela de gerentes não existe.'));
-        }
-      } catch (tableError) {
-        console.error('[AuthCredentials] Erro ao verificar tabela managers:', tableError);
-      }
-      
-      // Tentar login simples sem metadados adicionais
+      // Tentar login
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -57,17 +42,6 @@ export const authCredentials = {
         
         if (error) {
           console.error('[AuthCredentials] Erro no login:', error);
-          
-          // Verificar se é o erro específico de stack overflow nos triggers
-          if (error.message?.includes('stack depth limit exceeded') || 
-              error.message?.includes('Database error granting user')) {
-            
-            return formatCrudResult(null, new Error(
-              'Erro no banco de dados durante o login. ' + 
-              'Este problema está relacionado aos triggers de sincronização. ' +
-              'Por favor, acesse a página de diagnóstico para mais informações.'
-            ));
-          }
           
           // Tradução de erros comuns do Supabase Auth
           if (error.message.includes('Invalid login credentials')) {
@@ -84,18 +58,6 @@ export const authCredentials = {
         return formatCrudResult(data.user, null);
       } catch (error: any) {
         console.error('[AuthCredentials] Erro não tratado no login:', error);
-        
-        // Verificar se é o erro específico de stack overflow
-        if (error.message?.includes('stack depth limit exceeded') || 
-            error.message?.includes('Database error granting user')) {
-          
-          return formatCrudResult(null, new Error(
-            'Erro no banco de dados durante o login. ' + 
-            'Este problema está relacionado aos triggers de sincronização. ' +
-            'Por favor, acesse a página de diagnóstico para mais informações.'
-          ));
-        }
-        
         return formatCrudResult(null, error);
       }
     } catch (error: any) {
@@ -119,17 +81,15 @@ export const authCredentials = {
       };
       console.log('[AuthCredentials] Verificação de tabelas:', tablesCheck);
       
-      // Verificação de funções RPC - Removendo a verificação de funções que não existem
-      const functionsCheck = {
-        sync_auth_user_to_manager: { error: "Verificação não disponível" },
-        sync_manager_to_auth_user: { error: "Verificação não disponível" }
-      };
+      // Verificar se a função de diagnóstico existe e chamá-la
+      const syncDiagnostic = await supabase.rpc('diagnose_auth_sync_issues');
+      console.log('[AuthCredentials] Diagnóstico de sincronização:', syncDiagnostic);
       
       // Resultado do diagnóstico
       const diagnosticResult = {
         connection: connectionTest,
         tables: tablesCheck,
-        functions: functionsCheck,
+        syncStatus: syncDiagnostic,
         timestamp: new Date().toISOString()
       };
       

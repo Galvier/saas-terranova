@@ -483,6 +483,10 @@ export type Database = {
         Args: { metric_id: string }
         Returns: string
       }
+      diagnose_auth_sync_issues: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_admin_dashboard_config: {
         Args: { user_id_param: string }
         Returns: {
