@@ -518,6 +518,10 @@ export type Database = {
           is_active: boolean
           icon_name: string
           lower_is_better: boolean
+          visualization_type: string
+          priority: string
+          default_period: string
+          last_value_date: string
         }[]
       }
       postgres_version: {

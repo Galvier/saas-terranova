@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -37,7 +36,7 @@ const Metrics = () => {
   // Set department name when department is selected
   React.useEffect(() => {
     if (selectedDepartment === 'all') {
-      setDepartmentName("Todos os departamentos");
+      setDepartmentName("Todos os setores");
     } else {
       const dept = departments.find(d => d.id === selectedDepartment);
       setDepartmentName(dept?.name || "");
