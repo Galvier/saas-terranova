@@ -9,4 +9,5 @@ export interface Manager {
   role?: string;
   created_at?: string;
   updated_at?: string;
+  user_id?: string;
 }
