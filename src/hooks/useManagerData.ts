@@ -1,114 +1,73 @@
 
-import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
+import { User } from '@supabase/supabase-js';
 import { Manager } from '@/integrations/supabase/types/manager';
-import { Department } from '@/integrations/supabase/types/department';
-import { getManagerById, updateManager } from '@/integrations/supabase/managers';
-import { getAllDepartments } from '@/integrations/supabase/departments';
+import { getCurrentUserManager } from '@/integrations/supabase/managers';
 
-export const useManagerData = (managerId: string | undefined) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+interface UseManagerDataReturn {
+  manager: Manager | null;
+  userDepartmentId: string | null;
+  isAdmin: boolean;
+  isLoading: boolean;
+}
+
+export const useManagerData = (
+  user: User | null,
+  dependencies: any[] = []
+): UseManagerDataReturn => {
   const [manager, setManager] = useState<Manager | null>(null);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const { toast } = useToast();
+  const [userDepartmentId, setUserDepartmentId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const fetchManager = async (id: string) => {
-    setIsLoading(true);
-    try {
-      console.log("Fetching manager with ID:", id);
-      const result = await getManagerById(id);
+  // Determinar se o usuário é um administrador com base nos metadados ou na função de gerente
+  const isAdmin = user?.user_metadata?.role === 'admin' || manager?.role === 'admin';
+
+  useEffect(() => {
+    const fetchManagerData = async () => {
+      if (!user) {
+        setManager(null);
+        setUserDepartmentId(null);
+        return;
+      }
       
-      if (result.error) {
-        throw new Error(result.message || "Error fetching manager data");
+      try {
+        setIsLoading(true);
+        console.log('[ManagerData] Buscando dados do gerente para o usuário:', user.id);
+        
+        const result = await getCurrentUserManager();
+        
+        if (result.error) {
+          console.error('[ManagerData] Erro ao buscar dados do gerente:', result.error);
+          return;
+        }
+        
+        if (result.data) {
+          console.log('[ManagerData] Dados do gerente encontrados:', result.data);
+          setManager(result.data);
+          if (result.data.department_id) {
+            setUserDepartmentId(result.data.department_id);
+          }
+        } else {
+          console.log('[ManagerData] Nenhum registro de gerente encontrado para este usuário');
+          setManager(null);
+        }
+      } catch (error) {
+        console.error('[ManagerData] Erro ao buscar dados do gerente:', error);
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      if (result.data) {
-        console.log("Manager data received:", result.data);
-        setManager(result.data);
-        return result.data;
-      } else {
-        toast({
-          title: "Erro",
-          description: "Gestor não encontrado",
-          variant: "destructive",
-        });
-        return null;
-      }
-    } catch (error: any) {
-      console.error("Error fetching manager:", error);
-      toast({
-        title: "Erro ao carregar gerente",
-        description: error.message,
-        variant: "destructive",
-      });
-      return null;
-    } finally {
-      setIsLoading(false);
+    // Use setTimeout para evitar deadlock com auth state change
+    if (user) {
+      setTimeout(() => {
+        fetchManagerData();
+      }, 0);
+    } else {
+      setManager(null);
+      setUserDepartmentId(null);
     }
-  };
+  }, [user, ...dependencies]);
 
-  const fetchDepartments = async () => {
-    try {
-      const result = await getAllDepartments();
-
-      if (result.error) {
-        throw new Error(result.message || "Error fetching departments");
-      }
-
-      if (result.data) {
-        setDepartments(result.data);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar departamentos",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleUpdateManager = async (values: {
-    name: string;
-    email: string;
-    department_id: string;
-    is_active: boolean;
-    role?: string;
-  }) => {
-    if (!managerId) return;
-    
-    setIsSaving(true);
-    try {
-      const result = await updateManager(managerId, values);
-
-      if (result.error) {
-        throw new Error(result.message || "Error updating manager");
-      }
-
-      toast({
-        title: "Gerente atualizado",
-        description: "Gerente atualizado com sucesso.",
-      });
-      return true;
-    } catch (error: any) {
-      toast({
-        title: "Erro ao atualizar gerente",
-        description: error.message,
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return {
-    isLoading,
-    isSaving,
-    manager,
-    departments,
-    fetchManager,
-    fetchDepartments,
-    handleUpdateManager
-  };
+  return { manager, userDepartmentId, isAdmin, isLoading: isLoading };
 };

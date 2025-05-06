@@ -33,6 +33,21 @@ export const authCredentials = {
         return formatCrudResult(null, new Error('Erro de conexão com o servidor. Verifique sua conexão e tente novamente.'));
       }
       
+      // Verificar se a tabela managers existe antes do login
+      try {
+        const { data: tableCheck } = await supabase.rpc('check_table_exists_and_count', {
+          table_name: 'managers'
+        });
+        console.log('[AuthCredentials] Verificação da tabela managers:', tableCheck);
+        
+        if (!tableCheck || !(tableCheck as any).exists) {
+          console.error('[AuthCredentials] Tabela managers não existe');
+          return formatCrudResult(null, new Error('Configuração do banco de dados incompleta. A tabela de gerentes não existe.'));
+        }
+      } catch (tableError) {
+        console.error('[AuthCredentials] Erro ao verificar tabela managers:', tableError);
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -56,6 +71,43 @@ export const authCredentials = {
       return formatCrudResult(data.user, null);
     } catch (error) {
       console.error('[AuthCredentials] Erro não tratado no login:', error);
+      return formatCrudResult(null, error);
+    }
+  },
+  
+  diagnoseLoginIssue: async (): Promise<CrudResult<any>> => {
+    try {
+      // Verificação da conexão
+      console.log('[AuthCredentials] Executando diagnóstico de login...');
+      
+      const connectionTest = await supabase.rpc('postgres_version');
+      console.log('[AuthCredentials] Teste de conexão:', connectionTest);
+      
+      // Verificação das tabelas necessárias
+      const tablesCheck = {
+        managers: await supabase.rpc('check_table_exists_and_count', { table_name: 'managers' }),
+        departments: await supabase.rpc('check_table_exists_and_count', { table_name: 'departments' })
+      };
+      console.log('[AuthCredentials] Verificação de tabelas:', tablesCheck);
+      
+      // Verificação de funções RPC
+      const functionsCheck = {
+        sync_auth_user_to_manager: await supabase.rpc('check_function_exists', { function_name: 'sync_auth_user_to_manager' }),
+        sync_manager_to_auth_user: await supabase.rpc('check_function_exists', { function_name: 'sync_manager_to_auth_user' })
+      };
+      console.log('[AuthCredentials] Verificação de funções:', functionsCheck);
+      
+      // Resultado do diagnóstico
+      const diagnosticResult = {
+        connection: connectionTest,
+        tables: tablesCheck,
+        functions: functionsCheck,
+        timestamp: new Date().toISOString()
+      };
+      
+      return formatCrudResult(diagnosticResult, null);
+    } catch (error) {
+      console.error('[AuthCredentials] Erro no diagnóstico de login:', error);
       return formatCrudResult(null, error);
     }
   },

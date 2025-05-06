@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import AppLogo from '@/components/AppLogo';
-import { Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Loader2, Eye, EyeOff, AlertCircle, Terminal } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { authCredentials } from '@/services/auth/credentials';
 
 interface LocationState {
   email?: string;
@@ -22,6 +23,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [diagnosticResult, setDiagnosticResult] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -61,6 +64,31 @@ const Login = () => {
       setLoginError(error.message || "Ocorreu um erro inesperado. Tente novamente.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const runDiagnostic = async () => {
+    setIsDiagnosing(true);
+    setDiagnosticResult(null);
+    
+    try {
+      const result = await authCredentials.diagnoseLoginIssue();
+      console.log("Resultado do diagnóstico:", result);
+      setDiagnosticResult(result.data);
+      
+      toast({
+        title: "Diagnóstico concluído",
+        description: "Verificação do sistema de login finalizada",
+      });
+    } catch (error) {
+      console.error("Erro ao executar diagnóstico:", error);
+      toast({
+        title: "Erro no diagnóstico",
+        description: "Não foi possível completar o diagnóstico de login",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDiagnosing(false);
     }
   };
 
@@ -150,6 +178,37 @@ const Login = () => {
                   </>
                 ) : 'Entrar'}
               </Button>
+              
+              <div className="flex justify-center w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={runDiagnostic}
+                  disabled={isDiagnosing}
+                >
+                  {isDiagnosing ? (
+                    <>
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      Diagnosticando...
+                    </>
+                  ) : (
+                    <>
+                      <Terminal className="mr-1 h-3 w-3" />
+                      Diagnosticar Problema
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              {diagnosticResult && (
+                <div className="text-xs mt-2 p-2 bg-muted rounded-md max-h-32 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap break-all">
+                    {JSON.stringify(diagnosticResult, null, 2)}
+                  </pre>
+                </div>
+              )}
             </CardFooter>
           </form>
         </Card>
