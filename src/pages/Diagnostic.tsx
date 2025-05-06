@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
-import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDown } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDown, Home } from 'lucide-react';
 import { 
   runFullDiagnostic, 
   ConnectionInfo, 
@@ -16,6 +16,7 @@ import {
   getSupabaseUrlUtil 
 } from '@/utils/supabaseDiagnostic';
 import { CustomBadge } from '@/components/ui/custom-badge';
+import { Link } from 'react-router-dom';
 
 const ESSENTIAL_TABLES = [
   'users',
@@ -93,11 +94,21 @@ const Diagnostic = () => {
   };
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <PageHeader 
-        title="Diagnóstico do Sistema" 
-        subtitle="Verifique a conexão com o banco de dados e o estado das tabelas" 
-      />
+    <div className="animate-fade-in space-y-6 p-4 md:p-8 min-h-screen bg-muted/30">
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold">Diagnóstico do Sistema</h1>
+          <p className="text-muted-foreground">
+            Verifique a conexão com o banco de dados e o estado das tabelas
+          </p>
+        </div>
+        <Button variant="outline" asChild className="flex items-center gap-2">
+          <Link to="/login">
+            <Home className="h-4 w-4" />
+            <span>Voltar para o Login</span>
+          </Link>
+        </Button>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
@@ -256,6 +267,25 @@ const Diagnostic = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Alert variant="warning">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Erro de login detectado</AlertTitle>
+        <AlertDescription>
+          <p className="mb-2">
+            Foi detectado um problema de recursão nos triggers de sincronização entre as tabelas auth.users e managers.
+            Este problema faz com que ocorra o erro "stack depth limit exceeded" durante o login.
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              O erro "Database error granting user" ocorre devido a uma recursão infinita entre os triggers.
+            </li>
+            <li>
+              O sistema não consegue atualizar os metadados do usuário durante o login.
+            </li>
+          </ul>
+        </AlertDescription>
+      </Alert>
       
       <Card>
         <CardHeader>

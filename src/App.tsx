@@ -58,6 +58,8 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/primeiro-acesso" element={<FirstAccess />} />
+            <Route path="/diagnostico" element={<Diagnostic />} />
+            <Route path="/admin/diagnostico" element={<Diagnostic />} />
             
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
@@ -70,8 +72,6 @@ const App = () => (
                 <Route path="/managers/edit/:id" element={<ManagersUpdate />} />
                 <Route path="/metrics" element={<Metrics />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/diagnostico" element={<Diagnostic />} />
-                <Route path="/admin/diagnostico" element={<Diagnostic />} />
               </Route>
             </Route>
             

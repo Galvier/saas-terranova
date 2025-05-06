@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { CrudResult, formatCrudResult } from '@/integrations/supabase';
@@ -47,28 +48,57 @@ export const authCredentials = {
         console.error('[AuthCredentials] Erro ao verificar tabela managers:', tableError);
       }
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        console.error('[AuthCredentials] Erro no login:', error);
+      // Tentar login simples sem metadados adicionais
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         
-        // Tradução de erros comuns do Supabase Auth
-        if (error.message.includes('Invalid login credentials')) {
-          return formatCrudResult(null, new Error('Credenciais inválidas. Verifique seu email e senha.'));
+        if (error) {
+          console.error('[AuthCredentials] Erro no login:', error);
+          
+          // Verificar se é o erro específico de stack overflow nos triggers
+          if (error.message?.includes('stack depth limit exceeded') || 
+              error.message?.includes('Database error granting user')) {
+            
+            return formatCrudResult(null, new Error(
+              'Erro no banco de dados durante o login. ' + 
+              'Este problema está relacionado aos triggers de sincronização. ' +
+              'Por favor, acesse a página de diagnóstico para mais informações.'
+            ));
+          }
+          
+          // Tradução de erros comuns do Supabase Auth
+          if (error.message.includes('Invalid login credentials')) {
+            return formatCrudResult(null, new Error('Credenciais inválidas. Verifique seu email e senha.'));
+          }
+          if (error.message.includes('Email not confirmed')) {
+            return formatCrudResult(null, new Error('Email não confirmado. Verifique sua caixa de entrada.'));
+          }
+          
+          return formatCrudResult(null, error);
         }
-        if (error.message.includes('Email not confirmed')) {
-          return formatCrudResult(null, new Error('Email não confirmado. Verifique sua caixa de entrada.'));
+        
+        console.log('[AuthCredentials] Login bem-sucedido para:', data.user?.email);
+        return formatCrudResult(data.user, null);
+      } catch (error: any) {
+        console.error('[AuthCredentials] Erro não tratado no login:', error);
+        
+        // Verificar se é o erro específico de stack overflow
+        if (error.message?.includes('stack depth limit exceeded') || 
+            error.message?.includes('Database error granting user')) {
+          
+          return formatCrudResult(null, new Error(
+            'Erro no banco de dados durante o login. ' + 
+            'Este problema está relacionado aos triggers de sincronização. ' +
+            'Por favor, acesse a página de diagnóstico para mais informações.'
+          ));
         }
         
         return formatCrudResult(null, error);
       }
-      
-      console.log('[AuthCredentials] Login bem-sucedido para:', data.user?.email);
-      return formatCrudResult(data.user, null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AuthCredentials] Erro não tratado no login:', error);
       return formatCrudResult(null, error);
     }
