@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   // Determine if the user is an admin based on metadata or manager role
-  const isAdmin = user?.user_metadata?.user_type === 'admin' || manager?.role === 'admin';
+  const isAdmin = user?.user_metadata?.role === 'admin' || manager?.role === 'admin';
 
   // Fetch manager data for the current user
   const fetchManagerData = async () => {

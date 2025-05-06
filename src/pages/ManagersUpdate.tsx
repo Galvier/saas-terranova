@@ -34,8 +34,10 @@ const ManagersUpdate = () => {
       name: values.name,
       email: values.email,
       department_id: values.department_id,
-      is_active: values.is_active
+      is_active: values.is_active,
+      role: values.role
     });
+    
     if (success) {
       navigate('/managers');
     }
@@ -68,4 +70,3 @@ const ManagersUpdate = () => {
 };
 
 export default ManagersUpdate;
-
