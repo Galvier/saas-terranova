@@ -268,7 +268,7 @@ const Diagnostic = () => {
         </Card>
       </div>
 
-      <Alert variant="warning">
+      <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Erro de login detectado</AlertTitle>
         <AlertDescription>

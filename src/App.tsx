@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import Diagnostic from "./pages/Diagnostic";
 import NotFound from "./pages/NotFound";
 import AppLayout from "./layouts/AppLayout";
+import { Loader2 } from 'lucide-react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,8 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/primeiro-acesso" element={<FirstAccess />} />
+            
+            {/* Public diagnostic routes - accessible without authentication */}
             <Route path="/diagnostico" element={<Diagnostic />} />
             <Route path="/admin/diagnostico" element={<Diagnostic />} />
             
@@ -82,8 +85,5 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
-
-// Import the Loader2 icon
-import { Loader2 } from 'lucide-react';
 
 export default App;
