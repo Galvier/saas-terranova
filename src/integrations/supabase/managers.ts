@@ -69,7 +69,7 @@ export const deleteManager = async (id: string): Promise<CrudResult<Manager>> =>
     const { data, error } = await callRPC<Manager>('delete_manager', {
       manager_id: id
     });
-    return formatCrudResult(null, error);
+    return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error deleting manager:', error);
     return formatCrudResult(null, error);
@@ -90,20 +90,6 @@ export const getManagerById = async (id: string): Promise<CrudResult<Manager>> =
     return formatCrudResult(manager, error);
   } catch (error) {
     console.error('Error fetching manager:', error);
-    return formatCrudResult(null, error);
-  }
-};
-
-export const getCurrentUserManager = async (): Promise<CrudResult<Manager>> => {
-  try {
-    const { data, error } = await callRPC<Manager[]>('get_current_user_manager', {});
-    
-    // Since the function returns a table (array) but we only need one manager
-    const manager = Array.isArray(data) && data.length > 0 ? data[0] : null;
-    
-    return formatCrudResult(manager, error);
-  } catch (error) {
-    console.error('Error fetching current user manager:', error);
     return formatCrudResult(null, error);
   }
 };

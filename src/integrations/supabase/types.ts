@@ -126,7 +126,6 @@ export type Database = {
           name: string
           role: string | null
           updated_at: string | null
-          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -137,7 +136,6 @@ export type Database = {
           name: string
           role?: string | null
           updated_at?: string | null
-          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -148,7 +146,6 @@ export type Database = {
           name?: string
           role?: string | null
           updated_at?: string | null
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -159,39 +156,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      managers_backup: {
-        Row: {
-          created_at: string | null
-          department_id: string | null
-          email: string | null
-          id: string | null
-          is_active: boolean | null
-          name: string | null
-          role: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          department_id?: string | null
-          email?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          name?: string | null
-          role?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          department_id?: string | null
-          email?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          name?: string | null
-          role?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       metrics: {
         Row: {
@@ -526,7 +490,6 @@ export type Database = {
           name: string
           role: string | null
           updated_at: string | null
-          user_id: string | null
         }[]
       }
       get_metric_history: {
@@ -578,22 +541,13 @@ export type Database = {
         Returns: string
       }
       update_manager: {
-        Args:
-          | {
-              manager_id: string
-              manager_name: string
-              manager_email: string
-              manager_department_id: string
-              manager_is_active: boolean
-            }
-          | {
-              manager_id: string
-              manager_name: string
-              manager_email: string
-              manager_department_id: string
-              manager_is_active: boolean
-              manager_role?: string
-            }
+        Args: {
+          manager_id: string
+          manager_name: string
+          manager_email: string
+          manager_department_id: string
+          manager_is_active: boolean
+        }
         Returns: Json
       }
       update_metric_definition: {
