@@ -73,6 +73,7 @@ export const useManagerData = (managerId: string | undefined) => {
     email: string;
     department_id: string;
     is_active: boolean;
+    role?: string;
   }) => {
     if (!managerId) return;
     
