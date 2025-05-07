@@ -168,11 +168,11 @@ export const getAdminDashboardConfig = async (
 ): Promise<CrudResult<AdminDashboardConfig>> => {
   try {
     console.log("Fetching dashboard config for user:", userId);
-    // Adicionar timestamp para evitar cache
+    // Add timestamp to prevent caching issues
     const timestamp = new Date().getTime();
     const { data, error } = await callRPC<AdminDashboardConfig>('get_admin_dashboard_config', {
       user_id_param: userId,
-      _cache_buster: timestamp // Parâmetro adicional para evitar cache
+      _cache_buster: timestamp 
     });
     
     if (error) {

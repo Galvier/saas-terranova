@@ -60,8 +60,8 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
     setIsSaving(true);
     
     try {
-      // Salva a configuração no banco de dados
-      console.log("Salvando configuração para o usuário:", user.id, "com métricas:", localSelection);
+      // Save the configuration to the database
+      console.log("Saving configuration for user:", user.id, "with metrics:", localSelection);
       const result = await saveAdminDashboardConfig(
         localSelection,
         user.id
@@ -71,7 +71,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
         throw new Error(result.message || "Erro ao salvar configuração");
       }
       
-      // Atualiza o estado local do componente pai
+      // Update parent component state
       onSelectionChange(localSelection);
       
       toast({
@@ -81,7 +81,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
       
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Erro ao salvar configuração:", error);
+      console.error("Error saving configuration:", error);
       toast({
         title: "Erro ao salvar configuração",
         description: error.message || "Ocorreu um erro ao salvar a configuração",

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -77,15 +78,22 @@ const Dashboard = () => {
       }
     },
     enabled: !!user?.id && isAdmin,
-    staleTime: 0, // Sempre buscar dados atualizados
-    cacheTime: 0, // Não manter em cache
+    staleTime: 0, // Always fetch updated data
+    gcTime: 0, // Don't keep in cache
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
   
   // Update selectedMetrics whenever dashboardConfig changes
   useEffect(() => {
-    if (dashboardConfig && dashboardConfig.metric_ids) {
+    if (dashboardConfig && dashboardConfig.metric_ids && dashboardConfig.metric_ids.length > 0) {
       console.log("Setting selected metrics from dashboard config:", dashboardConfig.metric_ids);
-      setSelectedMetrics(dashboardConfig.metric_ids || []);
+      setSelectedMetrics(dashboardConfig.metric_ids);
+      // If we have saved metrics, automatically set the view mode to favorites
+      if (dashboardConfig.metric_ids.length > 0 && viewMode !== 'favorites') {
+        console.log("Automatically switching to favorites view");
+        setViewMode('favorites');
+      }
     }
   }, [dashboardConfig]);
   
@@ -110,15 +118,48 @@ const Dashboard = () => {
         return [];
       }
     },
-    staleTime: 0, // Não manter em cache para sempre buscar dados atualizados
+    staleTime: 0, // Don't maintain in cache to always fetch updated data
   });
   
-  // Função para atualizar as métricas selecionadas
+  // Function to update selected metrics
   const handleMetricSelectionChange = (newSelectedMetrics: string[]) => {
     console.log("Updating selected metrics:", newSelectedMetrics);
     setSelectedMetrics(newSelectedMetrics);
-    // Invalidar a consulta para forçar um novo carregamento
+    
+    if (user?.id) {
+      // Save to Supabase
+      saveAdminDashboardConfig(user.id, newSelectedMetrics);
+    }
+    
+    // Invalidate the query to force a new load
     queryClient.invalidateQueries({ queryKey: ['admin-dashboard-config'] });
+  };
+  
+  // Save dashboard configuration to Supabase
+  const saveAdminDashboardConfig = async (userId: string, metricIds: string[]) => {
+    try {
+      console.log("Saving admin dashboard config:", { userId, metricIds });
+      const result = await getAdminDashboardConfig.saveAdminDashboardConfig(metricIds, userId);
+      
+      if (result.error) {
+        throw new Error(result.message);
+      }
+      
+      toast({
+        title: "Configuração salva",
+        description: "Seu dashboard personalizado foi atualizado com sucesso",
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error("Error saving dashboard config:", error);
+      toast({
+        title: "Erro ao salvar configuração",
+        description: error.message || "Ocorreu um erro ao salvar suas preferências",
+        variant: "destructive",
+      });
+      return false;
+    }
   };
   
   // Filter metrics based on view mode and selected metrics
@@ -281,7 +322,7 @@ const Dashboard = () => {
         <Card className="p-8 text-center">
           <h3 className="text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
           <p className="text-muted-foreground">
-            Você não selecionou métricas favoritas ou elas não estão disponíveis para os filtros atuais.
+            As métricas selecionadas não estão disponíveis para o departamento e período selecionados.
             <Button 
               variant="link" 
               className="p-0 h-auto ml-1"
