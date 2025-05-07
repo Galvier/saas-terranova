@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarChart3, FileText, ShoppingCart, Settings, Users, Star } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllDepartments, getMetricsByDepartment, getAdminDashboardConfig } from '@/integrations/supabase';
 
 import PageHeader from '@/components/PageHeader';
@@ -23,6 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 const Dashboard = () => {
   const { toast } = useToast();
   const { user, isAdmin, userDepartmentId } = useAuth();
+  const queryClient = useQueryClient();
   
   const [selectedDepartment, setSelectedDepartment] = useState<string>(isAdmin ? "all" : userDepartmentId || "");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -58,16 +58,21 @@ const Dashboard = () => {
   }, [selectedDepartment, departments]);
   
   // Load admin dashboard configuration
-  useQuery({
+  const { isLoading: isLoadingConfig } = useQuery({
     queryKey: ['admin-dashboard-config', user?.id],
     queryFn: async () => {
       if (!user?.id || !isAdmin) return null;
       
       try {
+        console.log("Loading dashboard config for user ID:", user.id);
         const result = await getAdminDashboardConfig(user.id);
+        console.log("Dashboard config result:", result);
+        
         if (result.error) throw new Error(result.message);
         
         if (result.data) {
+          // Atualizar o estado com as métricas salvas
+          console.log("Setting selected metrics:", result.data.metric_ids);
           setSelectedMetrics(result.data.metric_ids || []);
         }
         
@@ -103,6 +108,13 @@ const Dashboard = () => {
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache to prevent excessive calls
   });
+  
+  // Função para atualizar as métricas selecionadas
+  const handleMetricSelectionChange = (newSelectedMetrics: string[]) => {
+    setSelectedMetrics(newSelectedMetrics);
+    // Invalidar a consulta para forçar um novo carregamento
+    queryClient.invalidateQueries({ queryKey: ['admin-dashboard-config'] });
+  };
   
   // Filter metrics based on view mode and selected metrics
   const filteredMetrics = React.useMemo(() => {
@@ -414,7 +426,7 @@ const Dashboard = () => {
         />
       </div>
       
-      {isLoading ? (
+      {isLoading || isLoadingConfig ? (
         <div className="flex justify-center items-center h-64">
           <p className="text-muted-foreground">Carregando indicadores...</p>
         </div>
@@ -444,7 +456,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-2 mb-4 bg-primary/5 p-2 rounded-md">
               <Star className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">
-                Dashboard personalizado: Métricas principais
+                Dashboard personalizado: Métricas principais ({selectedMetrics.length} métricas)
               </span>
             </div>
           )}
@@ -528,7 +540,7 @@ const Dashboard = () => {
           onOpenChange={setIsMetricSelectionOpen}
           metrics={metrics}
           selectedMetrics={selectedMetrics}
-          onSelectionChange={setSelectedMetrics}
+          onSelectionChange={handleMetricSelectionChange}
         />
       )}
     </div>

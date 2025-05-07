@@ -204,7 +204,8 @@ export const testTables = async () => {
     'managers',
     'metrics',
     'settings',
-    'logs'
+    'logs',
+    'admin_dashboard_config' // Adicionada para garantir que esta tabela seja verificada
   ];
   
   const tablesResult = await checkTables(essentialTables);

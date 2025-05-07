@@ -59,6 +59,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
     setIsSaving(true);
     
     try {
+      // Salva a configuração no banco de dados
       const result = await saveAdminDashboardConfig(
         localSelection,
         user.id
@@ -68,6 +69,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
         throw new Error(result.message || "Erro ao salvar configuração");
       }
       
+      // Atualiza o estado local do componente pai
       onSelectionChange(localSelection);
       
       toast({
