@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarChart3, FileText, ShoppingCart, Settings, Users, Star } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getAllDepartments, getMetricsByDepartment, getAdminDashboardConfig } from '@/integrations/supabase';
+import { getAllDepartments, getMetricsByDepartment, getAdminDashboardConfig, saveAdminDashboardConfig } from '@/integrations/supabase';
 
 import PageHeader from '@/components/PageHeader';
 import KpiCard from '@/components/KpiCard';
@@ -128,7 +128,7 @@ const Dashboard = () => {
     
     if (user?.id) {
       // Save to Supabase
-      saveAdminDashboardConfig(user.id, newSelectedMetrics);
+      saveAdminDashboardConfigToSupabase(user.id, newSelectedMetrics);
     }
     
     // Invalidate the query to force a new load
@@ -136,10 +136,10 @@ const Dashboard = () => {
   };
   
   // Save dashboard configuration to Supabase
-  const saveAdminDashboardConfig = async (userId: string, metricIds: string[]) => {
+  const saveAdminDashboardConfigToSupabase = async (userId: string, metricIds: string[]) => {
     try {
       console.log("Saving admin dashboard config:", { userId, metricIds });
-      const result = await getAdminDashboardConfig.saveAdminDashboardConfig(metricIds, userId);
+      const result = await saveAdminDashboardConfig(metricIds, userId);
       
       if (result.error) {
         throw new Error(result.message);
