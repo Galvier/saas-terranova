@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -58,7 +59,7 @@ const Dashboard = () => {
   }, [selectedDepartment, departments]);
   
   // Load admin dashboard configuration
-  const { isLoading: isLoadingConfig } = useQuery({
+  const { data: dashboardConfig, isLoading: isLoadingConfig } = useQuery({
     queryKey: ['admin-dashboard-config', user?.id],
     queryFn: async () => {
       if (!user?.id || !isAdmin) return null;
@@ -70,12 +71,6 @@ const Dashboard = () => {
         
         if (result.error) throw new Error(result.message);
         
-        if (result.data) {
-          // Atualizar o estado com as métricas salvas
-          console.log("Setting selected metrics:", result.data.metric_ids);
-          setSelectedMetrics(result.data.metric_ids || []);
-        }
-        
         return result.data;
       } catch (error) {
         console.error("Error loading admin dashboard config:", error);
@@ -84,6 +79,14 @@ const Dashboard = () => {
     },
     enabled: !!user?.id && isAdmin,
   });
+  
+  // Update selectedMetrics whenever dashboardConfig changes
+  useEffect(() => {
+    if (dashboardConfig && dashboardConfig.metric_ids) {
+      console.log("Setting selected metrics from dashboard config:", dashboardConfig.metric_ids);
+      setSelectedMetrics(dashboardConfig.metric_ids || []);
+    }
+  }, [dashboardConfig]);
   
   // Load metrics data with filters
   const { data: metrics = [], isLoading } = useQuery({
@@ -111,6 +114,7 @@ const Dashboard = () => {
   
   // Função para atualizar as métricas selecionadas
   const handleMetricSelectionChange = (newSelectedMetrics: string[]) => {
+    console.log("Updating selected metrics:", newSelectedMetrics);
     setSelectedMetrics(newSelectedMetrics);
     // Invalidar a consulta para forçar um novo carregamento
     queryClient.invalidateQueries({ queryKey: ['admin-dashboard-config'] });
@@ -271,7 +275,23 @@ const Dashboard = () => {
       selectedMetrics.includes(metric.id)
     );
     
-    if (favoriteMetrics.length === 0) return null;
+    if (favoriteMetrics.length === 0) {
+      return (
+        <Card className="p-8 text-center">
+          <h3 className="text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
+          <p className="text-muted-foreground">
+            Você não selecionou métricas favoritas ou elas não estão disponíveis para os filtros atuais.
+            <Button 
+              variant="link" 
+              className="p-0 h-auto ml-1"
+              onClick={() => setIsMetricSelectionOpen(true)}
+            >
+              Configurar dashboard
+            </Button>
+          </p>
+        </Card>
+      );
+    }
     
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">

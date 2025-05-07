@@ -1,3 +1,4 @@
+
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { MetricDefinition, MetricHistory, AdminDashboardConfig } from './types/metric';
 
@@ -148,10 +149,12 @@ export const saveAdminDashboardConfig = async (
   userId: string
 ): Promise<CrudResult<string>> => {
   try {
+    console.log("Sending to server - metrics:", metricIds, "user:", userId);
     const { data, error } = await callRPC<string>('save_admin_dashboard_config', {
       metrics_ids: metricIds,
       user_id: userId
     });
+    console.log("Server response:", { data, error });
     return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error saving admin dashboard config:', error);
@@ -164,10 +167,23 @@ export const getAdminDashboardConfig = async (
   userId: string
 ): Promise<CrudResult<AdminDashboardConfig>> => {
   try {
+    console.log("Fetching dashboard config for user:", userId);
     const { data, error } = await callRPC<AdminDashboardConfig>('get_admin_dashboard_config', {
       user_id_param: userId
     });
-    return formatCrudResult(data, error);
+    
+    if (error) {
+      console.error("Error fetching dashboard config:", error);
+      return formatCrudResult(null, error);
+    }
+    
+    if (!data) {
+      console.log("No dashboard config found for user:", userId);
+      return formatCrudResult({ id: "", user_id: userId, metric_ids: [], created_at: "", updated_at: "" }, null);
+    }
+    
+    console.log("Found dashboard config:", data);
+    return formatCrudResult(data, null);
   } catch (error) {
     console.error('Error fetching admin dashboard config:', error);
     return formatCrudResult(null, error);

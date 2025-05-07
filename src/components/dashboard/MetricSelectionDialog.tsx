@@ -29,10 +29,11 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   
-  // Initialize local selection when dialog opens
+  // Initialize local selection whenever the dialog opens or selectedMetrics changes
   useEffect(() => {
     if (open) {
-      setLocalSelection(selectedMetrics);
+      console.log("Dialog opened, setting localSelection to:", selectedMetrics);
+      setLocalSelection([...selectedMetrics]);
     }
   }, [open, selectedMetrics]);
 
@@ -60,6 +61,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
     
     try {
       // Salva a configuração no banco de dados
+      console.log("Salvando configuração para o usuário:", user.id, "com métricas:", localSelection);
       const result = await saveAdminDashboardConfig(
         localSelection,
         user.id
