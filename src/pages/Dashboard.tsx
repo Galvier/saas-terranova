@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -78,6 +77,8 @@ const Dashboard = () => {
       }
     },
     enabled: !!user?.id && isAdmin,
+    staleTime: 0, // Sempre buscar dados atualizados
+    cacheTime: 0, // Não manter em cache
   });
   
   // Update selectedMetrics whenever dashboardConfig changes
@@ -109,7 +110,7 @@ const Dashboard = () => {
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes cache to prevent excessive calls
+    staleTime: 0, // Não manter em cache para sempre buscar dados atualizados
   });
   
   // Função para atualizar as métricas selecionadas
@@ -129,7 +130,34 @@ const Dashboard = () => {
     // For favorites view, only show metrics that are in the selectedMetrics array
     return metrics.filter(metric => selectedMetrics.includes(metric.id));
   }, [metrics, isAdmin, viewMode, selectedMetrics]);
+
+  // Load user preferences
+  useEffect(() => {
+    try {
+      const savedPrefs = localStorage.getItem('dashboardPreferences');
+      if (savedPrefs) {
+        const prefs = JSON.parse(savedPrefs);
+        
+        if (prefs.dateType) setDateRangeType(prefs.dateType);
+        if (prefs.viewMode && isAdmin) setViewMode(prefs.viewMode);
+      }
+    } catch (error) {
+      console.error("Error loading preferences", error);
+    }
+  }, [isAdmin]);
   
+  // Save preferences
+  useEffect(() => {
+    try {
+      localStorage.setItem('dashboardPreferences', JSON.stringify({
+        dateType: dateRangeType,
+        viewMode: viewMode,
+      }));
+    } catch (error) {
+      console.error("Error saving preferences", error);
+    }
+  }, [dateRangeType, viewMode]);
+
   // Process department performance data
   const departmentPerformance = React.useMemo(() => {
     if (!filteredMetrics.length) return [];
@@ -238,33 +266,6 @@ const Dashboard = () => {
     });
     
   }, [filteredMetrics]);
-  
-  // Load user preferences
-  useEffect(() => {
-    try {
-      const savedPrefs = localStorage.getItem('dashboardPreferences');
-      if (savedPrefs) {
-        const prefs = JSON.parse(savedPrefs);
-        
-        if (prefs.dateType) setDateRangeType(prefs.dateType);
-        if (prefs.viewMode && isAdmin) setViewMode(prefs.viewMode);
-      }
-    } catch (error) {
-      console.error("Error loading preferences", error);
-    }
-  }, [isAdmin]);
-  
-  // Save preferences
-  useEffect(() => {
-    try {
-      localStorage.setItem('dashboardPreferences', JSON.stringify({
-        dateType: dateRangeType,
-        viewMode: viewMode,
-      }));
-    } catch (error) {
-      console.error("Error saving preferences", error);
-    }
-  }, [dateRangeType, viewMode]);
 
   // Function to render metric cards for selected favorites
   const renderFavoriteMetricCards = () => {
@@ -450,13 +451,13 @@ const Dashboard = () => {
         <div className="flex justify-center items-center h-64">
           <p className="text-muted-foreground">Carregando indicadores...</p>
         </div>
-      ) : filteredMetrics.length === 0 ? (
+      ) : filteredMetrics.length === 0 && (viewMode === 'favorites' ? selectedMetrics.length > 0 : false) ? (
         <Card className="p-8 text-center">
           <h3 className="text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
           <p className="text-muted-foreground">
             {viewMode === 'favorites' ? (
               <>
-                Você não selecionou métricas favoritas.
+                As métricas selecionadas não estão disponíveis para o departamento e período selecionados.
                 <Button 
                   variant="link" 
                   className="p-0 h-auto ml-1"

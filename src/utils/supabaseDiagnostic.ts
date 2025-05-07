@@ -205,7 +205,7 @@ export const testTables = async () => {
     'metrics',
     'settings',
     'logs',
-    'admin_dashboard_config' // Adicionada para garantir que esta tabela seja verificada
+    'admin_dashboard_config'
   ];
   
   const tablesResult = await checkTables(essentialTables);
@@ -223,7 +223,6 @@ export const testTables = async () => {
   return result;
 };
 
-export const testDatabaseWrite = async () => {
-  const result = await testDiagnosticWrite();
-  return result;
+export const testDatabaseWrite = async (): Promise<DiagnosticResult> => {
+  return await testDiagnosticWrite();
 };
