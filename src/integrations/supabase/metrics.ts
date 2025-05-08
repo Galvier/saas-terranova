@@ -1,4 +1,3 @@
-
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import type { MetricDefinition, MetricHistory, AdminDashboardConfig } from './types/metric';
 
@@ -21,10 +20,10 @@ export const getMetricsByDepartment = async (departmentId?: string, date?: strin
     
     console.log("Metrics API response:", { data: data?.length || 0, error });
     
-    return formatCrudResult(data, error);
+    return formatCrudResult(data || [], error);  // Garantir que data sempre seja um array
   } catch (error) {
     console.error('Error fetching metrics:', error);
-    return formatCrudResult(null, error);
+    return formatCrudResult([], error);  // Retornar array vazio em caso de erro
   }
 };
 
@@ -159,9 +158,11 @@ export const saveAdminDashboardConfig = async (
 ): Promise<CrudResult<string>> => {
   try {
     console.log("Sending to server - metrics:", metricIds, "user:", userId);
+    const timestamp = new Date().getTime();
     const { data, error } = await callRPC<string>('save_admin_dashboard_config', {
       metrics_ids: metricIds,
-      user_id: userId
+      user_id: userId,
+      _cache_buster: timestamp
     });
     console.log("Server response:", { data, error });
     return formatCrudResult(data, error);
@@ -176,8 +177,7 @@ export const getAdminDashboardConfig = async (
   userId: string
 ): Promise<CrudResult<AdminDashboardConfig>> => {
   try {
-    console.log("Fetching dashboard config for user:", userId);
-    // Add timestamp to prevent caching issues
+    console.log("Loading dashboard config for user ID:", userId);
     const timestamp = new Date().getTime();
     const { data, error } = await callRPC<AdminDashboardConfig>('get_admin_dashboard_config', {
       user_id_param: userId,
@@ -191,7 +191,13 @@ export const getAdminDashboardConfig = async (
     
     if (!data) {
       console.log("No dashboard config found for user:", userId);
-      return formatCrudResult({ id: "", user_id: userId, metric_ids: [], created_at: "", updated_at: "" }, null);
+      return formatCrudResult({ 
+        id: "", 
+        user_id: userId, 
+        metric_ids: [], 
+        created_at: "", 
+        updated_at: "" 
+      }, null);
     }
     
     console.log("Found dashboard config:", data);

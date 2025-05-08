@@ -16,9 +16,11 @@ export const useDashboardMetrics = (
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  const [hasError, setHasError] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   // Load admin dashboard configuration
-  const { data: dashboardConfig, isLoading: isLoadingConfig } = useQuery({
+  const { data: dashboardConfig, isLoading: isLoadingConfig, isError: isConfigError } = useQuery({
     queryKey: ['admin-dashboard-config', user?.id],
     queryFn: async () => {
       if (!user?.id || !isAdmin) return null;
@@ -28,11 +30,15 @@ export const useDashboardMetrics = (
         const result = await getAdminDashboardConfig(user.id);
         console.log("Dashboard config result:", result);
         
-        if (result.error) throw new Error(result.message);
+        if (result.error) {
+          setErrorMessage("Erro ao carregar configuração do dashboard");
+          throw new Error(result.message);
+        }
         
         return result.data;
       } catch (error) {
         console.error("Error loading admin dashboard config:", error);
+        setErrorMessage("Erro ao carregar configuração do dashboard");
         return null;
       }
     },
@@ -52,21 +58,36 @@ export const useDashboardMetrics = (
   }, [dashboardConfig]);
 
   // Load metrics data with filters
-  const { data: metrics = [], isLoading } = useQuery({
+  const { data: metrics = [], isLoading, isError } = useQuery({
     queryKey: ['dashboard-metrics', selectedDepartment, format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       try {
+        setHasError(false);
+        setErrorMessage("");
         console.log("Fetching metrics for department:", selectedDepartment, "date:", format(selectedDate, 'yyyy-MM-dd'));
         const result = await getMetricsByDepartment(
           selectedDepartment === "all" ? undefined : selectedDepartment,
           format(selectedDate, 'yyyy-MM-dd')
         );
         
-        if (result.error) throw new Error(result.message);
+        if (result.error) {
+          setHasError(true);
+          setErrorMessage("Erro ao carregar métricas");
+          throw new Error(result.message);
+        }
+        
         console.log("Metrics fetched:", result.data?.length || 0, "metrics");
+        
+        // Se não tiver métricas, exibir uma mensagem amigável
+        if (result.data?.length === 0) {
+          console.log("No metrics found for the selected criteria");
+        }
+        
         return result.data || [];
       } catch (error) {
         console.error("Error fetching metrics:", error);
+        setHasError(true);
+        setErrorMessage("Não foi possível carregar os dados de desempenho");
         toast({
           title: "Erro ao carregar métricas",
           description: "Não foi possível carregar os dados de desempenho",
@@ -82,10 +103,11 @@ export const useDashboardMetrics = (
   const saveAdminDashboardConfigToSupabase = async (userId: string, metricIds: string[]) => {
     try {
       console.log("Saving admin dashboard config:", { userId, metricIds });
+      const timestamp = new Date().getTime();
       const result = await saveAdminDashboardConfig(metricIds, userId);
       
       if (result.error) {
-        throw new Error(result.message);
+        throw new Error(result.message || "Erro ao salvar configuração");
       }
       
       toast({
@@ -253,6 +275,9 @@ export const useDashboardMetrics = (
     isLoading,
     isLoadingConfig,
     selectedMetrics,
+    hasError,
+    errorMessage,
+    isError: isError || isConfigError,
     kpiData,
     departmentPerformance,
     monthlyRevenue,

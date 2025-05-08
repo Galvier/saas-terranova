@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Star } from 'lucide-react';
+import { Star, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllDepartments } from '@/integrations/supabase';
 
 import PageHeader from '@/components/PageHeader';
 import DateFilter, { DateRangeType } from '@/components/filters/DateFilter';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import MetricSelectionDialog from '@/components/dashboard/MetricSelectionDialog';
 import AnalyticsDashboard from '@/components/dashboard/AnalyticsDashboard';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,7 +37,7 @@ const Dashboard = () => {
   const showAnalyticsDashboard = viewMode === 'all' && selectedDepartment === 'all' && isAdmin;
   
   // Load departments
-  const { data: departments = [] } = useQuery({
+  const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
     queryKey: ['departments'],
     queryFn: async () => {
       const result = await getAllDepartments();
@@ -76,6 +77,8 @@ const Dashboard = () => {
     isLoading,
     isLoadingConfig,
     selectedMetrics,
+    hasError,
+    errorMessage,
     kpiData,
     departmentPerformance,
     monthlyRevenue,
@@ -116,28 +119,57 @@ const Dashboard = () => {
         <div className="flex justify-center items-center h-64">
           <p className="text-muted-foreground">Carregando indicadores...</p>
         </div>
-      ) : metrics.length === 0 && (viewMode === 'favorites' ? selectedMetrics.length > 0 : false) ? (
+      ) : hasError ? (
         <Card className="p-8 text-center">
-          <h3 className="text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
-          <p className="text-muted-foreground">
-            {viewMode === 'favorites' ? (
-              <>
-                As métricas selecionadas não estão disponíveis para o departamento e período selecionados.
-                <button 
-                  className="text-primary underline ml-1"
+          <div className="flex flex-col items-center justify-center py-8">
+            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-xl font-medium mb-2">Erro ao carregar métricas</h3>
+            <p className="text-muted-foreground mb-6">
+              {errorMessage || "Não foi possível carregar os dados de desempenho"}
+            </p>
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Tentar novamente
+            </Button>
+          </div>
+        </Card>
+      ) : metrics.length === 0 ? (
+        <Card className="p-8 text-center">
+          <div className="flex flex-col items-center justify-center py-8">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
+            <p className="text-muted-foreground mb-6">
+              {viewMode === 'favorites' ? (
+                <>
+                  Você ainda não selecionou métricas favoritas ou não há métricas disponíveis para o período selecionado.
+                </>
+              ) : (
+                'Não há métricas disponíveis para o departamento e período selecionados.'
+              )}
+            </p>
+            {isAdmin && (
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button 
+                  variant={viewMode === 'favorites' ? "outline" : "default"}
                   onClick={() => setIsMetricSelectionOpen(true)}
                 >
                   Configurar dashboard
-                </button>
-              </>
-            ) : (
-              'Não há métricas disponíveis para o departamento e período selecionados.'
+                </Button>
+                <Button 
+                  variant="default"
+                  onClick={() => {
+                    // Redirecionar para a página de criar métricas
+                    window.location.href = '/admin/metricas';
+                  }}
+                >
+                  Criar nova métrica
+                </Button>
+              </div>
             )}
-          </p>
+          </div>
         </Card>
       ) : (
         <>
-          {viewMode === 'favorites' && isAdmin && (
+          {viewMode === 'favorites' && isAdmin && selectedMetrics.length > 0 && (
             <div className="flex items-center gap-2 mb-4 bg-primary/5 p-2 rounded-md">
               <Star className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">
