@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
@@ -57,11 +56,14 @@ export const useDashboardMetrics = (
     queryKey: ['dashboard-metrics', selectedDepartment, format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       try {
+        console.log("Fetching metrics for department:", selectedDepartment, "date:", format(selectedDate, 'yyyy-MM-dd'));
         const result = await getMetricsByDepartment(
           selectedDepartment === "all" ? undefined : selectedDepartment,
           format(selectedDate, 'yyyy-MM-dd')
         );
+        
         if (result.error) throw new Error(result.message);
+        console.log("Metrics fetched:", result.data?.length || 0, "metrics");
         return result.data || [];
       } catch (error) {
         console.error("Error fetching metrics:", error);
@@ -194,7 +196,6 @@ export const useDashboardMetrics = (
   
   // Create monthly revenue data
   const monthlyRevenue = useMemo(() => {
-    // Use sample data if no metrics are available
     if (!filteredMetrics.length) {
       return [
         { name: 'Jan', value: 120000 },
@@ -248,7 +249,7 @@ export const useDashboardMetrics = (
   }, [dateRangeType, viewMode]);
 
   return {
-    metrics: filteredMetrics,
+    metrics, // This now contains all unfiltered metrics for the selection dialog
     isLoading,
     isLoadingConfig,
     selectedMetrics,

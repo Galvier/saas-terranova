@@ -5,13 +5,22 @@ import type { MetricDefinition, MetricHistory, AdminDashboardConfig } from './ty
 // Function to get metrics by department
 export const getMetricsByDepartment = async (departmentId?: string, date?: string): Promise<CrudResult<MetricDefinition[]>> => {
   try {
+    console.log("Fetching metrics with params - departmentId:", departmentId, "date:", date);
+    
     // If departmentId is "all", pass undefined to get all metrics
     const actualDepartmentId = departmentId === "all" ? undefined : departmentId;
     
+    // Add timestamp to prevent caching issues
+    const timestamp = new Date().getTime();
+    
     const { data, error } = await callRPC<MetricDefinition[]>('get_metrics_by_department', {
       department_id_param: actualDepartmentId,
-      date_param: date || new Date().toISOString().split('T')[0]
+      date_param: date || new Date().toISOString().split('T')[0],
+      _cache_buster: timestamp // Add cache buster to prevent stale data
     });
+    
+    console.log("Metrics API response:", { data: data?.length || 0, error });
+    
     return formatCrudResult(data, error);
   } catch (error) {
     console.error('Error fetching metrics:', error);

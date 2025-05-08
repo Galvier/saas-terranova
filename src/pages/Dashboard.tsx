@@ -82,6 +82,9 @@ const Dashboard = () => {
     handleMetricSelectionChange
   } = useDashboardMetrics(selectedDepartment, selectedDate, dateRangeType, viewMode);
 
+  console.log("Dashboard rendering - metrics count:", metrics?.length || 0);
+  console.log("Selected metrics:", selectedMetrics);
+
   return (
     <div className="animate-fade-in">
       <PageHeader
@@ -177,7 +180,7 @@ const Dashboard = () => {
         <MetricSelectionDialog
           open={isMetricSelectionOpen}
           onOpenChange={setIsMetricSelectionOpen}
-          metrics={metrics}
+          metrics={metrics} // Pass all metrics (not filtered) to the dialog
           selectedMetrics={selectedMetrics}
           onSelectionChange={handleMetricSelectionChange}
         />
