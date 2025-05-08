@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Star, AlertCircle } from 'lucide-react';
@@ -71,7 +70,7 @@ const Dashboard = () => {
     }
   }, [isAdmin]);
 
-  // Use custom hook for dashboard metrics
+  // Use custom hook for dashboard metrics - unchanged usage pattern
   const {
     metrics,
     isLoading,
