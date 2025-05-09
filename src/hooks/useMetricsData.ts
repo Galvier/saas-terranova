@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -25,7 +24,7 @@ export const useMetricsData = () => {
     queryKey: ['departments'],
     queryFn: async () => {
       const result = await getAllDepartments();
-      if (result.error) throw new Error(result.message);
+      if (result.error) throw new Error(result.error.message);
       return result.data || [];
     }
   });

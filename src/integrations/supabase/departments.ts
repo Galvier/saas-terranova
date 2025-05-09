@@ -1,11 +1,12 @@
 
 import { supabase } from './client';
 import { formatCrudResult } from './core';
-import type { Department } from './types';
+import type { Department } from './types/department';
 
 export type GetDepartmentsResult = {
-  departments: Department[];
+  data: Department[] | null;
   error: Error | null;
+  message?: string;
 };
 
 export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
@@ -13,13 +14,15 @@ export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
     const { data, error } = await supabase.rpc('get_all_departments');
     
     return {
-      departments: (data as Department[]) || [],
-      error: error
+      data: data as Department[],
+      error: error,
+      message: error ? error.message : undefined
     };
   } catch (error: any) {
     return {
-      departments: [],
-      error: error instanceof Error ? error : new Error(String(error))
+      data: null,
+      error: error instanceof Error ? error : new Error(String(error)),
+      message: error instanceof Error ? error.message : String(error)
     };
   }
 };
