@@ -1,4 +1,5 @@
 
+import { supabase } from '../client';
 import { callRPC, formatCrudResult, type CrudResult } from '../core';
 import type { MetricDefinition } from '../types/metric';
 
@@ -7,28 +8,54 @@ export const getMetricsByDepartment = async (departmentId?: string, date?: strin
   try {
     console.log("Fetching metrics with params - departmentId:", departmentId, "date:", date);
     
-    // If departmentId is "all", pass undefined to get all metrics
-    const actualDepartmentId = departmentId === "all" ? undefined : departmentId;
+    // Simple approach using direct database query instead of RPC
+    let query = supabase
+      .from('metrics_definition')
+      .select(`
+        id,
+        name,
+        description,
+        unit,
+        target,
+        department_id,
+        departments:department_id(name),
+        frequency,
+        is_active,
+        icon_name,
+        lower_is_better,
+        created_at,
+        updated_at
+      `);
     
-    // Add timestamp to prevent caching issues
-    const timestamp = new Date().getTime();
-    
-    const { data, error } = await callRPC<MetricDefinition[]>('get_metrics_by_department', {
-      department_id_param: actualDepartmentId,
-      date_param: date || new Date().toISOString().split('T')[0],
-      _cache_buster: timestamp // Add cache buster to prevent stale data
-    });
-    
-    console.log("Metrics API response:", { data: data?.length || 0, error });
-    
-    if (error) {
-      console.error("Error in metrics RPC call:", error);
+    // Apply department filter if provided
+    if (departmentId && departmentId !== 'all') {
+      query = query.eq('department_id', departmentId);
     }
     
-    return formatCrudResult(data || [], error);  // Garantir que data sempre seja um array
+    const { data, error } = await query.order('name');
+    
+    if (error) {
+      console.error("Error fetching metrics:", error);
+      return formatCrudResult([], error);
+    }
+    
+    // Transform metrics to match expected format
+    const transformedData = data?.map(metric => ({
+      ...metric,
+      department_name: metric.departments?.name || null,
+      current: 0, // Default value when no measurement
+      trend: 'neutral',
+      status: 'warning',
+      visualization_type: 'card',
+      priority: 'normal',
+      default_period: 'month'
+    }));
+    
+    console.log("Successfully fetched metrics:", transformedData?.length || 0);
+    return formatCrudResult(transformedData as MetricDefinition[], null);
   } catch (error) {
-    console.error('Error fetching metrics:', error);
-    return formatCrudResult([], error);  // Retornar array vazio em caso de erro
+    console.error('Error in getMetricsByDepartment:', error);
+    return formatCrudResult([], error);
   }
 };
 
@@ -48,21 +75,23 @@ export const createMetricDefinition = async (metric: {
   default_period?: string;
 }): Promise<CrudResult<string>> => {
   try {
-    const { data, error } = await callRPC<string>('create_metric_definition', {
-      metric_name: metric.name,
-      metric_description: metric.description,
-      metric_unit: metric.unit,
-      metric_target: metric.target,
-      metric_department_id: metric.department_id,
-      metric_frequency: metric.frequency,
-      metric_is_active: metric.is_active,
-      metric_icon_name: metric.icon_name,
-      metric_lower_is_better: metric.lower_is_better,
-      metric_visualization_type: metric.visualization_type || 'card',
-      metric_priority: metric.priority || 'normal',
-      metric_default_period: metric.default_period || 'month'
-    });
-    return formatCrudResult(data, error);
+    const { data, error } = await supabase
+      .from('metrics_definition')
+      .insert({
+        name: metric.name,
+        description: metric.description,
+        unit: metric.unit,
+        target: metric.target,
+        department_id: metric.department_id,
+        frequency: metric.frequency || 'monthly',
+        is_active: metric.is_active !== undefined ? metric.is_active : true,
+        icon_name: metric.icon_name || null,
+        lower_is_better: metric.lower_is_better !== undefined ? metric.lower_is_better : false
+      })
+      .select('id')
+      .single();
+      
+    return formatCrudResult(data?.id, error);
   } catch (error) {
     console.error('Error creating metric:', error);
     return formatCrudResult(null, error);
@@ -80,27 +109,27 @@ export const updateMetricDefinition = async (metricId: string, metric: {
   is_active?: boolean;
   icon_name?: string;
   lower_is_better?: boolean;
-  visualization_type?: string;
-  priority?: string;
-  default_period?: string;
 }): Promise<CrudResult<string>> => {
   try {
-    const { data, error } = await callRPC<string>('update_metric_definition', {
-      metric_id: metricId,
-      metric_name: metric.name,
-      metric_description: metric.description,
-      metric_unit: metric.unit,
-      metric_target: metric.target,
-      metric_department_id: metric.department_id,
-      metric_frequency: metric.frequency,
-      metric_is_active: metric.is_active,
-      metric_icon_name: metric.icon_name,
-      metric_lower_is_better: metric.lower_is_better,
-      metric_visualization_type: metric.visualization_type,
-      metric_priority: metric.priority,
-      metric_default_period: metric.default_period
-    });
-    return formatCrudResult(data, error);
+    const { data, error } = await supabase
+      .from('metrics_definition')
+      .update({
+        name: metric.name,
+        description: metric.description,
+        unit: metric.unit,
+        target: metric.target,
+        department_id: metric.department_id,
+        frequency: metric.frequency || 'monthly',
+        is_active: metric.is_active !== undefined ? metric.is_active : true,
+        icon_name: metric.icon_name || null,
+        lower_is_better: metric.lower_is_better !== undefined ? metric.lower_is_better : false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', metricId)
+      .select('id')
+      .single();
+    
+    return formatCrudResult(data?.id, error);
   } catch (error) {
     console.error('Error updating metric:', error);
     return formatCrudResult(null, error);
@@ -110,10 +139,21 @@ export const updateMetricDefinition = async (metricId: string, metric: {
 // Function to delete a metric
 export const deleteMetricDefinition = async (metricId: string): Promise<CrudResult<string>> => {
   try {
-    const { data, error } = await callRPC<string>('delete_metric_definition', {
-      metric_id: metricId
-    });
-    return formatCrudResult(data, error);
+    // First delete related metric values
+    await supabase
+      .from('metrics_values')
+      .delete()
+      .eq('metrics_definition_id', metricId);
+    
+    // Then delete the metric definition
+    const { data, error } = await supabase
+      .from('metrics_definition')
+      .delete()
+      .eq('id', metricId)
+      .select('id')
+      .single();
+    
+    return formatCrudResult(data?.id, error);
   } catch (error) {
     console.error('Error deleting metric:', error);
     return formatCrudResult(null, error);

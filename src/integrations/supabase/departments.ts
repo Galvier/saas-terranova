@@ -46,12 +46,15 @@ export const createDepartment = async (
   manager_id: string | null = null
 ) => {
   try {
-    const { data, error } = await supabase.rpc('create_department', {
-      department_name: name,
-      department_description: description,
-      department_is_active: is_active,
-      department_manager_id: manager_id
-    });
+    const { data, error } = await supabase
+      .from('departments')
+      .insert({
+        name,
+        description,
+        is_active,
+        manager_id
+      })
+      .single();
     
     return formatCrudResult(data, error);
   } catch (error: any) {
