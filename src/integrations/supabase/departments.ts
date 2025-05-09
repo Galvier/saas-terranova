@@ -11,10 +11,22 @@ export type GetDepartmentsResult = {
 
 export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
   try {
-    const { data, error } = await supabase.rpc('get_all_departments');
+    const { data, error } = await supabase
+      .from('departments')
+      .select(`
+        *,
+        managers:manager_id (name)
+      `)
+      .order('name');
+    
+    // Transform the data to include manager_name
+    const transformedData = data?.map(dept => ({
+      ...dept,
+      manager_name: dept.managers?.name || null
+    }));
     
     return {
-      data: data as Department[],
+      data: transformedData as Department[],
       error: error,
       message: error ? error.message : undefined
     };

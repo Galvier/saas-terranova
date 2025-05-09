@@ -21,6 +21,10 @@ export const getMetricsByDepartment = async (departmentId?: string, date?: strin
     
     console.log("Metrics API response:", { data: data?.length || 0, error });
     
+    if (error) {
+      console.error("Error in metrics RPC call:", error);
+    }
+    
     return formatCrudResult(data || [], error);  // Garantir que data sempre seja um array
   } catch (error) {
     console.error('Error fetching metrics:', error);

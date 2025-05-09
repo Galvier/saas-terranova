@@ -20,11 +20,12 @@ export const useMetricsData = () => {
   const queryClient = useQueryClient();
   const { isAdmin, userDepartmentId } = useAuth();
 
+  // Fetch departments data
   const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
     queryKey: ['departments'],
     queryFn: async () => {
       const result = await getAllDepartments();
-      if (result.error) throw new Error(result.error.message);
+      if (result.error) throw new Error(result.message || "Erro ao carregar departamentos");
       return result.data || [];
     }
   });
@@ -39,16 +40,31 @@ export const useMetricsData = () => {
     }
   }, [selectedDepartment, departments]);
 
+  // Fetch metrics data with proper error handling
   const { data: metrics = [], isLoading: isLoadingMetrics } = useQuery({
     queryKey: ['metrics', selectedDepartment, format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
+      console.log("Fetching metrics with params:", {
+        department: selectedDepartment,
+        date: format(selectedDate, 'yyyy-MM-dd')
+      });
+      
       const result = await getMetricsByDepartment(
         selectedDepartment === "all" ? undefined : selectedDepartment,
         format(selectedDate, 'yyyy-MM-dd')
       );
-      if (result.error) throw new Error(result.message);
+      
+      console.log("Metrics API response:", result);
+      
+      if (result.error) {
+        console.error("Error fetching metrics:", result.error);
+        throw new Error(result.message || "Erro ao carregar métricas");
+      }
+      
       return result.data || [];
-    }
+    },
+    retry: 1,
+    staleTime: 0, // Don't maintain in cache to always fetch updated data
   });
 
   // Dialog handlers

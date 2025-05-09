@@ -24,8 +24,9 @@ export const DepartmentsTable = ({ departments = [], onEditDepartment, onDeleted
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[300px]">Nome</TableHead>
-            <TableHead className="w-[400px]">Descrição</TableHead>
+            <TableHead className="w-[250px]">Nome</TableHead>
+            <TableHead className="w-[350px]">Descrição</TableHead>
+            <TableHead className="w-[200px]">Gestor</TableHead>
             <TableHead className="w-[100px]">Status</TableHead>
             <TableHead className="w-[80px] text-right">Ações</TableHead>
           </TableRow>
@@ -33,7 +34,7 @@ export const DepartmentsTable = ({ departments = [], onEditDepartment, onDeleted
         <TableBody>
           {!departments || departments.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="h-24 text-center">
+              <TableCell colSpan={5} className="h-24 text-center">
                 Nenhum setor encontrado
               </TableCell>
             </TableRow>
@@ -42,6 +43,7 @@ export const DepartmentsTable = ({ departments = [], onEditDepartment, onDeleted
               <TableRow key={department.id}>
                 <TableCell className="font-medium">{department.name}</TableCell>
                 <TableCell>{department.description || "-"}</TableCell>
+                <TableCell>{department.manager_name || "-"}</TableCell>
                 <TableCell>
                   {department.is_active ? (
                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-50">
