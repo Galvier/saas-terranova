@@ -24,7 +24,7 @@ const DepartmentsPage = () => {
   const fetchDepartments = async () => {
     setIsLoading(true);
     try {
-      const { departments, error } = await getAllDepartments();
+      const { data, error } = await getAllDepartments();
       
       if (error) {
         toast({
@@ -35,7 +35,7 @@ const DepartmentsPage = () => {
         return;
       }
       
-      setDepartments(departments);
+      setDepartments(data || []);
     } catch (error) {
       console.error('Error fetching departments:', error);
       toast({

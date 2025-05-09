@@ -18,7 +18,7 @@ interface DepartmentsTableProps {
   onDeletedDepartment: () => void;
 }
 
-export const DepartmentsTable = ({ departments, onEditDepartment, onDeletedDepartment }: DepartmentsTableProps) => {
+export const DepartmentsTable = ({ departments = [], onEditDepartment, onDeletedDepartment }: DepartmentsTableProps) => {
   return (
     <div className="w-full overflow-auto">
       <Table>
@@ -31,7 +31,7 @@ export const DepartmentsTable = ({ departments, onEditDepartment, onDeletedDepar
           </TableRow>
         </TableHeader>
         <TableBody>
-          {departments.length === 0 ? (
+          {!departments || departments.length === 0 ? (
             <TableRow>
               <TableCell colSpan={4} className="h-24 text-center">
                 Nenhum setor encontrado
