@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { MetricDefinition } from '@/integrations/supabase/types/metric';
-import { saveAdminDashboardConfig } from '@/integrations/supabase';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
 
 interface MetricSelectionDialogProps {
   open: boolean;
@@ -29,10 +28,11 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   
-  // Initialize local selection when dialog opens
+  // Initialize local selection whenever the dialog opens or selectedMetrics changes
   useEffect(() => {
     if (open) {
-      setLocalSelection(selectedMetrics);
+      console.log("Dialog opened, setting localSelection to:", selectedMetrics);
+      setLocalSelection([...selectedMetrics]);
     }
   }, [open, selectedMetrics]);
 
@@ -59,15 +59,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
     setIsSaving(true);
     
     try {
-      const result = await saveAdminDashboardConfig(
-        localSelection,
-        user.id
-      );
-      
-      if (result.error) {
-        throw new Error(result.message || "Erro ao salvar configuração");
-      }
-      
+      // Update parent component state first for immediate feedback
       onSelectionChange(localSelection);
       
       toast({
@@ -77,7 +69,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
       
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Erro ao salvar configuração:", error);
+      console.error("Error saving configuration:", error);
       toast({
         title: "Erro ao salvar configuração",
         description: error.message || "Ocorreu um erro ao salvar a configuração",
@@ -99,30 +91,36 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
         </DialogHeader>
         
         <div className="max-h-[60vh] overflow-y-auto py-4">
-          <div className="space-y-4">
-            {metrics.map((metric) => (
-              <div key={metric.id} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={`metric-${metric.id}`} 
-                  checked={localSelection.includes(metric.id)}
-                  onCheckedChange={() => handleToggleMetric(metric.id)}
-                />
-                <label 
-                  htmlFor={`metric-${metric.id}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer"
-                >
-                  <div className="font-medium">{metric.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {metric.department_name || 'Sem departamento'} • {metric.unit}
-                  </div>
-                </label>
-              </div>
-            ))}
-            
-            {metrics.length === 0 && (
-              <p className="text-center text-muted-foreground">Nenhuma métrica encontrada</p>
-            )}
-          </div>
+          {metrics.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-1">Nenhuma métrica encontrada</p>
+              <p className="text-xs text-muted-foreground">
+                Crie métricas na página "Métricas" para poder adicioná-las ao dashboard
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {metrics.map((metric) => (
+                <div key={metric.id} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`metric-${metric.id}`} 
+                    checked={localSelection.includes(metric.id)}
+                    onCheckedChange={() => handleToggleMetric(metric.id)}
+                  />
+                  <label 
+                    htmlFor={`metric-${metric.id}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer"
+                  >
+                    <div className="font-medium">{metric.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {metric.department_name || 'Sem departamento'} • {metric.unit}
+                    </div>
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
         <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">

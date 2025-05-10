@@ -399,18 +399,12 @@ export type Database = {
         Returns: Json
       }
       create_department: {
-        Args:
-          | {
-              department_name: string
-              department_description: string
-              department_is_active: boolean
-            }
-          | {
-              department_name: string
-              department_description: string
-              department_is_active: boolean
-              department_manager_id?: string
-            }
+        Args: {
+          department_name: string
+          department_description: string
+          department_is_active: boolean
+          department_manager_id?: string
+        }
         Returns: Json
       }
       create_diagnostic_table_if_not_exists: {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { Manager } from '@/integrations/supabase/types/manager';
@@ -37,7 +36,7 @@ export const useManagerData = (
     userIdentifier?.user_metadata?.role === 'admin') || 
     manager?.role === 'admin';
 
-  // Função para buscar um gerente específico pelo ID
+  // Function to fetch a manager specific by ID
   const fetchManager = async (id: string): Promise<void> => {
     setIsLoading(true);
     try {
@@ -69,7 +68,7 @@ export const useManagerData = (
     }
   };
 
-  // Função para buscar todos os departamentos
+  // Function to fetch all departments
   const fetchDepartments = async (): Promise<void> => {
     try {
       const { data, error } = await getAllDepartments();
@@ -84,7 +83,7 @@ export const useManagerData = (
     }
   };
 
-  // Função para atualizar um gerente
+  // Function to update a manager
   const handleUpdateManager = async (managerData: Partial<Manager>): Promise<boolean> => {
     if (!manager?.id) return false;
     
@@ -125,7 +124,7 @@ export const useManagerData = (
     }
   };
 
-  // Efeito para carregar os dados do gerente quando o usuário for fornecido
+  // Effect to load manager data when user is provided
   useEffect(() => {
     const fetchManagerData = async () => {
       if (!userIdentifier) {
@@ -138,7 +137,7 @@ export const useManagerData = (
       try {
         console.log('[ManagerData] Buscando dados do gerente');
         
-        // Se userIdentifier for um objeto User, buscar o gerente atual
+        // If userIdentifier is an object User, fetch the current manager
         if (typeof userIdentifier === 'object') {
           const result = await getCurrentUserManager();
           
@@ -158,7 +157,7 @@ export const useManagerData = (
             setManager(null);
           }
         } 
-        // Se for uma string, assumimos que é um ID de gerente
+        // If it's a string, assume it's a manager ID
         else if (typeof userIdentifier === 'string') {
           await fetchManager(userIdentifier);
         }
@@ -169,7 +168,7 @@ export const useManagerData = (
       }
     };
 
-    // Use setTimeout para evitar deadlock com auth state change
+    // Use setTimeout to avoid deadlock with auth state change
     setTimeout(() => {
       fetchManagerData();
     }, 0);
@@ -188,5 +187,5 @@ export const useManagerData = (
   };
 };
 
-// Adicionar importação para updateManager
+// Import for updateManager
 import { updateManager } from '@/integrations/supabase/managers';

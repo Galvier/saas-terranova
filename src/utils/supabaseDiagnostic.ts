@@ -204,7 +204,8 @@ export const testTables = async () => {
     'managers',
     'metrics',
     'settings',
-    'logs'
+    'logs',
+    'admin_dashboard_config' // Make sure admin_dashboard_config is included in the diagnostic check
   ];
   
   const tablesResult = await checkTables(essentialTables);
@@ -222,7 +223,6 @@ export const testTables = async () => {
   return result;
 };
 
-export const testDatabaseWrite = async () => {
-  const result = await testDiagnosticWrite();
-  return result;
+export const testDatabaseWrite = async (): Promise<DiagnosticResult> => {
+  return await testDiagnosticWrite();
 };

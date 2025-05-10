@@ -1,225 +1,167 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { getAllDepartments, createDepartment, updateDepartment } from '@/integrations/supabase/departments';
+import { Department } from '@/integrations/supabase';
+import { DepartmentsTable } from '@/components/departments/DepartmentsTable';
+import { DepartmentEditDialog } from '@/components/departments/DepartmentEditDialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import PageHeader from '@/components/PageHeader';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { Department, Manager, createDepartment, getAllDepartments, getAllManagers } from '@/integrations/supabase';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CustomBadge } from '@/components/ui/custom-badge';
 
-const Departments = () => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newDepartment, setNewDepartment] = useState({
-    name: '',
-    description: '',
-    status: 'active',
-    managerId: ''
-  });
+const DepartmentsPage = () => {
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const { data: departmentsData, isLoading, error } = useQuery({
-    queryKey: ['departments'],
-    queryFn: async () => {
-      const result = await getAllDepartments();
-      if (result.error) {
-        throw new Error(result.message);
-      }
-      return result.data || [];
-    }
-  });
+  // Fetch departments on component mount
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
 
-  const createDepartmentMutation = useMutation({
-    mutationFn: async (departmentData: { 
-      name: string; 
-      description: string; 
-      is_active: boolean;
-      manager_id?: string;
-    }) => {
-      const result = await createDepartment(departmentData);
-      if (result.error) {
-        throw new Error(result.message);
+  const fetchDepartments = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await getAllDepartments();
+      
+      if (error) {
+        toast({
+          title: "Erro ao carregar setores",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
       }
-      return result.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['departments'] });
-      setIsDialogOpen(false);
+      
+      setDepartments(data || []);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
       toast({
-        title: "Setor criado",
-        description: `${newDepartment.name} foi adicionado com sucesso`,
+        title: "Erro ao carregar setores",
+        description: "Ocorreu um erro ao carregar os setores.",
+        variant: "destructive",
       });
-      setNewDepartment({
-        name: '',
-        description: '',
-        status: 'active',
-        managerId: ''
-      });
-    },
-    onError: (error) => {
-      console.error('Erro ao criar setor:', error);
-      toast({
-        title: "Erro ao criar setor",
-        description: error instanceof Error ? error.message : "Ocorreu um erro ao salvar o setor",
-        variant: "destructive"
-      });
+    } finally {
+      setIsLoading(false);
     }
-  });
+  };
 
-  const { data: managersData } = useQuery({
-    queryKey: ['managers'],
-    queryFn: async () => {
-      const result = await getAllManagers();
-      if (result.error) {
-        throw new Error(result.message);
+  const handleCreateDepartment = () => {
+    setSelectedDepartment(null);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditDepartment = (department: Department) => {
+    setSelectedDepartment(department);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveDepartment = async (formValues: { name: string, description: string, is_active: boolean, manager_id?: string | null }) => {
+    setIsProcessing(true);
+    try {
+      // Transformar "null" string em valor null real
+      const managerId = formValues.manager_id === "null" ? null : formValues.manager_id;
+      
+      if (selectedDepartment) {
+        // Update existing department
+        const { error } = await updateDepartment(
+          selectedDepartment.id,
+          formValues.name,
+          formValues.description,
+          formValues.is_active,
+          managerId
+        );
+        
+        if (error) {
+          toast({
+            title: "Erro ao atualizar setor",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        toast({
+          title: "Setor atualizado",
+          description: `O setor "${formValues.name}" foi atualizado com sucesso.`,
+        });
+      } else {
+        // Create new department
+        const { error } = await createDepartment(
+          formValues.name,
+          formValues.description,
+          formValues.is_active,
+          managerId
+        );
+        
+        if (error) {
+          toast({
+            title: "Erro ao criar setor",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        toast({
+          title: "Setor criado",
+          description: `O setor "${formValues.name}" foi criado com sucesso.`,
+        });
       }
-      return result.data || [];
+      
+      // Close dialog and refresh departments
+      setIsEditDialogOpen(false);
+      fetchDepartments();
+    } catch (error) {
+      console.error('Error saving department:', error);
+      toast({
+        title: "Erro ao salvar setor",
+        description: "Ocorreu um erro ao salvar o setor.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createDepartmentMutation.mutate({
-      name: newDepartment.name,
-      description: newDepartment.description,
-      is_active: newDepartment.status === 'active',
-      manager_id: newDepartment.managerId || undefined
-    });
   };
 
   return (
-    <div className="animate-fade-in">
-      <PageHeader title="Setores" subtitle="Gerencie os setores da empresa" />
-      <div className="flex justify-end mb-6">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Novo Setor
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <form onSubmit={handleSubmit}>
-              <DialogHeader>
-                <DialogTitle>Criar Setor</DialogTitle>
-                <DialogDescription>
-                  Adicione um novo setor à empresa.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
-                  <Input 
-                    id="name" 
-                    value={newDepartment.name}
-                    onChange={e => setNewDepartment({...newDepartment, name: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descrição</Label>
-                  <Textarea 
-                    id="description" 
-                    value={newDepartment.description}
-                    onChange={e => setNewDepartment({...newDepartment, description: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select 
-                    defaultValue={newDepartment.status}
-                    onValueChange={value => setNewDepartment({...newDepartment, status: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Ativo</SelectItem>
-                      <SelectItem value="inactive">Inativo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="manager">Gestor Responsável</Label>
-                  <Select
-                    value={newDepartment.managerId}
-                    onValueChange={value => setNewDepartment({...newDepartment, managerId: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um gestor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(managersData || []).length === 0 ? (
-                        <SelectItem value="no-manager">Nenhum gestor encontrado</SelectItem>
-                      ) : (
-                        managersData?.map((manager) => (
-                          <SelectItem key={manager.id} value={manager.id}>
-                            {manager.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={createDepartmentMutation.isPending}>
-                  {createDepartmentMutation.isPending ? 'Salvando...' : 'Salvar'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-      {isLoading ? (
-        <div className="flex justify-center p-8">Carregando setores...</div>
-      ) : error ? (
-        <div className="text-center p-8 text-red-500">Erro ao carregar setores</div>
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Setor</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Gestor Responsável</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {departmentsData && departmentsData.length > 0 ? (
-                departmentsData.map((dept) => (
-                  <TableRow key={dept.id}>
-                    <TableCell className="font-medium">{dept.name}</TableCell>
-                    <TableCell>{dept.description || '-'}</TableCell>
-                    <TableCell>{dept.manager_name || '-'}</TableCell>
-                    <TableCell className="text-center">
-                      <CustomBadge variant={dept.is_active ? 'success' : 'secondary'}>
-                        {dept.is_active ? 'Ativo' : 'Inativo'}
-                      </CustomBadge>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-6">
-                    Nenhum setor encontrado
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+    <div className="container mx-auto py-10 space-y-6 animate-fade-in">
+      <header className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Setores</h1>
+          <p className="text-muted-foreground">
+            Gerencie os setores da sua organização
+          </p>
         </div>
+        <Button onClick={handleCreateDepartment}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Setor
+        </Button>
+      </header>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <p>Carregando setores...</p>
+        </div>
+      ) : (
+        <DepartmentsTable 
+          departments={departments} 
+          onEditDepartment={handleEditDepartment}
+          onDeletedDepartment={fetchDepartments}
+        />
       )}
+
+      <DepartmentEditDialog 
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onSave={handleSaveDepartment}
+        department={selectedDepartment}
+        isEditing={isProcessing}
+      />
     </div>
   );
 };
 
-export default Departments;
+export default DepartmentsPage;

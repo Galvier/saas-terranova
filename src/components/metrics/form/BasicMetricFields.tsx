@@ -13,7 +13,7 @@ interface BasicMetricFieldsProps {
 
 const BasicMetricFields: React.FC<BasicMetricFieldsProps> = ({ form }) => {
   return (
-    <>
+    <div className="space-y-4">
       <FormField
         control={form.control}
         name="name"
@@ -21,13 +21,13 @@ const BasicMetricFields: React.FC<BasicMetricFieldsProps> = ({ form }) => {
           <FormItem>
             <FormLabel>Nome</FormLabel>
             <FormControl>
-              <Input {...field} />
+              <Input placeholder="Nome da métrica" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-
+      
       <FormField
         control={form.control}
         name="description"
@@ -35,13 +35,17 @@ const BasicMetricFields: React.FC<BasicMetricFieldsProps> = ({ form }) => {
           <FormItem>
             <FormLabel>Descrição</FormLabel>
             <FormControl>
-              <Textarea {...field} />
+              <Textarea 
+                placeholder="Descrição detalhada da métrica" 
+                className="min-h-[100px]" 
+                {...field} 
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-    </>
+    </div>
   );
 };
 

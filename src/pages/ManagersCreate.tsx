@@ -47,7 +47,7 @@ const ManagersCreate = () => {
     queryKey: ['departments'],
     queryFn: async () => {
       const result = await getAllDepartments();
-      if (result.error) throw new Error(result.message);
+      if (result.error) throw new Error(result.error.message || 'Failed to load departments');
       return result.data || [];
     }
   });
