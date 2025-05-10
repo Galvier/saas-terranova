@@ -23,7 +23,7 @@ export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
       };
     }
     
-    // Transformar os dados para manter compatibilidade
+    // Garantir que temos o manager_name disponível
     const transformedData = data?.map(dept => ({
       ...dept,
       manager_name: dept.manager_name || null

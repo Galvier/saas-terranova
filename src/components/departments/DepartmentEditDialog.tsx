@@ -124,14 +124,14 @@ export const DepartmentEditDialog = ({
           <div className="space-y-2">
             <Label htmlFor="manager">Gestor</Label>
             <Select 
-              value={managerId || ''} 
-              onValueChange={(value) => setManagerId(value || null)}
+              value={managerId || undefined} 
+              onValueChange={(value) => setManagerId(value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um gestor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum gestor</SelectItem>
+                <SelectItem key="no-manager" value="null">Nenhum gestor</SelectItem>
                 {managers.map((manager: Manager) => (
                   <SelectItem key={manager.id} value={manager.id}>
                     {manager.name}
