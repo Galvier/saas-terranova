@@ -11,26 +11,33 @@ export type GetDepartmentsResult = {
 
 export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
   try {
-    const { data, error } = await supabase
-      .from('departments')
-      .select(`
-        *,
-        managers:manager_id (name)
-      `)
-      .order('name');
+    // Usar a função SQL get_all_departments
+    const { data, error } = await supabase.rpc('get_all_departments');
     
-    // Transform the data to include manager_name
+    if (error) {
+      console.error("Error fetching departments:", error);
+      return {
+        data: null,
+        error: error,
+        message: error.message
+      };
+    }
+    
+    // Transformar os dados para manter compatibilidade
     const transformedData = data?.map(dept => ({
       ...dept,
-      manager_name: dept.managers?.name || null
+      manager_name: dept.manager_name || null
     }));
+    
+    console.log("Fetched departments:", transformedData);
     
     return {
       data: transformedData as Department[],
-      error: error,
-      message: error ? error.message : undefined
+      error: null,
+      message: undefined
     };
   } catch (error: any) {
+    console.error("Exception in getAllDepartments:", error);
     return {
       data: null,
       error: error instanceof Error ? error : new Error(String(error)),
@@ -46,18 +53,23 @@ export const createDepartment = async (
   manager_id: string | null = null
 ) => {
   try {
-    const { data, error } = await supabase
-      .from('departments')
-      .insert({
-        name,
-        description,
-        is_active,
-        manager_id
-      })
-      .single();
+    // Usar a função SQL create_department com SECURITY DEFINER
+    const { data, error } = await supabase.rpc('create_department', {
+      department_name: name,
+      department_description: description,
+      department_is_active: is_active,
+      department_manager_id: manager_id
+    });
+    
+    if (error) {
+      console.error("Error creating department:", error);
+    } else {
+      console.log("Department created successfully:", data);
+    }
     
     return formatCrudResult(data, error);
   } catch (error: any) {
+    console.error("Exception in createDepartment:", error);
     return formatCrudResult(null, error);
   }
 };
