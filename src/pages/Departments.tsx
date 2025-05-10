@@ -58,7 +58,7 @@ const DepartmentsPage = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveDepartment = async (formValues: { name: string, description: string, is_active: boolean }) => {
+  const handleSaveDepartment = async (formValues: { name: string, description: string, is_active: boolean, manager_id?: string | null }) => {
     setIsProcessing(true);
     try {
       if (selectedDepartment) {
@@ -67,7 +67,8 @@ const DepartmentsPage = () => {
           selectedDepartment.id,
           formValues.name,
           formValues.description,
-          formValues.is_active
+          formValues.is_active,
+          formValues.manager_id || null
         );
         
         if (error) {
@@ -88,7 +89,8 @@ const DepartmentsPage = () => {
         const { error } = await createDepartment(
           formValues.name,
           formValues.description,
-          formValues.is_active
+          formValues.is_active,
+          formValues.manager_id || null
         );
         
         if (error) {
