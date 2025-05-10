@@ -8,7 +8,7 @@ export const getMetricsByDepartment = async (departmentId?: string, date?: strin
   try {
     console.log("Fetching metrics with params - departmentId:", departmentId, "date:", date);
     
-    // Simple approach using direct database query instead of RPC
+    // Use direct database query instead of RPC to avoid function not found errors
     let query = supabase
       .from('metrics_definition')
       .select(`
@@ -48,7 +48,8 @@ export const getMetricsByDepartment = async (departmentId?: string, date?: strin
       status: 'warning',
       visualization_type: 'card',
       priority: 'normal',
-      default_period: 'month'
+      default_period: 'month',
+      last_value_date: null
     }));
     
     console.log("Successfully fetched metrics:", transformedData?.length || 0);

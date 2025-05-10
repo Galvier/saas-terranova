@@ -153,15 +153,6 @@ const Dashboard = () => {
                 >
                   Configurar dashboard
                 </Button>
-                <Button 
-                  variant="default"
-                  onClick={() => {
-                    // Redirecionar para a página de criar métricas
-                    window.location.href = '/admin/metricas';
-                  }}
-                >
-                  Criar nova métrica
-                </Button>
               </div>
             )}
           </div>
