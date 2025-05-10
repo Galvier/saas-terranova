@@ -87,6 +87,8 @@ export const createMetricDefinition = async (metric: {
         is_active: metric.is_active !== undefined ? metric.is_active : true,
         icon_name: metric.icon_name || null,
         lower_is_better: metric.lower_is_better !== undefined ? metric.lower_is_better : false
+        // Note: Additional fields like visualization_type, priority, and default_period
+        // are handled in the UI layer but not stored in the database
       })
       .select('id')
       .single();
@@ -109,8 +111,12 @@ export const updateMetricDefinition = async (metricId: string, metric: {
   is_active?: boolean;
   icon_name?: string;
   lower_is_better?: boolean;
+  visualization_type?: string; 
+  priority?: string;
+  default_period?: string;
 }): Promise<CrudResult<string>> => {
   try {
+    // We only update the fields that the database table actually has
     const { data, error } = await supabase
       .from('metrics_definition')
       .update({

@@ -45,3 +45,6 @@ export interface DashboardConfig {
   created_at?: string;
   updated_at?: string;
 }
+
+// Add this type alias to fix the AdminDashboardConfig error
+export type AdminDashboardConfig = DashboardConfig;

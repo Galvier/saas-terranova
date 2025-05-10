@@ -1,6 +1,6 @@
 
 import { callRPC, formatCrudResult, type CrudResult } from '../core';
-import type { AdminDashboardConfig } from '../types/metric';
+import type { DashboardConfig } from '../types/metric';
 
 // Function to save admin dashboard configuration
 export const saveAdminDashboardConfig = async (
@@ -26,11 +26,11 @@ export const saveAdminDashboardConfig = async (
 // Function to get admin dashboard configuration
 export const getAdminDashboardConfig = async (
   userId: string
-): Promise<CrudResult<AdminDashboardConfig>> => {
+): Promise<CrudResult<DashboardConfig>> => {
   try {
     console.log("Loading dashboard config for user ID:", userId);
     const timestamp = new Date().getTime();
-    const { data, error } = await callRPC<AdminDashboardConfig>('get_admin_dashboard_config', {
+    const { data, error } = await callRPC<DashboardConfig>('get_admin_dashboard_config', {
       user_id_param: userId,
       _cache_buster: timestamp 
     });
