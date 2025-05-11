@@ -23,9 +23,15 @@ export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
       };
     }
     
-    // Garantir que temos o manager_name disponível
+    // Transformar os resultados para garantir que todos os campos estão presentes
     const transformedData = data?.map(dept => ({
-      ...dept,
+      id: dept.id,
+      name: dept.name,
+      description: dept.description || null,
+      is_active: dept.is_active || true,
+      manager_id: dept.manager_id || null,
+      created_at: dept.created_at,
+      updated_at: dept.updated_at,
       manager_name: dept.manager_name || null
     }));
     
