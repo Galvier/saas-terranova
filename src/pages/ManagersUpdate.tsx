@@ -32,11 +32,11 @@ const ManagersUpdate = () => {
       });
       navigate('/managers');
     }
-  }, [id]);
+  }, [id, fetchManager, toast, navigate]);
 
   useEffect(() => {
     fetchDepartments();
-  }, []);
+  }, [fetchDepartments]);
 
   const handleSubmit = async (values: ManagerUpdateValues) => {
     console.log("Submitting manager update:", values);

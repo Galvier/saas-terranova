@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { Manager } from '@/integrations/supabase/types/manager';
 import { Department } from '@/integrations/supabase/types/department';
@@ -37,7 +37,7 @@ export const useManagerData = (
     manager?.role === 'admin';
 
   // Function to fetch a manager specific by ID
-  const fetchManager = async (id: string): Promise<void> => {
+  const fetchManager = useCallback(async (id: string): Promise<void> => {
     setIsLoading(true);
     try {
       const { data, error } = await getManagerById(id);
@@ -71,10 +71,10 @@ export const useManagerData = (
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   // Function to fetch all departments
-  const fetchDepartments = async (): Promise<void> => {
+  const fetchDepartments = useCallback(async (): Promise<void> => {
     try {
       const { data, error } = await getAllDepartments();
       if (error) {
@@ -86,7 +86,7 @@ export const useManagerData = (
     } catch (error) {
       console.error('[ManagerData] Erro ao buscar departamentos:', error);
     }
-  };
+  }, []);
 
   // Function to update a manager
   const handleUpdateManager = async (managerData: Partial<Manager>): Promise<boolean> => {
@@ -117,7 +117,7 @@ export const useManagerData = (
           email: managerData.email || manager.email,
           department_id: managerData.department_id || manager.department_id || '',
           is_active: typeof managerData.is_active !== 'undefined' ? managerData.is_active : manager.is_active,
-          role: managerData.role
+          role: managerData.role || manager.role
         }
       );
 
@@ -196,7 +196,7 @@ export const useManagerData = (
     setTimeout(() => {
       fetchManagerData();
     }, 0);
-  }, [userIdentifier, ...dependencies]);
+  }, [userIdentifier, fetchManager, ...dependencies]);
 
   return {
     manager, 
