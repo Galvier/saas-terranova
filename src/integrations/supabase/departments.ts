@@ -11,7 +11,7 @@ export type GetDepartmentsResult = {
 
 export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
   try {
-    // Usar a função SQL get_all_departments
+    // Use the SQL function get_all_departments
     const { data, error } = await supabase.rpc('get_all_departments');
     
     if (error) {
@@ -23,7 +23,7 @@ export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
       };
     }
     
-    // Transformar os resultados para garantir que todos os campos estão presentes
+    // Transform the results to ensure all fields are present
     const transformedData = data?.map(dept => ({
       id: dept.id,
       name: dept.name,

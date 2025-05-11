@@ -67,7 +67,7 @@ const ManagersUpdate = () => {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="animate-fade-in space-y-6 container mx-auto px-4 py-6">
       <PageHeader
         title="Editar Gerente"
         subtitle="Atualize as informações do gerente"
