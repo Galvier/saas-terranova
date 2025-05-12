@@ -24,27 +24,32 @@ const DepartmentsPage = () => {
 
   // Set up real-time subscription
   useEffect(() => {
+    console.log('Setting up realtime subscription for departments and managers');
+    
     // Subscribe to changes in the managers and departments tables
-    const managersChannel = supabase
+    const channel = supabase
       .channel('departments-managers-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'managers' }, 
-        () => {
-          console.log('Manager changed, refreshing departments');
+        (payload) => {
+          console.log('Manager changed, payload:', payload);
           fetchDepartments();
         }
       )
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'departments' }, 
-        () => {
-          console.log('Department changed, refreshing departments');
+        (payload) => {
+          console.log('Department changed, payload:', payload);
           fetchDepartments();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
-      supabase.removeChannel(managersChannel);
+      console.log('Unsubscribing from realtime channel');
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -62,6 +67,7 @@ const DepartmentsPage = () => {
         return;
       }
       
+      console.log('Departments data fetched:', data);
       setDepartments(data || []);
     } catch (error) {
       console.error('Error fetching departments:', error);
