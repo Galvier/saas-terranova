@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { getAllDepartments, createDepartment, updateDepartment } from '@/integrations/supabase/departments';
+import { supabase } from '@/integrations/supabase/client';
 import { Department } from '@/integrations/supabase';
 import { DepartmentsTable } from '@/components/departments/DepartmentsTable';
 import { DepartmentEditDialog } from '@/components/departments/DepartmentEditDialog';
@@ -19,6 +20,32 @@ const DepartmentsPage = () => {
   // Fetch departments on component mount
   useEffect(() => {
     fetchDepartments();
+  }, []);
+
+  // Set up real-time subscription
+  useEffect(() => {
+    // Subscribe to changes in the managers and departments tables
+    const managersChannel = supabase
+      .channel('departments-managers-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'managers' }, 
+        () => {
+          console.log('Manager changed, refreshing departments');
+          fetchDepartments();
+        }
+      )
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'departments' }, 
+        () => {
+          console.log('Department changed, refreshing departments');
+          fetchDepartments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(managersChannel);
+    };
   }, []);
 
   const fetchDepartments = async () => {
@@ -128,7 +155,7 @@ const DepartmentsPage = () => {
 
   return (
     <div className="container mx-auto py-10 space-y-6 animate-fade-in">
-      <header className="flex justify-between items-center">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Setores</h1>
           <p className="text-muted-foreground">
