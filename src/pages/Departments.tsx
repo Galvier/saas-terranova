@@ -94,9 +94,6 @@ const DepartmentsPage = () => {
   const handleSaveDepartment = async (formValues: { name: string, description: string, is_active: boolean, manager_id?: string | null }) => {
     setIsProcessing(true);
     try {
-      // Transformar "null" string em valor null real
-      const managerId = formValues.manager_id === "null" ? null : formValues.manager_id;
-      
       if (selectedDepartment) {
         // Update existing department
         const { error } = await updateDepartment(
@@ -104,7 +101,7 @@ const DepartmentsPage = () => {
           formValues.name,
           formValues.description,
           formValues.is_active,
-          managerId
+          selectedDepartment.manager_id // Keep the existing manager_id
         );
         
         if (error) {
@@ -126,7 +123,7 @@ const DepartmentsPage = () => {
           formValues.name,
           formValues.description,
           formValues.is_active,
-          managerId
+          null // New departments don't have managers initially
         );
         
         if (error) {

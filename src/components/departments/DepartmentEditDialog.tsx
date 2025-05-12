@@ -1,174 +1,173 @@
-
-import React, { useState, useEffect } from 'react';
-import { useForm } from "react-hook-form";
+import React, { useEffect } from 'react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Department, Manager } from '@/integrations/supabase';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuery } from '@tanstack/react-query';
-import { getAllManagers } from '@/integrations/supabase/managers';
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { Department } from '@/integrations/supabase';
+import { Loader2 } from 'lucide-react';
 
-interface DepartmentFormValues {
-  name: string;
-  description: string;
-  is_active: boolean;
-  manager_id?: string | null;
-}
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: 'O nome deve ter pelo menos 2 caracteres.',
+  }),
+  description: z.string().optional(),
+  is_active: z.boolean().default(true),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface DepartmentEditDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (values: DepartmentFormValues) => Promise<void>;
+  onSave: (values: { name: string; description: string; is_active: boolean; manager_id?: string | null }) => void;
   department: Department | null;
   isEditing: boolean;
 }
 
-export const DepartmentEditDialog = ({
+export function DepartmentEditDialog({
   isOpen,
   onOpenChange,
   onSave,
   department,
-  isEditing
-}: DepartmentEditDialogProps) => {
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<DepartmentFormValues>();
-  const [isActive, setIsActive] = useState(true);
-  const [managerId, setManagerId] = useState<string | null>(null);
-
-  // Buscar gestores
-  const { data: managers = [], isLoading: isLoadingManagers } = useQuery({
-    queryKey: ['managers'],
-    queryFn: async () => {
-      const result = await getAllManagers();
-      if (result.error) {
-        console.error("Error fetching managers:", result.error);
-        return [];
-      }
-      return result.data || [];
+  isEditing,
+}: DepartmentEditDialogProps) {
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      is_active: true,
     },
-    enabled: isOpen
   });
 
-  // Reset form when department changes
   useEffect(() => {
     if (department) {
-      setValue('name', department.name);
-      setValue('description', department.description || '');
-      setIsActive(department.is_active || true);
-      setManagerId(department.manager_id || null);
+      form.reset({
+        name: department.name,
+        description: department.description || '',
+        is_active: department.is_active,
+      });
     } else {
-      reset({
+      form.reset({
         name: '',
         description: '',
-        manager_id: null
+        is_active: true,
       });
-      setIsActive(true);
-      setManagerId(null);
     }
-  }, [department, reset, setValue]);
+  }, [department, form]);
 
-  const onSubmit = async (data: DepartmentFormValues) => {
-    await onSave({
-      ...data,
-      is_active: isActive,
-      manager_id: managerId
+  function onSubmit(values: FormValues) {
+    onSave({
+      name: values.name,
+      description: values.description || '',
+      is_active: values.is_active,
+      // We're keeping manager_id unchanged if editing, or null if creating new
+      manager_id: department ? department.manager_id : null,
     });
-  };
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{department ? 'Editar Setor' : 'Novo Setor'}</DialogTitle>
+          <DialogTitle>{department ? 'Editar' : 'Novo'} Setor</DialogTitle>
           <DialogDescription>
-            {department 
-              ? 'Atualize as informações do setor abaixo.' 
-              : 'Preencha as informações para criar um novo setor.'}
+            {department ? 'Edite as informações do setor existente.' : 'Adicione um novo setor à sua organização.'}
           </DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome do Setor</Label>
-            <Input
-              id="name"
-              placeholder="Digite o nome do setor"
-              {...register('name', { required: true })}
-              className={errors.name ? "border-red-500" : ""}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nome do setor" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.name && (
-              <p className="text-red-500 text-xs italic">Nome é obrigatório</p>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              placeholder="Digite uma descrição para o setor"
-              {...register('description')}
-              rows={3}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Descreva o propósito ou função deste setor." 
+                      className="resize-none" 
+                      {...field} 
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="manager">Gestor</Label>
-            <Select 
-              value={managerId || undefined} 
-              onValueChange={(value) => setManagerId(value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um gestor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem key="no-manager" value="null">Nenhum gestor</SelectItem>
-                {managers.map((manager: Manager) => (
-                  <SelectItem key={manager.id} value={manager.id}>
-                    {manager.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="is_active"
-              checked={isActive}
-              onCheckedChange={(checked) => setIsActive(checked as boolean)}
+            <FormField
+              control={form.control}
+              name="is_active"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel>Ativo</FormLabel>
+                    <FormDescription>
+                      Este setor está ativo na organização?
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
             />
-            <Label htmlFor="is_active" className="cursor-pointer">
-              Setor ativo
-            </Label>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-              disabled={isEditing}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isEditing}>
-              {isEditing ? "Salvando..." : department ? "Salvar Alterações" : "Criar Setor"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isEditing}>
+                {isEditing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : department ? 'Salvar' : 'Criar'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
-};
-
-export default DepartmentEditDialog;
+}

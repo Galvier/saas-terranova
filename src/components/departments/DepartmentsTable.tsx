@@ -19,6 +19,8 @@ interface DepartmentsTableProps {
 }
 
 export const DepartmentsTable = ({ departments = [], onEditDepartment, onDeletedDepartment }: DepartmentsTableProps) => {
+  console.log("Rendering departments with data:", departments);
+
   return (
     <div className="w-full overflow-auto">
       <Table>
