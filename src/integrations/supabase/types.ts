@@ -494,13 +494,14 @@ export type Database = {
       get_all_departments: {
         Args: Record<PropertyKey, never>
         Returns: {
-          created_at: string | null
-          description: string | null
           id: string
-          is_active: boolean | null
-          manager_id: string | null
           name: string
-          updated_at: string | null
+          description: string
+          is_active: boolean
+          manager_id: string
+          created_at: string
+          updated_at: string
+          manager_name: string
         }[]
       }
       get_all_managers: {

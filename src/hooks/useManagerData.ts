@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { Manager } from '@/integrations/supabase/types/manager';
 import { Department } from '@/integrations/supabase/types/department';
-import { getCurrentUserManager, getManagerById, getAllManagers } from '@/integrations/supabase/managers';
+import { getCurrentUserManager, getManagerById, updateManager } from '@/integrations/supabase/managers';
 import { getAllDepartments } from '@/integrations/supabase/departments';
 import { useToast } from './use-toast';
 
@@ -11,7 +12,6 @@ export interface UseManagerDataReturn {
   userDepartmentId: string | null;
   isAdmin: boolean;
   isLoading: boolean;
-  // Adicionando os campos que faltavam para ManagersUpdate.tsx
   departments: Department[];
   isSaving: boolean;
   fetchManager: (id: string) => Promise<void>;
@@ -37,7 +37,7 @@ export const useManagerData = (
     manager?.role === 'admin';
 
   // Function to fetch a manager specific by ID
-  const fetchManager = async (id: string): Promise<void> => {
+  const fetchManager = useCallback(async (id: string): Promise<void> => {
     setIsLoading(true);
     try {
       const { data, error } = await getManagerById(id);
@@ -60,16 +60,21 @@ export const useManagerData = (
       } else {
         console.error('[ManagerData] Gerente não encontrado');
         setManager(null);
+        toast({
+          title: "Erro",
+          description: "Gerente não encontrado",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('[ManagerData] Erro inesperado:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   // Function to fetch all departments
-  const fetchDepartments = async (): Promise<void> => {
+  const fetchDepartments = useCallback(async (): Promise<void> => {
     try {
       const { data, error } = await getAllDepartments();
       if (error) {
@@ -81,27 +86,46 @@ export const useManagerData = (
     } catch (error) {
       console.error('[ManagerData] Erro ao buscar departamentos:', error);
     }
-  };
+  }, []);
 
   // Function to update a manager
   const handleUpdateManager = async (managerData: Partial<Manager>): Promise<boolean> => {
-    if (!manager?.id) return false;
+    if (!manager?.id) {
+      toast({
+        title: "Erro",
+        description: "ID do gerente não disponível",
+        variant: "destructive"
+      });
+      return false;
+    }
     
     setIsSaving(true);
     try {
-      const { error } = await updateManager(manager.id, {
+      console.log("Updating manager with data:", {
+        id: manager.id,
         name: managerData.name || manager.name,
         email: managerData.email || manager.email,
         department_id: managerData.department_id || manager.department_id || '',
         is_active: typeof managerData.is_active !== 'undefined' ? managerData.is_active : manager.is_active,
-        role: managerData.role
+        role: managerData.role || manager.role
       });
+      
+      const { error } = await updateManager(
+        manager.id,
+        {
+          name: managerData.name || manager.name,
+          email: managerData.email || manager.email,
+          department_id: managerData.department_id || manager.department_id || '',
+          is_active: typeof managerData.is_active !== 'undefined' ? managerData.is_active : manager.is_active,
+          role: managerData.role || manager.role
+        }
+      );
 
       if (error) {
         console.error('[ManagerData] Erro ao atualizar gerente:', error);
         toast({
           title: "Erro",
-          description: "Não foi possível atualizar o gerente",
+          description: "Não foi possível atualizar o gerente: " + error.message,
           variant: "destructive"
         });
         return false;
@@ -112,7 +136,7 @@ export const useManagerData = (
         description: "Gerente atualizado com sucesso"
       });
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('[ManagerData] Erro inesperado ao atualizar gerente:', error);
       toast({
         title: "Erro",
@@ -172,7 +196,7 @@ export const useManagerData = (
     setTimeout(() => {
       fetchManagerData();
     }, 0);
-  }, [userIdentifier, ...dependencies]);
+  }, [userIdentifier, fetchManager, ...dependencies]);
 
   return {
     manager, 
@@ -186,6 +210,3 @@ export const useManagerData = (
     handleUpdateManager 
   };
 };
-
-// Import for updateManager
-import { updateManager } from '@/integrations/supabase/managers';

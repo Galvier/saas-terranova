@@ -1,168 +1,108 @@
 
-import React, { useState, useEffect } from 'react';
-import { useForm } from "react-hook-form";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Department, Manager } from '@/integrations/supabase';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuery } from '@tanstack/react-query';
-import { getAllManagers } from '@/integrations/supabase/managers';
-
-interface DepartmentFormValues {
-  name: string;
-  description: string;
-  is_active: boolean;
-  manager_id?: string | null;
-}
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Department } from '@/integrations/supabase';
+import { Loader2 } from 'lucide-react';
+import DepartmentsSelect from '@/components/DepartmentsSelect';
 
 interface DepartmentEditDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (values: DepartmentFormValues) => Promise<void>;
+  onSave: (formValues: { name: string, description: string, is_active: boolean }) => void;
   department: Department | null;
   isEditing: boolean;
 }
 
-export const DepartmentEditDialog = ({
+export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
   isOpen,
   onOpenChange,
   onSave,
   department,
-  isEditing
-}: DepartmentEditDialogProps) => {
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<DepartmentFormValues>();
-  const [isActive, setIsActive] = useState(true);
-  const [managerId, setManagerId] = useState<string | null>(null);
-
-  // Buscar gestores
-  const { data: managers = [], isLoading: isLoadingManagers } = useQuery({
-    queryKey: ['managers'],
-    queryFn: async () => {
-      const result = await getAllManagers();
-      if (result.error) {
-        console.error("Error fetching managers:", result.error);
-        return [];
-      }
-      return result.data || [];
-    },
-    enabled: isOpen
-  });
+  isEditing = false
+}) => {
+  const [name, setName] = React.useState('');
+  const [description, setDescription] = React.useState('');
+  const [isActive, setIsActive] = React.useState(true);
 
   // Reset form when department changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (department) {
-      setValue('name', department.name);
-      setValue('description', department.description || '');
-      setIsActive(department.is_active || true);
-      setManagerId(department.manager_id || null);
+      setName(department.name);
+      setDescription(department.description || '');
+      setIsActive(department.is_active);
     } else {
-      reset({
-        name: '',
-        description: '',
-        manager_id: null
-      });
+      // Default values for new department
+      setName('');
+      setDescription('');
       setIsActive(true);
-      setManagerId(null);
     }
-  }, [department, reset, setValue]);
+  }, [department]);
 
-  const onSubmit = async (data: DepartmentFormValues) => {
-    await onSave({
-      ...data,
-      is_active: isActive,
-      manager_id: managerId
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      name,
+      description,
+      is_active: isActive
     });
   };
+
+  const isNewDepartment = !department;
+  const title = isNewDepartment ? 'Criar Novo Setor' : 'Editar Setor';
+  const buttonText = isNewDepartment ? 'Criar Setor' : 'Salvar Alterações';
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{department ? 'Editar Setor' : 'Novo Setor'}</DialogTitle>
-          <DialogDescription>
-            {department 
-              ? 'Atualize as informações do setor abaixo.' 
-              : 'Preencha as informações para criar um novo setor.'}
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
+        <form className="space-y-4 py-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="name">Nome do Setor</Label>
-            <Input
-              id="name"
-              placeholder="Digite o nome do setor"
-              {...register('name', { required: true })}
-              className={errors.name ? "border-red-500" : ""}
+            <Label htmlFor="name">Nome do Setor <span className="text-destructive">*</span></Label>
+            <Input 
+              id="name" 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+              placeholder="Ex: Marketing" 
+              required 
             />
-            {errors.name && (
-              <p className="text-red-500 text-xs italic">Nome é obrigatório</p>
-            )}
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              placeholder="Digite uma descrição para o setor"
-              {...register('description')}
-              rows={3}
+            <Textarea 
+              id="description" 
+              value={description} 
+              onChange={(e) => setDescription(e.target.value)} 
+              placeholder="Descrição do setor" 
             />
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="manager">Gestor</Label>
-            <Select 
-              value={managerId || undefined} 
-              onValueChange={(value) => setManagerId(value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um gestor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem key="no-manager" value="null">Nenhum gestor</SelectItem>
-                {managers.map((manager: Manager) => (
-                  <SelectItem key={manager.id} value={manager.id}>
-                    {manager.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
+
           <div className="flex items-center space-x-2">
-            <Checkbox
-              id="is_active"
-              checked={isActive}
-              onCheckedChange={(checked) => setIsActive(checked as boolean)}
-            />
-            <Label htmlFor="is_active" className="cursor-pointer">
-              Setor ativo
-            </Label>
+            <Switch checked={isActive} onCheckedChange={setIsActive} id="is-active" />
+            <Label htmlFor="is-active">Ativo</Label>
           </div>
-          
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-              disabled={isEditing}
-            >
+
+          <DialogFooter className="pt-4">
+            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isEditing}>
-              {isEditing ? "Salvando..." : department ? "Salvar Alterações" : "Criar Setor"}
+              {isEditing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                buttonText
+              )}
             </Button>
           </DialogFooter>
         </form>

@@ -49,6 +49,15 @@ export const updateManager = async (
   }
 ): Promise<CrudResult<Manager>> => {
   try {
+    console.log("Calling update_manager with params:", {
+      manager_id: id,
+      manager_name: manager.name,
+      manager_email: manager.email,
+      manager_department_id: manager.department_id,
+      manager_is_active: manager.is_active,
+      manager_role: manager.role
+    });
+
     const { data, error } = await callRPC<Manager>('update_manager', {
       manager_id: id,
       manager_name: manager.name,
@@ -57,9 +66,16 @@ export const updateManager = async (
       manager_is_active: manager.is_active,
       manager_role: manager.role
     });
+
+    if (error) {
+      console.error('Error from update_manager RPC:', error);
+    } else {
+      console.log('Update manager success:', data);
+    }
+
     return formatCrudResult(data, error);
   } catch (error) {
-    console.error('Error updating manager:', error);
+    console.error('Exception in updateManager:', error);
     return formatCrudResult(null, error);
   }
 };

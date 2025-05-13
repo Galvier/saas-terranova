@@ -20,6 +20,9 @@ BEGIN
   IF old_email != manager_email THEN
     -- Find user with new email
     SELECT id INTO user_id FROM auth.users WHERE email = manager_email;
+  ELSE
+    -- Keep the same user_id
+    SELECT user_id INTO user_id FROM managers WHERE id = manager_id;
   END IF;
   
   -- Update the manager
@@ -30,7 +33,7 @@ BEGIN
     is_active = manager_is_active,
     updated_at = NOW(),
     role = COALESCE(manager_role, role),
-    user_id = CASE WHEN old_email != manager_email THEN user_id ELSE user_id END
+    user_id = user_id
   WHERE id = manager_id;
   
   RETURN jsonb_build_object('id', manager_id);

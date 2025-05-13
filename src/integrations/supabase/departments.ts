@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { formatCrudResult } from './core';
 import type { Department } from './types/department';
@@ -11,7 +10,7 @@ export type GetDepartmentsResult = {
 
 export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
   try {
-    // Usar a função SQL get_all_departments
+    // Use the SQL function get_all_departments
     const { data, error } = await supabase.rpc('get_all_departments');
     
     if (error) {
@@ -23,13 +22,19 @@ export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
       };
     }
     
-    // Garantir que temos o manager_name disponível
+    // Transform the results to ensure all fields are present
     const transformedData = data?.map(dept => ({
-      ...dept,
+      id: dept.id,
+      name: dept.name,
+      description: dept.description || null,
+      is_active: dept.is_active || true,
+      manager_id: dept.manager_id || null,
+      created_at: dept.created_at,
+      updated_at: dept.updated_at,
       manager_name: dept.manager_name || null
     }));
     
-    console.log("Fetched departments:", transformedData);
+    console.log("Fetched departments with manager data:", transformedData);
     
     return {
       data: transformedData as Department[],
@@ -82,6 +87,8 @@ export const updateDepartment = async (
   manager_id: string | null = null
 ) => {
   try {
+    console.log(`Updating department ${id} with manager_id: ${manager_id}`);
+    
     const { data, error } = await supabase
       .from('departments')
       .update({
@@ -93,8 +100,15 @@ export const updateDepartment = async (
       })
       .eq('id', id);
     
+    if (error) {
+      console.error("Error updating department:", error);
+    } else {
+      console.log("Department updated successfully");
+    }
+    
     return formatCrudResult(data, error);
   } catch (error: any) {
+    console.error("Exception in updateDepartment:", error);
     return formatCrudResult(null, error);
   }
 };

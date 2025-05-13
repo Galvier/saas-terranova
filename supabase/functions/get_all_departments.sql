@@ -1,5 +1,4 @@
 
--- Function to get all departments
 create or replace function get_all_departments()
 returns table (
   id uuid,

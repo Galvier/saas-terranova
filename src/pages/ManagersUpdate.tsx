@@ -5,10 +5,12 @@ import { Loader2 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useManagerData } from '@/hooks/useManagerData';
 import { ManagerInfoForm, type ManagerUpdateValues } from '@/components/managers/ManagerInfoForm';
+import { useToast } from '@/hooks/use-toast';
 
 const ManagersUpdate = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     isLoading,
     isSaving,
@@ -17,19 +19,28 @@ const ManagersUpdate = () => {
     fetchManager,
     fetchDepartments,
     handleUpdateManager
-  } = useManagerData(id || '');  // Passando uma string vazia se id for undefined
+  } = useManagerData(id || '');
 
   useEffect(() => {
     if (id) {
       fetchManager(id);
+    } else {
+      toast({
+        title: "Erro",
+        description: "ID do gerente não fornecido",
+        variant: "destructive"
+      });
+      navigate('/managers');
     }
-  }, [id]);
+  }, [id, fetchManager, toast, navigate]);
 
   useEffect(() => {
     fetchDepartments();
-  }, []);
+  }, [fetchDepartments]);
 
   const handleSubmit = async (values: ManagerUpdateValues) => {
+    console.log("Submitting manager update:", values);
+    
     const success = await handleUpdateManager({
       name: values.name,
       email: values.email,
@@ -39,6 +50,10 @@ const ManagersUpdate = () => {
     });
     
     if (success) {
+      toast({
+        title: "Sucesso",
+        description: "Gerente atualizado com sucesso"
+      });
       navigate('/managers');
     }
   };
@@ -52,7 +67,7 @@ const ManagersUpdate = () => {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="animate-fade-in space-y-6 container mx-auto px-4 py-6">
       <PageHeader
         title="Editar Gerente"
         subtitle="Atualize as informações do gerente"
