@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 type SubscriptionConfig = {
   tables: string[];
   schema?: string;
-  event?: '*' | 'INSERT' | 'UPDATE' | 'DELETE';
+  event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
   onData?: () => void;
 };
 
@@ -20,13 +20,17 @@ export function useRealTimeSubscription({ tables, schema = 'public', event = '*'
     
     // Create a channel for all the specified tables
     const channelName = `${tables.join('-')}-changes`;
-    const channel = supabase
-      .channel(channelName);
+    const channel = supabase.channel(channelName);
     
     // Add subscription for each table
     tables.forEach(table => {
-      channel.on('postgres_changes', 
-        { event, schema, table }, 
+      channel.on(
+        'postgres_changes', 
+        { 
+          event: event, 
+          schema: schema, 
+          table: table 
+        }, 
         (payload) => {
           console.log(`${table} changed, payload:`, payload);
           if (onData) onData();

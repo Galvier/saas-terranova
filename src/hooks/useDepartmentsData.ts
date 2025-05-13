@@ -69,8 +69,7 @@ export function useDepartmentsData() {
   const handleSaveDepartment = useCallback(async (formValues: { 
     name: string, 
     description: string, 
-    is_active: boolean, 
-    manager_id?: string | null 
+    is_active: boolean 
   }) => {
     setIsProcessing(true);
     try {
