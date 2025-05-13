@@ -26,7 +26,7 @@ export const useRealTimeSubscription = (config: SubscriptionConfig) => {
     // Add subscription for each table
     tables.forEach(table => {
       channel.on(
-        'postgres_changes' as any, 
+        'postgres_changes', 
         { 
           event: event, 
           schema: schema, 
