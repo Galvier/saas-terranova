@@ -32,7 +32,7 @@ export const useRealTimeSubscription = (config: SubscriptionConfig) => {
           schema: schema, 
           table: table 
         }, 
-        (payload) => {
+        (payload: RealtimePostgresChangesPayload<Record<string, any>>) => {
           console.log(`${table} changed, payload:`, payload);
           if (onData) onData(payload);
         }
