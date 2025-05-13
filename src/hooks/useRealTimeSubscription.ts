@@ -25,6 +25,7 @@ export const useRealTimeSubscription = (config: SubscriptionConfig) => {
     
     // Add subscription for each table
     tables.forEach(table => {
+      // The correct method signature for postgres_changes
       channel.on(
         'postgres_changes', 
         { 
@@ -32,9 +33,9 @@ export const useRealTimeSubscription = (config: SubscriptionConfig) => {
           schema: schema, 
           table: table 
         }, 
-        (payload: RealtimePostgresChangesPayload<Record<string, any>>) => {
+        (payload) => {
           console.log(`${table} changed, payload:`, payload);
-          if (onData) onData(payload);
+          if (onData) onData(payload as RealtimePostgresChangesPayload<Record<string, any>>);
         }
       );
     });
