@@ -1,13 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 type SubscriptionConfig = {
   tables: string[];
   schema?: string;
   event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
-  onData?: () => void;
+  onData?: (payload: RealtimePostgresChangesPayload<Record<string, any>>) => void;
 };
 
 /**
@@ -26,7 +26,7 @@ export function useRealTimeSubscription({ tables, schema = 'public', event = '*'
     // Add subscription for each table
     tables.forEach(table => {
       channel.on(
-        'postgres_changes', 
+        'postgres_changes',  
         { 
           event: event, 
           schema: schema, 
@@ -34,7 +34,7 @@ export function useRealTimeSubscription({ tables, schema = 'public', event = '*'
         }, 
         (payload) => {
           console.log(`${table} changed, payload:`, payload);
-          if (onData) onData();
+          if (onData) onData(payload);
         }
       );
     });
