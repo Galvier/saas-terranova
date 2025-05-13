@@ -67,7 +67,22 @@ export function useUserSettings() {
             setSettings(JSON.parse(savedSettings));
           }
         } else if (data) {
-          setSettings(data.value as UserSettings);
+          // Fix type conversion by parsing the value as UserSettings
+          const userSettings = data.value as Record<string, any>;
+          setSettings({
+            theme: userSettings.theme || DEFAULT_SETTINGS.theme,
+            density: userSettings.density || DEFAULT_SETTINGS.density,
+            animationsEnabled: userSettings.animationsEnabled !== undefined ? 
+              userSettings.animationsEnabled : DEFAULT_SETTINGS.animationsEnabled,
+            notificationPreferences: {
+              email: userSettings.notificationPreferences?.email !== undefined ? 
+                userSettings.notificationPreferences.email : DEFAULT_SETTINGS.notificationPreferences.email,
+              system: userSettings.notificationPreferences?.system !== undefined ? 
+                userSettings.notificationPreferences.system : DEFAULT_SETTINGS.notificationPreferences.system,
+              alerts: userSettings.notificationPreferences?.alerts !== undefined ? 
+                userSettings.notificationPreferences.alerts : DEFAULT_SETTINGS.notificationPreferences.alerts
+            }
+          });
         }
       } catch (error) {
         console.error('Error loading settings:', error);

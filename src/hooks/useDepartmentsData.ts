@@ -1,9 +1,9 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Department } from '@/integrations/supabase/types/department';
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useTableSubscription } from '@/hooks/useRealTimeSubscription';
 import { useToast } from '@/hooks/use-toast';
-import { getAllDepartments, createDepartment, Department } from '@/integrations/supabase';
-import { useRealTimeSubscription } from '@/hooks/useRealTimeSubscription';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export const useDepartmentsData = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -36,7 +36,7 @@ export const useDepartmentsData = () => {
   };
 
   // Set up real-time subscription for departments and managers tables
-  const { isSubscribed } = useRealTimeSubscription({
+  const { isSubscribed } = useTableSubscription({
     tables: ['departments', 'managers'],
     onData: handleRealtimeUpdate
   });
