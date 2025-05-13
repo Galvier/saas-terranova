@@ -9,11 +9,9 @@ export const saveAdminDashboardConfig = async (
 ): Promise<CrudResult<string>> => {
   try {
     console.log("Sending to server - metrics:", metricIds, "user:", userId);
-    const timestamp = new Date().getTime();
     const { data, error } = await callRPC<string>('save_admin_dashboard_config', {
       metrics_ids: metricIds,
-      user_id: userId,
-      _cache_buster: timestamp
+      user_id: userId
     });
     console.log("Server response:", { data, error });
     return formatCrudResult(data, error);
@@ -29,10 +27,8 @@ export const getAdminDashboardConfig = async (
 ): Promise<CrudResult<DashboardConfig>> => {
   try {
     console.log("Loading dashboard config for user ID:", userId);
-    const timestamp = new Date().getTime();
     const { data, error } = await callRPC<DashboardConfig>('get_admin_dashboard_config', {
-      user_id_param: userId,
-      _cache_buster: timestamp 
+      user_id_param: userId
     });
     
     if (error) {

@@ -11,22 +11,22 @@ type SubscriptionConfig = {
 };
 
 /**
- * Custom hook for creating and managing Supabase real-time subscriptions
+ * Hook for subscribing to real-time updates from Supabase
  */
-export function useRealTimeSubscription({ tables, schema = 'public', event = '*', onData }: SubscriptionConfig) {
+export const useRealTimeSubscription = (config: SubscriptionConfig) => {
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const { tables, schema = 'public', event = '*', onData } = config;
   
   useEffect(() => {
-    console.log(`Setting up realtime subscription for tables: ${tables.join(', ')}`);
+    console.log(`Setting up real-time subscription for tables: ${tables.join(', ')}`);
     
-    // Create a channel for all the specified tables
-    const channelName = `${tables.join('-')}-changes`;
-    const channel = supabase.channel(channelName);
+    // Create a channel for real-time communication
+    const channel = supabase.channel('schema-db-changes');
     
     // Add subscription for each table
     tables.forEach(table => {
       channel.on(
-        'postgres_changes',  
+        'postgres_changes' as any, 
         { 
           event: event, 
           schema: schema, 
@@ -42,16 +42,16 @@ export function useRealTimeSubscription({ tables, schema = 'public', event = '*'
     // Subscribe to the channel
     channel
       .subscribe((status) => {
-        console.log(`Realtime subscription status for ${channelName}:`, status);
+        console.log(`Subscription status:`, status);
         setIsSubscribed(status === 'SUBSCRIBED');
       });
-
-    // Cleanup function
+    
+    // Cleanup function to remove the channel when component unmounts
     return () => {
-      console.log(`Unsubscribing from realtime channel ${channelName}`);
+      console.log(`Removing real-time subscription for tables: ${tables.join(', ')}`);
       supabase.removeChannel(channel);
     };
-  }, [tables, schema, event, onData]);
+  }, [tables.join(','), schema, event]); // Re-run if tables, schema or event changes
 
   return { isSubscribed };
-}
+};
