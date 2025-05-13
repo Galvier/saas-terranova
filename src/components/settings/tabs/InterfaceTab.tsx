@@ -32,7 +32,7 @@ const InterfaceTab = ({ settings, isSaving, onSave, onUpdateSettings }: Interfac
               value={settings.theme} 
               onValueChange={(value: 'light' | 'dark' | 'system') => 
                 onUpdateSettings({ theme: value })} 
-              className="flex gap-4"
+              className="flex flex-wrap gap-4"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="light" id="theme-light" />
@@ -64,7 +64,7 @@ const InterfaceTab = ({ settings, isSaving, onSave, onUpdateSettings }: Interfac
               value={settings.density} 
               onValueChange={(value: 'compact' | 'default' | 'comfortable') => 
                 onUpdateSettings({ density: value })} 
-              className="flex gap-4"
+              className="flex flex-wrap gap-4"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="compact" id="density-compact" />

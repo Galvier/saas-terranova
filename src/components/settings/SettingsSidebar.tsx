@@ -7,9 +7,10 @@ import { User, Settings2, Bell, Link, Database } from 'lucide-react';
 
 interface SettingsSidebarProps {
   onTabChange: (tabId: string) => void;
+  activeTab: string;
 }
 
-const SettingsSidebar = ({ onTabChange }: SettingsSidebarProps) => {
+const SettingsSidebar = ({ onTabChange, activeTab }: SettingsSidebarProps) => {
   return (
     <Card>
       <CardContent className="p-4">
@@ -18,25 +19,25 @@ const SettingsSidebar = ({ onTabChange }: SettingsSidebarProps) => {
           <Separator className="my-2" />
           <div className="space-y-1 py-2">
             <Button 
-              variant="ghost" 
+              variant={activeTab === 'profile' ? 'secondary' : 'ghost'} 
               className="w-full justify-start gap-2" 
               size="sm" 
               onClick={() => onTabChange('profile')}
             >
               <User className="h-4 w-4" />
-              <span>Perfil do Usuário</span>
+              <span>Perfil</span>
             </Button>
             <Button 
-              variant="ghost" 
-              className="w-full justify-start gap-2 text-primary" 
+              variant={activeTab === 'interface' ? 'secondary' : 'ghost'} 
+              className="w-full justify-start gap-2" 
               size="sm"
               onClick={() => onTabChange('interface')}
             >
               <Settings2 className="h-4 w-4" />
-              <span>Aparência</span>
+              <span>Interface</span>
             </Button>
             <Button 
-              variant="ghost" 
+              variant={activeTab === 'notifications' ? 'secondary' : 'ghost'} 
               className="w-full justify-start gap-2" 
               size="sm"
               onClick={() => onTabChange('notifications')}
@@ -45,7 +46,7 @@ const SettingsSidebar = ({ onTabChange }: SettingsSidebarProps) => {
               <span>Notificações</span>
             </Button>
             <Button 
-              variant="ghost" 
+              variant={activeTab === 'integrations' ? 'secondary' : 'ghost'} 
               className="w-full justify-start gap-2" 
               size="sm"
               onClick={() => onTabChange('integrations')}
@@ -54,7 +55,7 @@ const SettingsSidebar = ({ onTabChange }: SettingsSidebarProps) => {
               <span>Integrações</span>
             </Button>
             <Button 
-              variant="ghost" 
+              variant={activeTab === 'backup' ? 'secondary' : 'ghost'} 
               className="w-full justify-start gap-2" 
               size="sm"
               onClick={() => onTabChange('backup')}

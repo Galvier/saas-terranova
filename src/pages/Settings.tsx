@@ -65,16 +65,19 @@ const Settings = () => {
       
       <div className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-[240px] shrink-0">
-          <SettingsSidebar onTabChange={handleTabChange} />
+          <SettingsSidebar 
+            onTabChange={handleTabChange} 
+            activeTab={activeTab}
+          />
         </div>
         
         <div className="flex-1">
           <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-6 w-full justify-start">
+            <TabsList className="mb-6 w-full overflow-x-auto justify-start">
               <TabsTrigger value="interface" id="interface-tab">Interface</TabsTrigger>
               <TabsTrigger value="notifications" id="notifications-tab">Notificações</TabsTrigger>
               <TabsTrigger value="integrations" id="integrations-tab">Integrações</TabsTrigger>
-              <TabsTrigger value="backup" id="backup-tab">Backup de Dados</TabsTrigger>
+              <TabsTrigger value="backup" id="backup-tab">Sistema</TabsTrigger>
               <TabsTrigger value="profile" id="profile-tab">Perfil</TabsTrigger>
             </TabsList>
             

@@ -52,36 +52,56 @@ export function useUserSettings() {
 
       setIsLoading(true);
       try {
-        // Try to load from database first
+        // Try to load from the new user_settings table first
         const { data, error } = await supabase
-          .from('settings')
+          .from('user_settings')
           .select('*')
-          .eq('key', `user_settings_${user.id}`)
+          .eq('user_id', user.id)
           .single();
 
         if (error) {
-          console.error('Error loading settings from database:', error);
-          // Try to load from localStorage as fallback
-          const savedSettings = localStorage.getItem(`userSettings_${user.id}`);
-          if (savedSettings) {
-            setSettings(JSON.parse(savedSettings));
+          console.error('Error loading settings from user_settings table:', error);
+          
+          // Try to load from legacy settings table as fallback
+          const { data: legacyData, error: legacyError } = await supabase
+            .from('settings')
+            .select('*')
+            .eq('key', `user_settings_${user.id}`)
+            .single();
+            
+          if (legacyError) {
+            console.error('Error loading settings from legacy settings table:', legacyError);
+            // Try to load from localStorage as last resort
+            const savedSettings = localStorage.getItem(`userSettings_${user.id}`);
+            if (savedSettings) {
+              setSettings(JSON.parse(savedSettings));
+            }
+          } else if (legacyData) {
+            // Migrate from legacy value format
+            const userSettings = legacyData.value as Record<string, any>;
+            setSettings({
+              theme: userSettings.theme || DEFAULT_SETTINGS.theme,
+              density: userSettings.density || DEFAULT_SETTINGS.density,
+              animationsEnabled: userSettings.animationsEnabled !== undefined ? 
+                userSettings.animationsEnabled : DEFAULT_SETTINGS.animationsEnabled,
+              notificationPreferences: {
+                email: userSettings.notificationPreferences?.email !== undefined ? 
+                  userSettings.notificationPreferences.email : DEFAULT_SETTINGS.notificationPreferences.email,
+                system: userSettings.notificationPreferences?.system !== undefined ? 
+                  userSettings.notificationPreferences.system : DEFAULT_SETTINGS.notificationPreferences.system,
+                alerts: userSettings.notificationPreferences?.alerts !== undefined ? 
+                  userSettings.notificationPreferences.alerts : DEFAULT_SETTINGS.notificationPreferences.alerts
+              }
+            });
           }
         } else if (data) {
-          // Fix type conversion by parsing the value as UserSettings
-          const userSettings = data.value as Record<string, any>;
+          // Use data from new user_settings table
           setSettings({
-            theme: userSettings.theme || DEFAULT_SETTINGS.theme,
-            density: userSettings.density || DEFAULT_SETTINGS.density,
-            animationsEnabled: userSettings.animationsEnabled !== undefined ? 
-              userSettings.animationsEnabled : DEFAULT_SETTINGS.animationsEnabled,
-            notificationPreferences: {
-              email: userSettings.notificationPreferences?.email !== undefined ? 
-                userSettings.notificationPreferences.email : DEFAULT_SETTINGS.notificationPreferences.email,
-              system: userSettings.notificationPreferences?.system !== undefined ? 
-                userSettings.notificationPreferences.system : DEFAULT_SETTINGS.notificationPreferences.system,
-              alerts: userSettings.notificationPreferences?.alerts !== undefined ? 
-                userSettings.notificationPreferences.alerts : DEFAULT_SETTINGS.notificationPreferences.alerts
-            }
+            theme: (data.theme as 'light' | 'dark' | 'system') || DEFAULT_SETTINGS.theme,
+            density: (data.density as 'compact' | 'default' | 'comfortable') || DEFAULT_SETTINGS.density,
+            animationsEnabled: data.animations_enabled !== undefined ? 
+              data.animations_enabled : DEFAULT_SETTINGS.animationsEnabled,
+            notificationPreferences: data.notification_preferences || DEFAULT_SETTINGS.notificationPreferences
           });
         }
       } catch (error) {
@@ -120,7 +140,8 @@ export function useUserSettings() {
     }
     
     // Apply density
-    document.documentElement.dataset.density = settings.density;
+    document.body.dataset.density = settings.density;
+    console.log('Applied density setting:', settings.density);
 
     // Save to localStorage as fallback
     if (user) {
@@ -139,15 +160,14 @@ export function useUserSettings() {
     
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('settings')
-        .upsert({
-          key: `user_settings_${user.id}`,
-          value: updatedSettings,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'key'
-        });
+      // Save to the new user_settings table
+      const { error } = await supabase.rpc('save_user_settings', {
+        p_user_id: user.id,
+        p_theme: updatedSettings.theme,
+        p_density: updatedSettings.density,
+        p_animations_enabled: updatedSettings.animationsEnabled,
+        p_notification_preferences: updatedSettings.notificationPreferences
+      });
 
       if (error) {
         throw error;
