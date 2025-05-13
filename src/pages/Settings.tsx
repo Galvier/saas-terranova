@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -17,7 +18,6 @@ import {
   Moon, 
   Sun, 
   Globe, 
-  UploadCloud, 
   User, 
   Settings2, 
   Bell, 
@@ -26,75 +26,57 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { testConnection, testTables, testDatabaseWrite } from '@/utils/supabaseDiagnostic';
-import { useInterfacePreferences } from '@/hooks/useInterfacePreferences';
+import { useUserSettings } from '@/hooks/useUserSettings';
+import { useAuth } from '@/hooks/useAuth';
 
 const Settings = () => {
-  const { preferences, updatePreferences } = useInterfacePreferences();
+  const { settings, isLoading: isSettingsLoading, isSaving, updateSettings } = useUserSettings();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(preferences.theme);
-  const [density, setDensity] = useState<'compact' | 'default' | 'comfortable'>(preferences.density);
-  const [animationsEnabled, setAnimationsEnabled] = useState(preferences.animationsEnabled);
   const navigate = useNavigate();
   
-  // Synchronize state with preferences when preferences change
-  useEffect(() => {
-    setTheme(preferences.theme);
-    setDensity(preferences.density);
-    setAnimationsEnabled(preferences.animationsEnabled);
-  }, [preferences]);
+  // Form states - user profile
+  const [fullName, setFullName] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
   
-  // Form states
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [systemNotifications, setSystemNotifications] = useState(true);
-  const [alertNotifications, setAlertNotifications] = useState(true);
-  const [apiKey, setApiKey] = useState('');
-  const [exportEnabled, setExportEnabled] = useState(true);
-  const [fullName, setFullName] = useState('Administrador');
-  const [displayName, setDisplayName] = useState('Admin');
-  const [email, setEmail] = useState('admin@empresa.com');
+  // Form states - backup
   const [autoBackup, setAutoBackup] = useState(false);
   
-  // General save settings function for all tabs except interface
-  const handleSaveSettings = () => {
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Configurações salvas",
-        description: "Suas configurações foram atualizadas com sucesso",
-      });
-    }, 1000);
+  React.useEffect(() => {
+    // Initialize form values when user data is loaded
+    if (user) {
+      setEmail(user.email || '');
+      // Use metadata if available
+      const metadata = user?.user_metadata;
+      if (metadata) {
+        setFullName(metadata.full_name || metadata.name || '');
+        setDisplayName(metadata.display_name || metadata.name || '');
+      }
+    }
+  }, [user]);
+  
+  // Handle saving interface settings
+  const handleSaveInterfaceSettings = () => {
+    updateSettings({
+      theme: settings.theme,
+      density: settings.density,
+      animationsEnabled: settings.animationsEnabled
+    });
   };
   
-  // Handle saving interface settings with visual feedback
-  const handleSaveInterfaceSettings = () => {
+  // Handle saving notification settings
+  const handleSaveNotificationSettings = () => {
     setIsLoading(true);
-    
-    try {
-      updatePreferences({
-        theme,
-        density,
-        animationsEnabled
-      });
-      
-      setTimeout(() => {
-        setIsLoading(false);
-        toast({
-          title: "Preferências de interface salvas",
-          description: "Suas preferências de interface foram atualizadas com sucesso",
-        });
-      }, 800);
-    } catch (error) {
-      setIsLoading(false);
-      toast({
-        title: "Erro ao salvar",
-        description: "Ocorreu um erro ao salvar suas preferências",
-        variant: "destructive"
-      });
-    }
+    updateSettings({
+      notificationPreferences: {
+        email: settings.notificationPreferences.email,
+        system: settings.notificationPreferences.system,
+        alerts: settings.notificationPreferences.alerts
+      }
+    });
+    setIsLoading(false);
   };
   
   // Handle backup data with visual feedback
@@ -106,7 +88,7 @@ const Settings = () => {
         title: "Backup concluído",
         description: "Seu backup foi gerado e está disponível para download",
       });
-    }, 1500);
+    }, 1000);
   };
   
   // Handle data restoration with visual feedback
@@ -130,7 +112,7 @@ const Settings = () => {
             title: "Restauração concluída",
             description: `O arquivo ${file.name} foi restaurado com sucesso`
           });
-        }, 2000);
+        }, 1000);
       }
     };
     input.click();
@@ -196,6 +178,16 @@ const Settings = () => {
   const handleNavigateToDiagnostic = () => {
     navigate('/diagnostico');
   };
+
+  // Show loading state while settings are being fetched
+  if (isSettingsLoading || isAuthLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-lg font-medium">Carregando configurações...</span>
+      </div>
+    );
+  }
   
   return (
     <div className="animate-fade-in space-y-6">
@@ -212,23 +204,28 @@ const Settings = () => {
                 <h3 className="text-sm font-medium">Categorias</h3>
                 <Separator className="my-2" />
                 <div className="space-y-1 py-2">
-                  <Button variant="ghost" className="w-full justify-start gap-2 text-primary" size="sm">
+                  <Button variant="ghost" className="w-full justify-start gap-2" size="sm" 
+                    onClick={() => document.getElementById('perfil-tab')?.click()}>
                     <User className="h-4 w-4" />
                     <span>Perfil do Usuário</span>
                   </Button>
-                  <Button variant="ghost" className="w-full justify-start gap-2" size="sm">
+                  <Button variant="ghost" className="w-full justify-start gap-2 text-primary" size="sm"
+                    onClick={() => document.getElementById('interface-tab')?.click()}>
                     <Settings2 className="h-4 w-4" />
                     <span>Aparência</span>
                   </Button>
-                  <Button variant="ghost" className="w-full justify-start gap-2" size="sm">
+                  <Button variant="ghost" className="w-full justify-start gap-2" size="sm"
+                    onClick={() => document.getElementById('notifications-tab')?.click()}>
                     <Bell className="h-4 w-4" />
                     <span>Notificações</span>
                   </Button>
-                  <Button variant="ghost" className="w-full justify-start gap-2" size="sm">
+                  <Button variant="ghost" className="w-full justify-start gap-2" size="sm"
+                    onClick={() => document.getElementById('integrations-tab')?.click()}>
                     <Link className="h-4 w-4" />
                     <span>Integrações</span>
                   </Button>
-                  <Button variant="ghost" className="w-full justify-start gap-2" size="sm">
+                  <Button variant="ghost" className="w-full justify-start gap-2" size="sm"
+                    onClick={() => document.getElementById('backup-tab')?.click()}>
                     <Database className="h-4 w-4" />
                     <span>Sistema</span>
                   </Button>
@@ -241,11 +238,11 @@ const Settings = () => {
         <div className="flex-1">
           <Tabs defaultValue="interface" className="w-full">
             <TabsList className="mb-6 w-full justify-start">
-              <TabsTrigger value="interface">Interface</TabsTrigger>
-              <TabsTrigger value="notifications">Notificações</TabsTrigger>
-              <TabsTrigger value="integrations">Integrações</TabsTrigger>
-              <TabsTrigger value="backup">Backup de Dados</TabsTrigger>
-              <TabsTrigger value="profile">Perfil</TabsTrigger>
+              <TabsTrigger value="interface" id="interface-tab">Interface</TabsTrigger>
+              <TabsTrigger value="notifications" id="notifications-tab">Notificações</TabsTrigger>
+              <TabsTrigger value="integrations" id="integrations-tab">Integrações</TabsTrigger>
+              <TabsTrigger value="backup" id="backup-tab">Backup de Dados</TabsTrigger>
+              <TabsTrigger value="profile" id="perfil-tab">Perfil</TabsTrigger>
             </TabsList>
             
             {/* Interface Settings */}
@@ -262,8 +259,9 @@ const Settings = () => {
                     <div className="space-y-2">
                       <Label>Tema</Label>
                       <RadioGroup 
-                        value={theme} 
-                        onValueChange={(value: 'light' | 'dark' | 'system') => setTheme(value)} 
+                        value={settings.theme} 
+                        onValueChange={(value: 'light' | 'dark' | 'system') => 
+                          updateSettings({ theme: value })} 
                         className="flex gap-4"
                       >
                         <div className="flex items-center space-x-2">
@@ -293,8 +291,9 @@ const Settings = () => {
                     <div className="space-y-2">
                       <Label>Densidade de Informações</Label>
                       <RadioGroup 
-                        value={density} 
-                        onValueChange={(value: 'compact' | 'default' | 'comfortable') => setDensity(value)} 
+                        value={settings.density} 
+                        onValueChange={(value: 'compact' | 'default' | 'comfortable') => 
+                          updateSettings({ density: value })} 
                         className="flex gap-4"
                       >
                         <div className="flex items-center space-x-2">
@@ -321,15 +320,15 @@ const Settings = () => {
                       </Label>
                       <Switch 
                         id="animations" 
-                        checked={animationsEnabled}
-                        onCheckedChange={setAnimationsEnabled}
+                        checked={settings.animationsEnabled}
+                        onCheckedChange={(value) => updateSettings({ animationsEnabled: value })}
                       />
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="border-t bg-muted/50 px-6 py-4">
-                  <Button onClick={handleSaveInterfaceSettings} disabled={isLoading}>
-                    {isLoading ? (
+                  <Button onClick={handleSaveInterfaceSettings} disabled={isSaving}>
+                    {isSaving ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Salvando...
@@ -359,7 +358,7 @@ const Settings = () => {
                     <div className="md:w-1/3 flex flex-col items-center space-y-4">
                       <div className="relative">
                         <div className="h-32 w-32 rounded-full bg-muted flex items-center justify-center text-2xl font-bold">
-                          AD
+                          {displayName?.substring(0, 2).toUpperCase() || 'U'}
                         </div>
                         <Button size="sm" variant="secondary" className="absolute -bottom-2 -right-2 rounded-full p-2">
                           <Upload className="h-4 w-4" />
@@ -395,17 +394,40 @@ const Settings = () => {
                           type="email" 
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
+                          readOnly={!!user} // Email is readonly if logged in
+                          className={user ? "bg-muted" : ""}
                         />
+                        {user && (
+                          <p className="text-xs text-muted-foreground">
+                            O email não pode ser alterado depois do registro
+                          </p>
+                        )}
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="role">Função</Label>
-                        <Input id="role" defaultValue="Administrador" readOnly className="bg-muted" />
-                      </div>
+                      {user?.app_metadata?.role && (
+                        <div className="space-y-2">
+                          <Label htmlFor="role">Função</Label>
+                          <Input 
+                            id="role" 
+                            defaultValue={user.app_metadata.role} 
+                            readOnly 
+                            className="bg-muted" 
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="border-t bg-muted/50 px-6 py-4">
-                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                  <Button onClick={() => {
+                    setIsLoading(true);
+                    setTimeout(() => {
+                      setIsLoading(false);
+                      toast({
+                        title: "Perfil atualizado",
+                        description: "Suas informações de perfil foram atualizadas com sucesso"
+                      });
+                    }, 1000);
+                  }} disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -442,8 +464,13 @@ const Settings = () => {
                       </div>
                       <Switch 
                         id="email-notifications" 
-                        checked={emailNotifications}
-                        onCheckedChange={setEmailNotifications}
+                        checked={settings.notificationPreferences.email}
+                        onCheckedChange={(value) => updateSettings({
+                          notificationPreferences: {
+                            ...settings.notificationPreferences,
+                            email: value
+                          }
+                        })}
                       />
                     </div>
                     
@@ -458,8 +485,13 @@ const Settings = () => {
                       </div>
                       <Switch 
                         id="system-notifications" 
-                        checked={systemNotifications}
-                        onCheckedChange={setSystemNotifications}
+                        checked={settings.notificationPreferences.system}
+                        onCheckedChange={(value) => updateSettings({
+                          notificationPreferences: {
+                            ...settings.notificationPreferences,
+                            system: value
+                          }
+                        })}
                       />
                     </div>
                     
@@ -474,14 +506,19 @@ const Settings = () => {
                       </div>
                       <Switch 
                         id="alert-notifications" 
-                        checked={alertNotifications}
-                        onCheckedChange={setAlertNotifications}
+                        checked={settings.notificationPreferences.alerts}
+                        onCheckedChange={(value) => updateSettings({
+                          notificationPreferences: {
+                            ...settings.notificationPreferences,
+                            alerts: value
+                          }
+                        })}
                       />
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="border-t bg-muted/50 px-6 py-4">
-                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                  <Button onClick={handleSaveNotificationSettings} disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -515,8 +552,6 @@ const Settings = () => {
                         id="api-key" 
                         type="password" 
                         placeholder="Insira sua chave de API"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
                       />
                     </div>
                     
@@ -529,8 +564,6 @@ const Settings = () => {
                       </div>
                       <Switch 
                         id="export-enabled" 
-                        checked={exportEnabled}
-                        onCheckedChange={setExportEnabled}
                       />
                     </div>
                     
@@ -556,7 +589,16 @@ const Settings = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="border-t bg-muted/50 px-6 py-4">
-                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                  <Button onClick={() => {
+                    setIsLoading(true);
+                    setTimeout(() => {
+                      setIsLoading(false);
+                      toast({
+                        title: "Configurações salvas",
+                        description: "Suas configurações de integração foram atualizadas"
+                      });
+                    }, 1000);
+                  }} disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -633,7 +675,7 @@ const Settings = () => {
                             </>
                           ) : (
                             <>
-                              <UploadCloud className="mr-2 h-4 w-4" />
+                              <Upload className="mr-2 h-4 w-4" />
                               Restaurar Backup
                             </>
                           )}
@@ -754,28 +796,20 @@ const Settings = () => {
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
-                      <Separator />
-                      <div className="p-4 flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Backup Completo</p>
-                          <p className="text-sm text-muted-foreground">18/04/2025, 15:30</p>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => toast({
-                            title: "Download iniciado",
-                            description: "O download do seu backup foi iniciado"
-                          })}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="border-t bg-muted/50 px-6 py-4">
-                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                  <Button onClick={() => {
+                    setIsLoading(true);
+                    setTimeout(() => {
+                      setIsLoading(false);
+                      toast({
+                        title: "Configurações salvas",
+                        description: "Suas configurações de backup foram atualizadas"
+                      });
+                    }, 1000);
+                  }} disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

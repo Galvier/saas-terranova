@@ -1,58 +1,60 @@
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
-type SubscriptionConfig = {
+type TableSubscriptionProps = {
   tables: string[];
   schema?: string;
   event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
   onData?: (payload: RealtimePostgresChangesPayload<Record<string, any>>) => void;
 };
 
-/**
- * Hook for subscribing to real-time updates from Supabase
- */
-export const useRealTimeSubscription = (config: SubscriptionConfig) => {
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const { tables, schema = 'public', event = '*', onData } = config;
-  
+export function useTableSubscription({ tables, schema = 'public', event = '*', onData }: TableSubscriptionProps) {
+  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+  const [connected, setConnected] = useState(false);
+
   useEffect(() => {
-    console.log(`Setting up real-time subscription for tables: ${tables.join(', ')}`);
+    // Create a new channel
+    const newChannel = supabase.channel('db-changes');
     
-    // Create a channel for real-time communication
-    const channel = supabase.channel('schema-db-changes');
+    // Set up channel status handler
+    newChannel
+      .on('system', { event: 'status' }, (status) => {
+        console.log('Realtime status changed:', status);
+        setConnected(status.status === 'connected');
+      });
     
     // Add subscription for each table
     tables.forEach(table => {
-      // The correct method signature for postgres_changes
-      channel.on(
-        'postgres_changes', 
+      newChannel.on(
+        'postgres_changes', // This must match the channel event type
         { 
           event: event, 
           schema: schema, 
           table: table 
         }, 
-        (payload) => {
+        (payload: any) => {
           console.log(`${table} changed, payload:`, payload);
+          // Cast the payload to the expected type
           if (onData) onData(payload as RealtimePostgresChangesPayload<Record<string, any>>);
         }
       );
     });
     
     // Subscribe to the channel
-    channel
-      .subscribe((status) => {
-        console.log(`Subscription status:`, status);
-        setIsSubscribed(status === 'SUBSCRIBED');
-      });
+    newChannel.subscribe((status) => {
+      console.log('Subscription status:', status);
+    });
     
-    // Cleanup function to remove the channel when component unmounts
+    // Store the channel reference
+    setChannel(newChannel);
+    
+    // Clean up when component unmounts
     return () => {
-      console.log(`Removing real-time subscription for tables: ${tables.join(', ')}`);
-      supabase.removeChannel(channel);
+      newChannel.unsubscribe();
     };
-  }, [tables.join(','), schema, event]); // Re-run if tables, schema or event changes
-
-  return { isSubscribed };
-};
+  }, [tables.join(','), schema, event, onData]); // Re-subscribe if any of these change
+  
+  return { connected, channel };
+}
