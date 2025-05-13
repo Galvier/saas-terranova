@@ -1,2 +1,8 @@
 
 project_id = "wjuzzjitpkhjjxujxftm"
+
+[api]
+enabled_apis = ["rest", "graphql", "realtime"]
+
+[realtime]
+enabled = true
