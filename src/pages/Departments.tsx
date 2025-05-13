@@ -11,33 +11,33 @@ const DepartmentsPage = () => {
     isLoading,
     selectedDepartment,
     isEditDialogOpen,
-    isProcessing,
-    setIsEditDialogOpen,
-    handleCreateDepartment,
-    handleEditDepartment,
-    handleSaveDepartment,
-    fetchDepartments
+    handleDepartmentCreate,
+    handleDepartmentEdit,
+    handleCloseEditDialog,
+    handleEditSuccess,
+    handleCreateSuccess,
+    refetch
   } = useDepartmentsData();
 
   return (
     <div className="container mx-auto py-10 space-y-6 animate-fade-in">
       <DepartmentsHeader 
-        onCreateDepartment={handleCreateDepartment} 
+        onCreateDepartment={handleDepartmentCreate} 
       />
 
       <DepartmentsContent
         isLoading={isLoading}
         departments={departments}
-        onEditDepartment={handleEditDepartment}
-        onDeletedDepartment={fetchDepartments}
+        onEditDepartment={handleDepartmentEdit}
+        onDeletedDepartment={refetch}
       />
 
       <DepartmentEditDialog 
         isOpen={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        onSave={handleSaveDepartment}
+        onOpenChange={handleCloseEditDialog}
+        onSave={handleEditSuccess}
         department={selectedDepartment}
-        isEditing={isProcessing}
+        isEditing={false}
       />
     </div>
   );

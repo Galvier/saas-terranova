@@ -118,5 +118,6 @@ export const useDepartmentsData = () => {
     handleCreateSuccess,
     handleEditSuccess,
     handleDeleteSuccess,
+    refetch
   };
 };

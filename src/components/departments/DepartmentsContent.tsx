@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Department } from '@/integrations/supabase';
-import { DepartmentsTable } from '@/components/departments/DepartmentsTable';
+import DepartmentsTable from '@/components/departments/DepartmentsTable';
 
 interface DepartmentsContentProps {
   isLoading: boolean;
@@ -27,8 +27,8 @@ export const DepartmentsContent: React.FC<DepartmentsContentProps> = ({
   return (
     <DepartmentsTable 
       departments={departments} 
-      onEditDepartment={onEditDepartment}
-      onDeletedDepartment={onDeletedDepartment}
+      onEdit={onEditDepartment}
+      onDelete={onDeletedDepartment}
     />
   );
 };
