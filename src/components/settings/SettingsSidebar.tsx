@@ -55,10 +55,10 @@ const SettingsSidebar = ({ onTabChange, activeTab }: SettingsSidebarProps) => {
               <span>Integrações</span>
             </Button>
             <Button 
-              variant={activeTab === 'backup' ? 'secondary' : 'ghost'} 
+              variant={activeTab === 'system' ? 'secondary' : 'ghost'} 
               className="w-full justify-start gap-2" 
               size="sm"
-              onClick={() => onTabChange('backup')}
+              onClick={() => onTabChange('system')}
             >
               <Database className="h-4 w-4" />
               <span>Sistema</span>

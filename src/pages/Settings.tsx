@@ -77,7 +77,7 @@ const Settings = () => {
               <TabsTrigger value="interface" id="interface-tab">Interface</TabsTrigger>
               <TabsTrigger value="notifications" id="notifications-tab">Notificações</TabsTrigger>
               <TabsTrigger value="integrations" id="integrations-tab">Integrações</TabsTrigger>
-              <TabsTrigger value="backup" id="backup-tab">Sistema</TabsTrigger>
+              <TabsTrigger value="system" id="system-tab">Sistema</TabsTrigger>
               <TabsTrigger value="profile" id="profile-tab">Perfil</TabsTrigger>
             </TabsList>
             
@@ -111,8 +111,8 @@ const Settings = () => {
               <IntegrationsTab />
             </TabsContent>
             
-            {/* Backup Settings */}
-            <TabsContent value="backup">
+            {/* System Settings (antes era Backup) */}
+            <TabsContent value="system">
               <BackupTab />
             </TabsContent>
           </Tabs>

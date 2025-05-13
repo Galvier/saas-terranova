@@ -1,0 +1,81 @@
+
+/* Estilos para diferentes densidades de UI */
+
+/* Modo compacto - menos espaçamento */
+[data-density="compact"] .card-content {
+  padding: 0.75rem;
+}
+
+[data-density="compact"] .form-group {
+  margin-bottom: 0.75rem;
+}
+
+[data-density="compact"] button {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+[data-density="compact"] input, 
+[data-density="compact"] select,
+[data-density="compact"] textarea {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+/* Modo padrão - espaçamento normal */
+[data-density="default"] .card-content {
+  padding: 1rem;
+}
+
+[data-density="default"] .form-group {
+  margin-bottom: 1rem;
+}
+
+/* Modo confortável - mais espaçamento */
+[data-density="comfortable"] .card-content {
+  padding: 1.5rem;
+}
+
+[data-density="comfortable"] .form-group {
+  margin-bottom: 1.5rem;
+}
+
+[data-density="comfortable"] button {
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
+[data-density="comfortable"] input, 
+[data-density="comfortable"] select,
+[data-density="comfortable"] textarea {
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
+/* Aplicar classes específicas para os componentes do shadcn/ui */
+[data-density="compact"] .p-4 {
+  padding: 0.75rem !important;
+}
+
+[data-density="compact"] .py-4 {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+[data-density="comfortable"] .p-4 {
+  padding: 1.5rem !important;
+}
+
+[data-density="comfortable"] .py-4 {
+  padding-top: 1.25rem !important;
+  padding-bottom: 1.25rem !important;
+}
+
+/* Espaçamento entre itens */
+[data-density="compact"] .space-y-6 {
+  margin-top: 0.75rem !important;
+}
+
+[data-density="comfortable"] .space-y-6 {
+  margin-top: 1.5rem !important;
+}
