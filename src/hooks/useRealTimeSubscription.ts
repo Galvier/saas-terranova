@@ -18,29 +18,32 @@ export function useTableSubscription(
       : event;
     
     // Subscribe to real-time updates
-    const subscription = supabase
-      .channel('table-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: eventType,
-          schema: schema,
-          table: table
-        },
-        handler
-      )
-      .subscribe((status) => {
-        // Update connection status based on the subscription status
-        setIsConnected(status === 'SUBSCRIBED');
-        console.log('Realtime subscription status:', status);
-      });
+    const channel = supabase.channel('table-changes');
+    
+    // Properly add the listener with correct typing
+    channel.on(
+      'postgres_changes',
+      {
+        event: eventType,
+        schema: schema,
+        table: table
+      },
+      handler
+    );
+    
+    // Subscribe to the channel and track status
+    const subscription = channel.subscribe((status) => {
+      // Update connection status based on the subscription status
+      setIsConnected(status === 'SUBSCRIBED');
+      console.log('Realtime subscription status:', status);
+    });
       
     // Debug log connection status
     console.log('Realtime subscription initiated');
 
     // Clean up the subscription when component unmounts
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [schema, table, event, handler]);
   
