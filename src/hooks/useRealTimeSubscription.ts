@@ -21,7 +21,6 @@ export function useTableSubscription(
     const channel = supabase.channel('table-changes');
     
     // Add postgres_changes listener
-    // The RealtimeChannel.on() method is correctly typed
     channel.on(
       'postgres_changes', 
       {
@@ -29,11 +28,13 @@ export function useTableSubscription(
         schema: schema,
         table: table
       },
-      handler
+      (payload) => {
+        handler(payload);
+      }
     );
     
     // Subscribe to the channel and track status
-    channel.subscribe((status) => {
+    const subscription = channel.subscribe((status) => {
       // Update connection status based on the subscription status
       setIsConnected(status === 'SUBSCRIBED');
       console.log('Realtime subscription status:', status);
