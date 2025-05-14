@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
@@ -9,13 +9,15 @@ export function useTableSubscription(
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
   handler: (payload: RealtimePostgresChangesPayload<any>) => void
 ) {
+  const [isConnected, setIsConnected] = useState(false);
+  
   useEffect(() => {
-    // Converte '*' para um array com todos os eventos
+    // Convert '*' to an array with all events
     const eventType = event === '*' 
       ? ['INSERT', 'UPDATE', 'DELETE'] as const
       : event;
     
-    // Inscreve-se para atualizações em tempo real
+    // Subscribe to real-time updates
     const subscription = supabase
       .channel('table-changes')
       .on(
@@ -27,17 +29,21 @@ export function useTableSubscription(
         },
         handler
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Update connection status based on the subscription status
+        setIsConnected(status === 'SUBSCRIBED');
+        console.log('Realtime subscription status:', status);
+      });
       
-    // Retorna status da conexão para debugging
-    console.log('Realtime subscription active:', subscription.isJoined());
+    // Debug log connection status
+    console.log('Realtime subscription initiated');
 
-    // Limpa a inscrição quando o componente é desmontado
+    // Clean up the subscription when component unmounts
     return () => {
       subscription.unsubscribe();
     };
   }, [schema, table, event, handler]);
   
-  // Retorna objeto indicando se a conexão está ativa
-  return { isConnected: true };
+  // Return object indicating if the connection is active
+  return { isConnected };
 }
