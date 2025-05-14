@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
-import { useTableSubscription } from './useRealTimeSubscription';
+import { useRealTimeSubscription } from './useRealTimeSubscription';
 
 export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
@@ -32,17 +31,17 @@ export function useUserSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Carregar configurações do banco de dados quando o usuário fizer login
+  // Load settings from database when user logs in
   const loadSettings = useCallback(async () => {
     if (!user) {
-      // Se não estiver logado, tenta carregar do localStorage como fallback
+      // If not logged in, try to load from localStorage as a fallback
       try {
         const savedSettings = localStorage.getItem('userSettings');
         if (savedSettings) {
           setSettings(JSON.parse(savedSettings));
         }
       } catch (error) {
-        console.error('Erro ao carregar configurações do localStorage:', error);
+        console.error('Error loading settings from localStorage:', error);
       }
       setIsLoading(false);
       return;
@@ -50,7 +49,7 @@ export function useUserSettings() {
 
     setIsLoading(true);
     try {
-      // Tenta carregar da nova tabela user_settings primeiro
+      // Try to load from the new user_settings table first
       const { data, error } = await supabase
         .from('user_settings')
         .select('*')
@@ -58,9 +57,9 @@ export function useUserSettings() {
         .single();
 
       if (error) {
-        console.error('Erro ao carregar configurações da tabela user_settings:', error);
+        console.error('Error loading settings from user_settings table:', error);
         
-        // Tenta carregar da tabela de configurações legacy como fallback
+        // Try to load from the legacy settings table as a fallback
         const { data: legacyData, error: legacyError } = await supabase
           .from('settings')
           .select('*')
@@ -68,14 +67,14 @@ export function useUserSettings() {
           .single();
           
         if (legacyError) {
-          console.error('Erro ao carregar configurações da tabela legacy settings:', legacyError);
-          // Tenta carregar do localStorage como último recurso
+          console.error('Error loading settings from legacy settings table:', legacyError);
+          // Try to load from localStorage as the last resort
           const savedSettings = localStorage.getItem(`userSettings_${user.id}`);
           if (savedSettings) {
             setSettings(JSON.parse(savedSettings));
           }
         } else if (legacyData) {
-          // Migra do formato legacy value
+          // Migrate from legacy value format
           const userSettings = legacyData.value as Record<string, any>;
           setSettings({
             theme: userSettings.theme || DEFAULT_SETTINGS.theme,
@@ -92,7 +91,7 @@ export function useUserSettings() {
           });
         }
       } else if (data) {
-        // Usa dados da nova tabela user_settings
+        // Use data from the new user_settings table
         const notificationPrefs = data.notification_preferences as Record<string, boolean>;
         setSettings({
           theme: (data.theme as 'light' | 'dark' | 'system') || DEFAULT_SETTINGS.theme,
@@ -106,22 +105,22 @@ export function useUserSettings() {
         });
       }
     } catch (error) {
-      console.error('Erro ao carregar configurações:', error);
+      console.error('Error loading settings:', error);
     } finally {
       setIsLoading(false);
     }
   }, [user]);
 
-  // Carregar configurações quando o usuário mudar
+  // Load settings when user changes
   useEffect(() => {
     loadSettings();
   }, [user, loadSettings]);
 
-  // Escutar atualizações em tempo real para as configurações do usuário
+  // Listen for real-time updates for user settings
   const handleRealtimeUpdate = useCallback((payload: any) => {
     if (!user || payload.new.user_id !== user.id) return;
     
-    console.log('Configurações atualizadas em tempo real:', payload);
+    console.log('Settings updated in real-time:', payload);
     const data = payload.new;
     const notificationPrefs = data.notification_preferences as Record<string, boolean>;
     
@@ -137,19 +136,21 @@ export function useUserSettings() {
     });
   }, [user]);
 
-  // Inscrever para atualizações em tempo real quando o usuário estiver logado
-  useTableSubscription(
-    'public', 
-    'user_settings', 
-    'UPDATE', 
+  // Subscribe for real-time updates when user is logged in
+  useRealTimeSubscription(
+    {
+      schema: 'public', 
+      table: 'user_settings', 
+      event: 'UPDATE'
+    }, 
     user ? handleRealtimeUpdate : () => {}
   );
 
-  // Aplicar efeitos das configurações
+  // Apply effects from settings
   useEffect(() => {
     if (isLoading) return;
 
-    // Aplicar tema
+    // Apply theme
     if (settings.theme === 'system') {
       const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.classList.remove('dark', 'light');
@@ -163,14 +164,14 @@ export function useUserSettings() {
       document.documentElement.classList.add(settings.theme);
     }
     
-    // Aplicar animações
+    // Apply animations
     if (!settings.animationsEnabled) {
       document.documentElement.classList.add('no-animations');
     } else {
       document.documentElement.classList.remove('no-animations');
     }
     
-    // Salvar no localStorage como fallback
+    // Save to localStorage as a fallback
     if (user) {
       localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(settings));
     } else {
@@ -178,7 +179,7 @@ export function useUserSettings() {
     }
   }, [settings, isLoading, user]);
 
-  // Função para atualizar configurações
+  // Function to update settings
   const updateSettings = async (newSettings: Partial<UserSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
     setSettings(updatedSettings);
@@ -187,7 +188,7 @@ export function useUserSettings() {
     
     setIsSaving(true);
     try {
-      // Salvar na nova tabela user_settings
+      // Save to the new user_settings table
       const { error } = await supabase.rpc('save_user_settings', {
         p_user_id: user.id,
         p_theme: updatedSettings.theme,
@@ -200,14 +201,14 @@ export function useUserSettings() {
       }
 
       toast({
-        title: "Configurações salvas",
-        description: "Suas preferências foram atualizadas com sucesso"
+        title: "Settings saved",
+        description: "Your preferences were updated successfully"
       });
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
+      console.error('Error saving settings:', error);
       toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar suas preferências",
+        title: "Error saving",
+        description: "Failed to save your preferences",
         variant: "destructive"
       });
     } finally {

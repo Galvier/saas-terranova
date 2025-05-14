@@ -20,9 +20,12 @@ export function useRealTimeSubscription(
   const { schema = 'public', table, event = '*', filter } = options;
 
   useEffect(() => {
-    // Create channel with proper configuration
+    // Create a unique channel name for this table subscription
+    const channelName = `table-changes-${table}-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Configure the channel with proper event filters
     const channel = supabase
-      .channel(`table-changes-${table}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         { 
@@ -39,7 +42,7 @@ export function useRealTimeSubscription(
         setIsConnected(status === 'SUBSCRIBED');
       });
 
-    // Cleanup function
+    // Cleanup function to remove channel when component unmounts
     return () => {
       supabase.removeChannel(channel);
     };

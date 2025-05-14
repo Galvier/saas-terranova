@@ -1,12 +1,13 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Department } from '@/integrations/supabase/types/department';
 import { useState } from 'react';
-import { useTableSubscription } from '@/hooks/useRealTimeSubscription';
+import { useRealTimeSubscription } from '@/hooks/useRealTimeSubscription';
 import { useToast } from '@/hooks/use-toast';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
-// Função para obter todos os departamentos
+// Function to get all departments
 const getAllDepartments = async () => {
   const { data, error } = await supabase.rpc('get_all_departments');
   if (error) throw error;
@@ -44,10 +45,12 @@ export const useDepartmentsData = () => {
   };
 
   // Set up real-time subscription for departments table
-  const { isConnected } = useTableSubscription(
-    'public',
-    'departments',
-    '*',
+  const { isConnected } = useRealTimeSubscription(
+    {
+      schema: 'public',
+      table: 'departments',
+      event: '*'
+    },
     handleRealtimeUpdate
   );
 
