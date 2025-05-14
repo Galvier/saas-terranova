@@ -17,34 +17,32 @@ export function useTableSubscription(
       ? ['INSERT', 'UPDATE', 'DELETE'] as const
       : event;
     
-    // Subscribe to real-time updates
-    const channel = supabase.channel('table-changes');
+    // Create a new realtime channel
+    const channelName = `table-changes-${schema}-${table}-${event}`;
+    const channel = supabase.channel(channelName);
     
-    // Add postgres_changes listener
-    channel.on(
-      'postgres_changes', 
-      {
-        event: eventType,
-        schema: schema,
-        table: table
-      },
-      (payload) => {
-        handler(payload);
-      }
-    );
-    
-    // Subscribe to the channel and track status
-    const subscription = channel.subscribe((status) => {
-      // Update connection status based on the subscription status
-      setIsConnected(status === 'SUBSCRIBED');
-      console.log('Realtime subscription status:', status);
-    });
+    // Configure the channel with postgres_changes filter
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: eventType,
+          schema: schema,
+          table: table
+        },
+        handler
+      )
+      .subscribe((status) => {
+        setIsConnected(status === 'SUBSCRIBED');
+        console.log(`Realtime subscription status for ${table}:`, status);
+      });
       
     // Debug log connection status
-    console.log('Realtime subscription initiated');
+    console.log(`Realtime subscription initiated for ${schema}.${table} with event ${event}`);
 
     // Clean up the subscription when component unmounts
     return () => {
+      console.log(`Cleaning up realtime subscription for ${schema}.${table}`);
       supabase.removeChannel(channel);
     };
   }, [schema, table, event, handler]);
