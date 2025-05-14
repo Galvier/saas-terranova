@@ -20,17 +20,17 @@ export function useTableSubscription(
     // Subscribe to real-time updates
     const channel = supabase.channel('table-changes');
     
-    // The correct way to add a postgres_changes listener
-    channel
-      .on(
-        'postgres_changes',
-        {
-          event: eventType,
-          schema: schema,
-          table: table
-        },
-        handler
-      );
+    // Add postgres_changes listener
+    // The RealtimeChannel.on() method is correctly typed
+    channel.on(
+      'postgres_changes', 
+      {
+        event: eventType,
+        schema: schema,
+        table: table
+      },
+      handler
+    );
     
     // Subscribe to the channel and track status
     channel.subscribe((status) => {
