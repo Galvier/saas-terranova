@@ -1,6 +1,5 @@
 
 import React, { ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
 
 interface PageHeaderProps {
   title: string;

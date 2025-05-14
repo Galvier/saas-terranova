@@ -644,9 +644,9 @@ export type Database = {
         Args: {
           p_user_id: string
           p_theme: string
-          p_density: string
-          p_animations_enabled: boolean
-          p_notification_preferences: Json
+          p_density?: string
+          p_animations_enabled?: boolean
+          p_notification_preferences?: Json
         }
         Returns: string
       }

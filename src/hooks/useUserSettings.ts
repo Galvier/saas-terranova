@@ -191,7 +191,6 @@ export function useUserSettings() {
       const { error } = await supabase.rpc('save_user_settings', {
         p_user_id: user.id,
         p_theme: updatedSettings.theme,
-        p_density: 'default', // Valor padrão já que removemos a opção
         p_animations_enabled: updatedSettings.animationsEnabled,
         p_notification_preferences: updatedSettings.notificationPreferences
       });

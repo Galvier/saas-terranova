@@ -30,7 +30,6 @@ const Settings = () => {
   const handleSaveInterfaceSettings = () => {
     updateSettings({
       theme: settings.theme,
-      density: settings.density,
       animationsEnabled: settings.animationsEnabled
     });
   };
@@ -111,7 +110,7 @@ const Settings = () => {
               <IntegrationsTab />
             </TabsContent>
             
-            {/* System Settings (antes era Backup) */}
+            {/* System Settings */}
             <TabsContent value="system">
               <BackupTab />
             </TabsContent>
