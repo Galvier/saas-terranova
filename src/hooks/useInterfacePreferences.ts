@@ -3,13 +3,11 @@ import { useState, useEffect } from 'react';
 
 interface InterfacePreferences {
   theme: 'light' | 'dark' | 'system';
-  density: 'compact' | 'default' | 'comfortable';
   animationsEnabled: boolean;
 }
 
 const DEFAULT_PREFERENCES: InterfacePreferences = {
   theme: 'system',
-  density: 'default',
   animationsEnabled: true,
 };
 
@@ -48,9 +46,6 @@ export function useInterfacePreferences() {
       } else {
         document.documentElement.classList.remove('no-animations');
       }
-      
-      // Apply density
-      document.documentElement.dataset.density = preferences.density;
     } catch (error) {
       console.error('Error saving preferences:', error);
     }
