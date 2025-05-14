@@ -1,54 +1,31 @@
 
-import { useEffect, useState } from 'react';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Define the table change event types
-type PostgresChangeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
-
-// Define the callback function type for real-time changes
-export type TableSubscriptionCallback<T = Record<string, any>> = (
-  payload: RealtimePostgresChangesPayload<T>
-) => void;
-
-/**
- * A hook for subscribing to real-time changes on a specific table
- */
-export function useTableSubscription<T = Record<string, any>>(
+export function useTableSubscription(
   schema: string,
   table: string,
-  event: PostgresChangeEvent = '*',
-  callback: TableSubscriptionCallback<T>
-): { isConnected: boolean } {
-  const [isConnected, setIsConnected] = useState(false);
-
+  event: 'INSERT' | 'UPDATE' | 'DELETE',
+  handler: (payload: any) => void
+) {
   useEffect(() => {
-    // Create a channel with a specific name for this subscription
-    const channelName = `${schema}-${table}-changes`;
-    
-    // Subscribe to the channel
-    const channel = supabase
-      .channel(channelName)
+    // Inscreve-se para atualizações em tempo real
+    const subscription = supabase
+      .channel('table-changes')
       .on(
         'postgres_changes',
         {
           event: event,
           schema: schema,
-          table: table,
+          table: table
         },
-        (payload: RealtimePostgresChangesPayload<T>) => {
-          callback(payload);
-        }
+        handler
       )
-      .subscribe((status) => {
-        setIsConnected(status === 'SUBSCRIBED');
-      });
+      .subscribe();
 
-    // Cleanup function to remove the channel when component unmounts
+    // Limpa a inscrição quando o componente é desmontado
     return () => {
-      supabase.removeChannel(channel);
+      subscription.unsubscribe();
     };
-  }, [schema, table, event, callback]);
-
-  return { isConnected };
+  }, [schema, table, event, handler]);
 }

@@ -57,29 +57,6 @@ const InterfaceTab = ({ settings, isSaving, onSave, onUpdateSettings }: Interfac
               </div>
             </RadioGroup>
           </div>
-          
-          <div className="space-y-2">
-            <Label>Densidade de Informações</Label>
-            <RadioGroup 
-              value={settings.density} 
-              onValueChange={(value: 'compact' | 'default' | 'comfortable') => 
-                onUpdateSettings({ density: value })} 
-              className="flex flex-wrap gap-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="compact" id="density-compact" />
-                <Label htmlFor="density-compact">Compacto</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="default" id="density-default" />
-                <Label htmlFor="density-default">Padrão</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="comfortable" id="density-comfortable" />
-                <Label htmlFor="density-comfortable">Confortável</Label>
-              </div>
-            </RadioGroup>
-          </div>
         </div>
         
         <div className="space-y-2">

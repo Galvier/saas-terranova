@@ -7,7 +7,6 @@ import { useTableSubscription } from './useRealTimeSubscription';
 
 export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
-  density: 'compact' | 'default' | 'comfortable';
   animationsEnabled: boolean;
   notificationPreferences: {
     email: boolean;
@@ -18,7 +17,6 @@ export interface UserSettings {
 
 const DEFAULT_SETTINGS: UserSettings = {
   theme: 'system',
-  density: 'default',
   animationsEnabled: true,
   notificationPreferences: {
     email: true,
@@ -81,7 +79,6 @@ export function useUserSettings() {
           const userSettings = legacyData.value as Record<string, any>;
           setSettings({
             theme: userSettings.theme || DEFAULT_SETTINGS.theme,
-            density: userSettings.density || DEFAULT_SETTINGS.density,
             animationsEnabled: userSettings.animationsEnabled !== undefined ? 
               userSettings.animationsEnabled : DEFAULT_SETTINGS.animationsEnabled,
             notificationPreferences: {
@@ -99,7 +96,6 @@ export function useUserSettings() {
         const notificationPrefs = data.notification_preferences as Record<string, boolean>;
         setSettings({
           theme: (data.theme as 'light' | 'dark' | 'system') || DEFAULT_SETTINGS.theme,
-          density: (data.density as 'compact' | 'default' | 'comfortable') || DEFAULT_SETTINGS.density,
           animationsEnabled: data.animations_enabled !== undefined ? 
             data.animations_enabled : DEFAULT_SETTINGS.animationsEnabled,
           notificationPreferences: {
@@ -131,7 +127,6 @@ export function useUserSettings() {
     
     setSettings({
       theme: (data.theme as 'light' | 'dark' | 'system') || DEFAULT_SETTINGS.theme,
-      density: (data.density as 'compact' | 'default' | 'comfortable') || DEFAULT_SETTINGS.density,
       animationsEnabled: data.animations_enabled !== undefined ? 
         data.animations_enabled : DEFAULT_SETTINGS.animationsEnabled,
       notificationPreferences: {
@@ -175,10 +170,6 @@ export function useUserSettings() {
       document.documentElement.classList.remove('no-animations');
     }
     
-    // Aplicar densidade
-    document.body.setAttribute('data-density', settings.density);
-    console.log('Densidade aplicada:', settings.density);
-
     // Salvar no localStorage como fallback
     if (user) {
       localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(settings));
@@ -200,7 +191,7 @@ export function useUserSettings() {
       const { error } = await supabase.rpc('save_user_settings', {
         p_user_id: user.id,
         p_theme: updatedSettings.theme,
-        p_density: updatedSettings.density,
+        p_density: 'default', // Valor padrão já que removemos a opção
         p_animations_enabled: updatedSettings.animationsEnabled,
         p_notification_preferences: updatedSettings.notificationPreferences
       });
