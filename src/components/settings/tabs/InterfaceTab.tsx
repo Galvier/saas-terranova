@@ -21,7 +21,7 @@ const InterfaceTab = ({ settings, isSaving, onSave, onUpdateSettings }: Interfac
       <CardHeader>
         <CardTitle>Preferências de Interface</CardTitle>
         <CardDescription>
-          Personalize a aparência e funcionamento da interface
+          Personalize a aparência da interface
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -83,7 +83,7 @@ const InterfaceTab = ({ settings, isSaving, onSave, onUpdateSettings }: Interfac
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              Salvar Preferências
+              Salvar
             </>
           )}
         </Button>

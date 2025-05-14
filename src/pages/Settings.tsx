@@ -5,16 +5,16 @@ import { Loader2 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 // Import refactored components
 import SettingsSidebar from '@/components/settings/SettingsSidebar';
 import InterfaceTab from '@/components/settings/tabs/InterfaceTab';
 import NotificationsTab from '@/components/settings/tabs/NotificationsTab';
-import ProfileTab from '@/components/settings/tabs/ProfileTab';
-import IntegrationsTab from '@/components/settings/tabs/IntegrationsTab';
 import BackupTab from '@/components/settings/tabs/BackupTab';
 
 const Settings = () => {
+  const { toast } = useToast();
   const { settings, isLoading: isSettingsLoading, isSaving, updateSettings } = useUserSettings();
   const { isLoading: isAuthLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('interface');
@@ -32,6 +32,11 @@ const Settings = () => {
       theme: settings.theme,
       animationsEnabled: settings.animationsEnabled
     });
+    
+    toast({
+      title: "Configurações salvas",
+      description: "Suas preferências de interface foram atualizadas"
+    });
   };
   
   // Handle saving notification settings
@@ -42,6 +47,11 @@ const Settings = () => {
         system: settings.notificationPreferences.system,
         alerts: settings.notificationPreferences.alerts
       }
+    });
+    
+    toast({
+      title: "Configurações salvas",
+      description: "Suas preferências de notificação foram atualizadas"
     });
   };
 
@@ -75,9 +85,7 @@ const Settings = () => {
             <TabsList className="mb-6 w-full overflow-x-auto justify-start">
               <TabsTrigger value="interface" id="interface-tab">Interface</TabsTrigger>
               <TabsTrigger value="notifications" id="notifications-tab">Notificações</TabsTrigger>
-              <TabsTrigger value="integrations" id="integrations-tab">Integrações</TabsTrigger>
               <TabsTrigger value="system" id="system-tab">Sistema</TabsTrigger>
-              <TabsTrigger value="profile" id="profile-tab">Perfil</TabsTrigger>
             </TabsList>
             
             {/* Interface Settings */}
@@ -90,11 +98,6 @@ const Settings = () => {
               />
             </TabsContent>
             
-            {/* Profile Settings */}
-            <TabsContent value="profile">
-              <ProfileTab />
-            </TabsContent>
-            
             {/* Notifications Settings */}
             <TabsContent value="notifications">
               <NotificationsTab 
@@ -103,11 +106,6 @@ const Settings = () => {
                 onSave={handleSaveNotificationSettings}
                 onUpdateSettings={updateSettings}
               />
-            </TabsContent>
-            
-            {/* Integrations Settings */}
-            <TabsContent value="integrations">
-              <IntegrationsTab />
             </TabsContent>
             
             {/* System Settings */}

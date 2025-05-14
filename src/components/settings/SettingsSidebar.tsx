@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { User, Settings2, Bell, Link, Database } from 'lucide-react';
+import { Settings2, Bell, Database } from 'lucide-react';
 
 interface SettingsSidebarProps {
   onTabChange: (tabId: string) => void;
@@ -18,15 +18,6 @@ const SettingsSidebar = ({ onTabChange, activeTab }: SettingsSidebarProps) => {
           <h3 className="text-sm font-medium">Categorias</h3>
           <Separator className="my-2" />
           <div className="space-y-1 py-2">
-            <Button 
-              variant={activeTab === 'profile' ? 'secondary' : 'ghost'} 
-              className="w-full justify-start gap-2" 
-              size="sm" 
-              onClick={() => onTabChange('profile')}
-            >
-              <User className="h-4 w-4" />
-              <span>Perfil</span>
-            </Button>
             <Button 
               variant={activeTab === 'interface' ? 'secondary' : 'ghost'} 
               className="w-full justify-start gap-2" 
@@ -44,15 +35,6 @@ const SettingsSidebar = ({ onTabChange, activeTab }: SettingsSidebarProps) => {
             >
               <Bell className="h-4 w-4" />
               <span>Notificações</span>
-            </Button>
-            <Button 
-              variant={activeTab === 'integrations' ? 'secondary' : 'ghost'} 
-              className="w-full justify-start gap-2" 
-              size="sm"
-              onClick={() => onTabChange('integrations')}
-            >
-              <Link className="h-4 w-4" />
-              <span>Integrações</span>
             </Button>
             <Button 
               variant={activeTab === 'system' ? 'secondary' : 'ghost'} 
