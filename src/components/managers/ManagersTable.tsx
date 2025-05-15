@@ -17,20 +17,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2, Eye } from 'lucide-react';
 import type { Manager } from '@/integrations/supabase';
 
 interface ManagersTableProps {
   managers: Manager[];
   isLoading: boolean;
   onDeleteManager: (manager: Manager) => void;
+  isAdmin: boolean;
 }
 
-export const ManagersTable = ({ managers, isLoading, onDeleteManager }: ManagersTableProps) => {
+export const ManagersTable = ({ managers, isLoading, onDeleteManager, isAdmin }: ManagersTableProps) => {
   const navigate = useNavigate();
 
   const handleEditManager = (id: string) => {
-    navigate(`/managers/edit/${id}`);
+    if (isAdmin) {
+      navigate(`/managers/edit/${id}`);
+    } else {
+      // For non-admins, just view the manager details
+      navigate(`/managers/edit/${id}`);
+    }
   };
 
   return (
@@ -73,17 +79,26 @@ export const ManagersTable = ({ managers, isLoading, onDeleteManager }: Managers
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditManager(manager.id)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onDeleteManager(manager)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir
-                      </DropdownMenuItem>
+                      {isAdmin ? (
+                        <>
+                          <DropdownMenuItem onClick={() => handleEditManager(manager.id)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => onDeleteManager(manager)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </>
+                      ) : (
+                        <DropdownMenuItem onClick={() => handleEditManager(manager.id)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Visualizar
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

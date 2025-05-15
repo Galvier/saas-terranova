@@ -12,6 +12,7 @@ import { ManagersTable } from '@/components/managers/ManagersTable';
 import { DeleteManagerDialog } from '@/components/managers/DeleteManagerDialog';
 import { useNavigate } from 'react-router-dom';
 import type { Manager } from '@/integrations/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 const Managers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,6 +21,7 @@ const Managers = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   const { data: managersData, isLoading, error } = useQuery({
     queryKey: ['managers'],
@@ -37,7 +39,7 @@ const Managers = () => {
   );
 
   const confirmDelete = async () => {
-    if (managerToDelete) {
+    if (managerToDelete && isAdmin) {
       try {
         const result = await deleteManager(managerToDelete.id);
         if (result.error) {
@@ -64,8 +66,16 @@ const Managers = () => {
   };
 
   const handleDeleteManager = (manager: Manager) => {
-    setManagerToDelete(manager);
-    setIsDeleteDialogOpen(true);
+    if (isAdmin) {
+      setManagerToDelete(manager);
+      setIsDeleteDialogOpen(true);
+    } else {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para remover gestores",
+        variant: "destructive"
+      });
+    }
   };
 
   if (error) {
@@ -82,10 +92,12 @@ const Managers = () => {
         title="Gestores" 
         subtitle="Gerencie os gestores e suas permissões"
         actionButton={
-          <Button onClick={() => navigate('/managers/new')}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Novo Gestor
-          </Button>
+          isAdmin ? (
+            <Button onClick={() => navigate('/managers/new')}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Novo Gestor
+            </Button>
+          ) : undefined
         }
       />
       
@@ -94,21 +106,24 @@ const Managers = () => {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
         />
-        <ManagerActions />
+        {isAdmin && <ManagerActions />}
       </div>
       
       <ManagersTable 
         managers={filteredManagers}
         isLoading={isLoading}
         onDeleteManager={handleDeleteManager}
+        isAdmin={isAdmin}
       />
       
-      <DeleteManagerDialog 
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={confirmDelete}
-        manager={managerToDelete}
-      />
+      {isAdmin && (
+        <DeleteManagerDialog 
+          isOpen={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={confirmDelete}
+          manager={managerToDelete}
+        />
+      )}
     </div>
   );
 };

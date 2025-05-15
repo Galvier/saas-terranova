@@ -21,7 +21,7 @@ BEGIN
     -- Update the user_id field of the manager
     NEW.user_id := user_id;
     
-    -- Update user metadata if needed
+    -- Update user metadata with manager's role and department
     UPDATE auth.users
     SET raw_user_meta_data = jsonb_build_object(
       'role', NEW.role,
@@ -29,6 +29,18 @@ BEGIN
       'display_name', NEW.name
     )
     WHERE id = user_id;
+    
+    -- Log the role update for debugging
+    INSERT INTO logs (level, message, details) 
+    VALUES (
+      'info', 
+      'Manager role synced to auth user', 
+      jsonb_build_object(
+        'email', NEW.email,
+        'role', NEW.role,
+        'user_id', user_id
+      )
+    );
   END IF;
   
   RETURN NEW;

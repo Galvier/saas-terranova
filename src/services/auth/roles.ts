@@ -5,22 +5,39 @@ export const authRoles = {
   isAdmin: (user: User | null): boolean => {
     if (!user) return false;
     
-    // Verificação explícita se o papel é 'admin'
+    // Explicit verification that the role is 'admin'
     const isAdmin = user.user_metadata?.role === 'admin';
-    console.log('[AuthRoles] Verificação de admin para usuário:', user.id, 'Papel:', user.user_metadata?.role, 'Resultado:', isAdmin);
+    console.log('[AuthRoles] Admin check for user:', user.id, 'Role:', user.user_metadata?.role, 'Result:', isAdmin);
     
-    // Garantir que retorne false para qualquer outro papel que não seja explicitamente 'admin'
+    // Ensure we return false for any role that isn't explicitly 'admin'
     return isAdmin === true;
   },
   
-  // Adicionar função para verificar papel de gestor
+  // Function to check if user has manager role
   isManager: (user: User | null): boolean => {
     if (!user) return false;
     
-    // Verificar se o papel é 'manager' ou 'gestor'
+    // Check if role is 'manager' or 'gestor'
     const isManager = user.user_metadata?.role === 'manager' || user.user_metadata?.role === 'gestor';
-    console.log('[AuthRoles] Verificação de manager para usuário:', user.id, 'Papel:', user.user_metadata?.role, 'Resultado:', isManager);
+    console.log('[AuthRoles] Manager check for user:', user.id, 'Role:', user.user_metadata?.role, 'Result:', isManager);
     
     return isManager === true;
+  },
+  
+  // Function to check if user has viewer role
+  isViewer: (user: User | null): boolean => {
+    if (!user) return false;
+    
+    // Check if role is 'viewer' or 'visualizador'
+    const isViewer = user.user_metadata?.role === 'viewer' || user.user_metadata?.role === 'visualizador';
+    console.log('[AuthRoles] Viewer check for user:', user.id, 'Role:', user.user_metadata?.role, 'Result:', isViewer);
+    
+    return isViewer === true;
+  },
+  
+  // Get user role as a string
+  getUserRole: (user: User | null): string | null => {
+    if (!user) return null;
+    return user.user_metadata?.role || null;
   }
 };
