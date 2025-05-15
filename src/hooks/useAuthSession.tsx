@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client'; 
 import { useToast } from './use-toast';
@@ -66,16 +66,21 @@ export const useAuthSession = (): UseAuthSessionReturn => {
   };
 
   useEffect(() => {
-    // Função para configurar a inscrição de eventos de autenticação
+    // Track if component is mounted to prevent state updates after unmount
+    const isMounted = { current: true };
+    
+    // Function to set up authentication event subscription
     const setupAuthSubscription = () => {
       try {
         console.log('[AuthSession] Configurando listener de autenticação');
         
         // Set up subscription for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+          if (!isMounted.current) return;
+          
           console.log('[AuthSession] Evento de autenticação:', event);
           
-          // Não atualize o estado se o evento for um refresh de token
+          // Don't update state if the event is a token refresh
           if (event === 'TOKEN_REFRESHED') {
             return;
           }
@@ -112,6 +117,8 @@ export const useAuthSession = (): UseAuthSessionReturn => {
 
         return subscription;
       } catch (err: any) {
+        if (!isMounted.current) return null;
+        
         console.error('[AuthSession] Erro ao configurar listener:', err);
         setError(err);
         setIsLoading(false);
@@ -119,16 +126,21 @@ export const useAuthSession = (): UseAuthSessionReturn => {
       }
     };
 
-    // Verificar sessão atual e configurar listener
+    // Check current session and set up listener
     const initializeAuth = async () => {
       try {
         console.log('[AuthSession] Verificando sessão existente');
         
-        // Configurar a inscrição primeiramente
+        // Set up the subscription first
         const subscription = setupAuthSubscription();
         
-        // Verificar sessão atual
+        // Check current session
         const { data, error } = await supabase.auth.getSession();
+        
+        if (!isMounted.current) return () => {
+          if (subscription) subscription.unsubscribe();
+        };
+        
         if (error) throw error;
         
         console.log('[AuthSession] Sessão encontrada:', !!data.session);
@@ -144,6 +156,8 @@ export const useAuthSession = (): UseAuthSessionReturn => {
           }
         };
       } catch (err: any) {
+        if (!isMounted.current) return () => {};
+        
         console.error('[AuthSession] Erro ao inicializar autenticação:', err);
         setError(err);
         setIsLoading(false);
@@ -152,7 +166,10 @@ export const useAuthSession = (): UseAuthSessionReturn => {
     };
 
     const cleanup = initializeAuth();
+    
+    // Cleanup function
     return () => {
+      isMounted.current = false;
       cleanup.then(unsubscribe => unsubscribe());
     };
   }, [toast]);
