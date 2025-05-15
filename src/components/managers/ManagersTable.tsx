@@ -60,25 +60,28 @@ export const ManagersTable = ({ managers, isLoading, onDeleteManager, isAdmin }:
     }
   };
 
-  // Check if current user's email is in the managers list with a different role
+  // Check if current user's email is in the managers list
   const currentUserEmail = user?.email?.toLowerCase();
   const currentUserManager = managers.find(m => m.email.toLowerCase() === currentUserEmail);
-  const hasRoleMismatch = currentUserManager && user?.user_metadata?.role !== currentUserManager.role;
+  
+  // Check for any mismatch between auth metadata and manager role
+  const userMetadataRole = user?.user_metadata?.role;
+  const hasRoleMismatch = currentUserManager && userMetadataRole !== currentUserManager.role;
 
   return (
     <>
       {hasRoleMismatch && (
         <div className="mb-4 p-4 border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 rounded-md">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
             <div>
               <h3 className="text-sm font-medium text-amber-800 dark:text-amber-300">Atualização de permissões detectada</h3>
               <p className="text-sm text-amber-700 dark:text-amber-400">
-                Sua função foi alterada para "{currentUserManager.role}", mas seus dados ainda não foram atualizados.
+                Sua função no banco é "{currentUserManager.role}", mas seus metadados mostram "{userMetadataRole}".
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleSyncUserData} className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={handleSyncUserData} className="flex items-center gap-1 self-start sm:self-center">
               <RefreshCcw className="h-3.5 w-3.5" />
-              Sincronizar
+              Sincronizar dados
             </Button>
           </div>
         </div>

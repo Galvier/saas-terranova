@@ -21,7 +21,7 @@ const Managers = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { isAdmin, user, manager: currentUserManager, refreshUser } = useAuth();
+  const { isAdmin, user, refreshUser } = useAuth();
 
   const { data: managersData, isLoading, error, refetch } = useQuery({
     queryKey: ['managers'],
@@ -80,13 +80,22 @@ const Managers = () => {
 
   const handleRefreshData = async () => {
     try {
+      // Set up a loading toast
+      toast({
+        title: "Atualizando dados",
+        description: "Carregando informações mais recentes..."
+      });
+      
+      // Perform all refresh operations
       await Promise.all([
-        refetch(), 
-        refreshUser()
+        refetch(),       // Refresh managers data
+        refreshUser()    // Refresh user session and metadata
       ]);
+      
+      // Success toast
       toast({
         title: "Dados atualizados",
-        description: "Lista de gestores e permissões atualizadas"
+        description: "Lista de gestores e permissões atualizadas com sucesso"
       });
     } catch (error) {
       console.error("Erro ao atualizar dados:", error);
@@ -97,14 +106,6 @@ const Managers = () => {
       });
     }
   };
-
-  // Check if the current user's email is in the managers list but with a different role
-  const currentUserManagerFromList = user?.email ? 
-    managers.find(m => m.email.toLowerCase() === user.email?.toLowerCase()) : 
-    undefined;
-
-  const hasRoleMismatch = currentUserManagerFromList && 
-    user?.user_metadata?.role !== currentUserManagerFromList.role;
 
   if (error) {
     return (

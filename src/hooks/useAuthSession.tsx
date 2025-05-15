@@ -23,10 +23,17 @@ export const useAuthSession = (): UseAuthSessionReturn => {
   const refreshUser = async (): Promise<void> => {
     try {
       console.log('[AuthSession] Manual refresh of user data requested');
+      setIsLoading(true);
+      
       const { data, error: refreshError } = await supabase.auth.refreshSession();
       
       if (refreshError) {
         console.error('[AuthSession] Error refreshing session:', refreshError);
+        toast({
+          title: "Erro na sincronização",
+          description: "Não foi possível atualizar seus dados: " + refreshError.message,
+          variant: "destructive"
+        });
         return;
       }
       
@@ -34,9 +41,27 @@ export const useAuthSession = (): UseAuthSessionReturn => {
         console.log('[AuthSession] Session refreshed successfully');
         setSession(data.session);
         setUser(data.session.user);
+        
+        toast({
+          title: "Sincronização completa",
+          description: "Seus dados e permissões foram atualizados"
+        });
+      } else {
+        console.log('[AuthSession] No session found after refresh');
+        toast({
+          title: "Sessão não encontrada",
+          description: "Por favor, faça login novamente"
+        });
       }
     } catch (err) {
       console.error('[AuthSession] Unexpected error during refresh:', err);
+      toast({
+        title: "Erro inesperado",
+        description: "Ocorreu um erro ao atualizar seus dados",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 

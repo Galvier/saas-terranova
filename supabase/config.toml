@@ -9,4 +9,3 @@ enabled = true
 
 [database]
 pool_timeout = 60
-

@@ -54,19 +54,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Consider user as authenticated if user object exists and not loading
   const isAuthenticated = !!user && !isLoading;
   
-  // Check user roles using service functions
-  const isAdmin = authRoles.isAdmin(user) || (managerIsAdmin && manager?.role === 'admin');
-  const isManager = authRoles.isManager(user) || manager?.role === 'manager';
-  const isViewer = authRoles.isViewer(user);
-  const userRole = authRoles.getUserRole(user) || manager?.role || null;
+  // Determine the effective role - prioritize auth metadata over manager role
+  // This ensures that the latest changes from the database are reflected
+  const userMetadataRole = user?.user_metadata?.role;
+  const managerRole = manager?.role;
+  
+  // Log the role sources for debugging
+  if (user && !isLoading) {
+    console.log('[AuthProvider] Role sources:', {
+      userMetadataRole,
+      managerRole
+    });
+  }
+  
+  // Check user roles - give priority to user_metadata from auth.users
+  const isAdmin = userMetadataRole === 'admin' || (!userMetadataRole && managerRole === 'admin');
+  const isManager = userMetadataRole === 'manager' || (!userMetadataRole && managerRole === 'manager');
+  const isViewer = userMetadataRole === 'viewer' || (!userMetadataRole && managerRole === 'viewer');
+  
+  // Get the effective role, prioritizing auth metadata
+  const userRole = userMetadataRole || managerRole || null;
 
   // Log for diagnostics
   if (user && !isLoading) {
     console.log('[AuthProvider] User status:', {
       id: user.id,
       email: user.email,
-      authMetadataRole: user.user_metadata?.role,
-      managerRole: manager?.role,
+      authMetadataRole: userMetadataRole,
+      managerRole: managerRole,
       isAdmin,
       isManager,
       isViewer,
