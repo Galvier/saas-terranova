@@ -26,17 +26,21 @@ export function useRealTimeSubscription(
     // Create the channel
     const channel = supabase.channel(channelName);
     
-    // Define the postgres_changes filter
-    const postgresChangesFilter = {
+    // Define the configuration for the subscription
+    const config = {
       event: event,
       schema: schema,
       table: table,
-      filter: filter
     };
     
-    // Subscribe to the channel with the proper configuration
+    if (filter) {
+      // Add the filter if provided
+      Object.assign(config, { filter });
+    }
+    
+    // Subscribe to PostgreSQL changes with the correct API format
     channel
-      .on('postgres_changes', postgresChangesFilter, (payload) => {
+      .on('postgres_changes', config as any, (payload) => {
         callback(payload);
       })
       .subscribe((status) => {
