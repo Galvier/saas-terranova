@@ -1,8 +1,9 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client'; 
 import { useToast } from './use-toast';
+import { createLog } from '@/services/logService';
 
 interface UseAuthSessionReturn {
   user: User | null;
@@ -42,6 +43,16 @@ export const useAuthSession = (): UseAuthSessionReturn => {
         setSession(data.session);
         setUser(data.session.user);
         
+        // Log successful refresh
+        try {
+          await createLog('info', 'Sessão sincronizada', {
+            user_id: data.session.user.id,
+            timestamp: new Date().toISOString()
+          }, data.session.user.id);
+        } catch (logError) {
+          console.warn('[AuthSession] Error creating log for refresh:', logError);
+        }
+        
         toast({
           title: "Sincronização completa",
           description: "Seus dados e permissões foram atualizados"
@@ -80,19 +91,29 @@ export const useAuthSession = (): UseAuthSessionReturn => {
           
           console.log('[AuthSession] Evento de autenticação:', event);
           
-          // Don't update state if the event is a token refresh
-          if (event === 'TOKEN_REFRESHED') {
-            return;
-          }
-          
+          // Update state without delay to ensure UI responds quickly
           setSession(newSession);
           setUser(newSession?.user || null);
           
+          // Handle different auth events
           if (event === 'SIGNED_IN') {
             toast({
               title: "Login realizado com sucesso",
               description: "Bem-vindo ao Business Manager"
             });
+            
+            // Log sign in with slight delay to avoid blocking UI
+            setTimeout(() => {
+              if (newSession?.user) {
+                createLog('info', 'Login bem-sucedido', {
+                  user_id: newSession.user.id,
+                  email: newSession.user.email,
+                  timestamp: new Date().toISOString()
+                }, newSession.user.id).catch(e => 
+                  console.warn('[AuthSession] Error creating login log:', e)
+                );
+              }
+            }, 0);
           }
           
           if (event === 'SIGNED_OUT') {
@@ -100,6 +121,8 @@ export const useAuthSession = (): UseAuthSessionReturn => {
               title: "Desconectado",
               description: "Sessão encerrada com sucesso"
             });
+            
+            // No need to log sign out as the user ID would be missing
           }
 
           if (event === 'USER_UPDATED') {
@@ -109,6 +132,19 @@ export const useAuthSession = (): UseAuthSessionReturn => {
             });
             
             console.log('[AuthSession] User data updated:', newSession?.user?.user_metadata);
+            
+            // Log user update with slight delay
+            setTimeout(() => {
+              if (newSession?.user) {
+                createLog('info', 'Dados de usuário atualizados', {
+                  user_id: newSession.user.id,
+                  metadata: newSession.user.user_metadata,
+                  timestamp: new Date().toISOString()
+                }, newSession.user.id).catch(e => 
+                  console.warn('[AuthSession] Error creating update log:', e)
+                );
+              }
+            }, 0);
           }
 
           // Update loading state
@@ -148,6 +184,18 @@ export const useAuthSession = (): UseAuthSessionReturn => {
         setUser(data.session?.user || null);
         
         setIsLoading(false);
+        
+        // Log successful initialization if there's a session
+        if (data.session?.user) {
+          setTimeout(() => {
+            createLog('info', 'Sessão inicializada', {
+              user_id: data.session?.user.id,
+              timestamp: new Date().toISOString()
+            }, data.session?.user.id).catch(e => 
+              console.warn('[AuthSession] Error creating initialization log:', e)
+            );
+          }, 0);
+        }
         
         return () => {
           if (subscription) {
