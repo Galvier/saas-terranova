@@ -55,7 +55,6 @@ export const useMetricSelection = () => {
   const saveAdminDashboardConfigToSupabase = async (userId: string, metricIds: string[]) => {
     try {
       console.log("Saving admin dashboard config:", { userId, metricIds });
-      const timestamp = new Date().getTime();
       const result = await saveAdminDashboardConfig(metricIds, userId);
       
       if (result.error) {

@@ -27,7 +27,7 @@ export const getAdminDashboardConfig = async (
 ): Promise<CrudResult<DashboardConfig>> => {
   try {
     console.log("Loading dashboard config for user ID:", userId);
-    const { data, error } = await callRPC<DashboardConfig>('get_admin_dashboard_config', {
+    const { data, error } = await callRPC<DashboardConfig[]>('get_admin_dashboard_config', {
       user_id_param: userId
     });
     
@@ -36,7 +36,7 @@ export const getAdminDashboardConfig = async (
       return formatCrudResult(null, error);
     }
     
-    if (!data) {
+    if (!data || data.length === 0) {
       console.log("No dashboard config found for user:", userId);
       return formatCrudResult({ 
         id: "", 
@@ -47,8 +47,9 @@ export const getAdminDashboardConfig = async (
       }, null);
     }
     
-    console.log("Found dashboard config:", data);
-    return formatCrudResult(data, null);
+    const config = data[0]; // Get first item since it returns an array now
+    console.log("Found dashboard config:", config);
+    return formatCrudResult(config, null);
   } catch (error) {
     console.error('Error fetching admin dashboard config:', error);
     return formatCrudResult(null, error);

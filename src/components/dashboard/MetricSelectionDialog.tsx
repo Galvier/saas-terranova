@@ -61,12 +61,6 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
     try {
       // Update parent component state first for immediate feedback
       onSelectionChange(localSelection);
-      
-      toast({
-        title: "Configuração salva",
-        description: "Seu dashboard personalizado foi atualizado com sucesso",
-      });
-      
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error saving configuration:", error);
