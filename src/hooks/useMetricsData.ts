@@ -89,15 +89,101 @@ export const useMetricsData = () => {
     setIsValueDialogOpen(true);
   };
 
+  // Set initial department based on user role
+  useEffect(() => {
+    try {
+      // Try to load from localStorage if user has a saved preference
+      const savedDepartment = localStorage.getItem('metricsSelectedDepartment');
+      
+      if (savedDepartment) {
+        // Only apply saved preference if user is admin or it's their department
+        if (isAdmin || savedDepartment === userDepartmentId) {
+          setSelectedDepartment(savedDepartment);
+          return;
+        }
+      }
+      
+      // If no saved preference or not applicable, use defaults
+      if (!isAdmin && userDepartmentId) {
+        // Managers default to their department and can't change
+        setSelectedDepartment(userDepartmentId);
+      } else if (isAdmin) {
+        // Admins default to "all departments"
+        setSelectedDepartment('all');
+      }
+    } catch (error) {
+      console.error("Error setting initial department:", error);
+    }
+  }, [isAdmin, userDepartmentId]);
+  
+  // Save department preference whenever it changes
+  useEffect(() => {
+    try {
+      if (selectedDepartment && (isAdmin || selectedDepartment === userDepartmentId)) {
+        localStorage.setItem('metricsSelectedDepartment', selectedDepartment);
+      }
+    } catch (error) {
+      console.error("Error saving department preference:", error);
+    }
+  }, [selectedDepartment, isAdmin, userDepartmentId]);
+
+  // Modify handleDeleteClick to check if the user can delete the metric
+  const handleDeleteClick = (metric: MetricDefinition) => {
+    // If user is not admin, check if they're trying to modify a metric from another department
+    if (!isAdmin && metric.department_id !== userDepartmentId) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para excluir métricas de outros setores",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSelectedMetric(metric);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Modify handleEditClick to check if the user can edit the metric
   const handleEditClick = (metric: MetricDefinition) => {
+    // If user is not admin, check if they're trying to modify a metric from another department
+    if (!isAdmin && metric.department_id !== userDepartmentId) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para editar métricas de outros setores",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSelectedMetric(metric);
     setIsEditDialogOpen(true);
   };
 
-  const handleDeleteClick = (metric: MetricDefinition) => {
-    setSelectedMetric(metric);
-    setIsDeleteDialogOpen(true);
-  };
+  // Load saved date filter preference
+  useEffect(() => {
+    try {
+      const savedPrefs = localStorage.getItem('metricsDatePreferences');
+      if (savedPrefs) {
+        const prefs = JSON.parse(savedPrefs);
+        if (prefs.date) setSelectedDate(new Date(prefs.date));
+        if (prefs.type) setDateRangeType(prefs.type);
+      }
+    } catch (error) {
+      console.error("Error loading date preferences", error);
+    }
+  }, []);
+  
+  // Save date filter preference
+  useEffect(() => {
+    try {
+      localStorage.setItem('metricsDatePreferences', JSON.stringify({
+        date: selectedDate.toISOString(),
+        type: dateRangeType
+      }));
+    } catch (error) {
+      console.error("Error saving date preferences", error);
+    }
+  }, [selectedDate, dateRangeType]);
 
   const handleDeleteConfirm = async () => {
     if (!selectedMetric) return;
@@ -135,70 +221,6 @@ export const useMetricsData = () => {
       setSelectedMetric(null);
     }
   };
-
-  // Set initial department based on user role
-  useEffect(() => {
-    try {
-      // Try to load from localStorage if user has a saved preference
-      const savedDepartment = localStorage.getItem('metricsSelectedDepartment');
-      
-      if (savedDepartment) {
-        // Only apply saved preference if user is admin or it's their department
-        if (isAdmin || savedDepartment === userDepartmentId) {
-          setSelectedDepartment(savedDepartment);
-          return;
-        }
-      }
-      
-      // If no saved preference or not applicable, use defaults
-      if (!isAdmin && userDepartmentId) {
-        // Managers default to their department
-        setSelectedDepartment(userDepartmentId);
-      } else if (isAdmin) {
-        // Admins default to "all departments"
-        setSelectedDepartment('all');
-      }
-    } catch (error) {
-      console.error("Error setting initial department:", error);
-    }
-  }, [isAdmin, userDepartmentId]);
-  
-  // Save department preference whenever it changes
-  useEffect(() => {
-    try {
-      if (selectedDepartment) {
-        localStorage.setItem('metricsSelectedDepartment', selectedDepartment);
-      }
-    } catch (error) {
-      console.error("Error saving department preference:", error);
-    }
-  }, [selectedDepartment]);
-
-  // Load saved date filter preference
-  useEffect(() => {
-    try {
-      const savedPrefs = localStorage.getItem('metricsDatePreferences');
-      if (savedPrefs) {
-        const prefs = JSON.parse(savedPrefs);
-        if (prefs.date) setSelectedDate(new Date(prefs.date));
-        if (prefs.type) setDateRangeType(prefs.type);
-      }
-    } catch (error) {
-      console.error("Error loading date preferences", error);
-    }
-  }, []);
-  
-  // Save date filter preference
-  useEffect(() => {
-    try {
-      localStorage.setItem('metricsDatePreferences', JSON.stringify({
-        date: selectedDate.toISOString(),
-        type: dateRangeType
-      }));
-    } catch (error) {
-      console.error("Error saving date preferences", error);
-    }
-  }, [selectedDate, dateRangeType]);
 
   const isLoading = isLoadingDepartments || isLoadingMetrics;
 
