@@ -5,6 +5,7 @@ import { Manager } from '@/integrations/supabase/types/manager';
 import { useAuthSession } from './useAuthSession';
 import { useManagerData } from './useManagerData';
 import { useAuthMethods } from './useAuthMethods';
+import { authRoles } from '@/services/auth/roles';
 
 interface AuthContextType {
   user: User | null;
@@ -36,7 +37,7 @@ const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Usar hooks separados para gerenciar partes específicas da autenticação
   const { user, session, isLoading: isSessionLoading, error: sessionError } = useAuthSession();
-  const { manager, userDepartmentId, isAdmin, isLoading: isManagerLoading } = useManagerData(user);
+  const { manager, userDepartmentId, isAdmin: managerIsAdmin, isLoading: isManagerLoading } = useManagerData(user);
   const { isAuthenticating, login, logout } = useAuthMethods();
 
   // Combinar carregamentos
@@ -44,6 +45,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Considerar usuário como autenticado se o objeto de usuário existir e não estiver carregando
   const isAuthenticated = !!user && !isLoading;
+  
+  // Verificar o papel do usuário utilizando a função do serviço de auth
+  const isAdmin = authRoles.isAdmin(user) || (managerIsAdmin && manager?.role === 'admin');
+
+  // Log para diagnóstico
+  if (user && !isLoading) {
+    console.log('[AuthProvider] Status do usuário:', {
+      id: user.id,
+      email: user.email,
+      role: user.user_metadata?.role,
+      isAdmin,
+      managerRole: manager?.role,
+      managerIsAdmin
+    });
+  }
 
   // Log de debug para facilitar identificação de problemas
   if (sessionError) {
