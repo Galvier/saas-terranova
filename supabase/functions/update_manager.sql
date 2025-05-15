@@ -24,6 +24,21 @@ BEGIN
     SELECT id INTO user_id FROM auth.users WHERE email = manager_email;
   END IF;
   
+  -- Log the update operation
+  INSERT INTO logs (level, message, details) 
+  VALUES (
+    'info', 
+    'Manager update initiated', 
+    jsonb_build_object(
+      'manager_id', manager_id,
+      'old_role', old_role,
+      'new_role', COALESCE(manager_role, old_role),
+      'old_email', old_email,
+      'new_email', manager_email,
+      'user_id', user_id
+    )
+  );
+  
   -- Update the manager
   UPDATE managers SET
     name = manager_name,
@@ -54,7 +69,7 @@ BEGIN
     INSERT INTO logs (level, message, details) 
     VALUES (
       'info', 
-      'Manager role updated', 
+      'Manager role updated directly', 
       jsonb_build_object(
         'manager_id', manager_id,
         'old_role', old_role,

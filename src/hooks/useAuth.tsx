@@ -20,6 +20,7 @@ interface AuthContextType {
   userDepartmentId: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 // Create a default value for the context
@@ -35,14 +36,15 @@ const defaultAuthContext: AuthContextType = {
   userRole: null,
   userDepartmentId: null,
   login: async () => false,
-  logout: async () => {}
+  logout: async () => {},
+  refreshUser: async () => {}
 };
 
 const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Use separate hooks to manage specific parts of authentication
-  const { user, session, isLoading: isSessionLoading, error: sessionError } = useAuthSession();
+  const { user, session, isLoading: isSessionLoading, error: sessionError, refreshUser } = useAuthSession();
   const { manager, userDepartmentId, isAdmin: managerIsAdmin, isLoading: isManagerLoading } = useManagerData(user);
   const { isAuthenticating, login, logout } = useAuthMethods();
 
@@ -90,7 +92,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       userRole,
       userDepartmentId,
       login,
-      logout
+      logout,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>

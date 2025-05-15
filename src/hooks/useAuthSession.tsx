@@ -9,6 +9,7 @@ interface UseAuthSessionReturn {
   session: Session | null;
   isLoading: boolean;
   error: Error | null;
+  refreshUser: () => Promise<void>;
 }
 
 export const useAuthSession = (): UseAuthSessionReturn => {
@@ -17,6 +18,27 @@ export const useAuthSession = (): UseAuthSessionReturn => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const { toast } = useToast();
+
+  // Function to refresh user data
+  const refreshUser = async (): Promise<void> => {
+    try {
+      console.log('[AuthSession] Manual refresh of user data requested');
+      const { data, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.error('[AuthSession] Error refreshing session:', refreshError);
+        return;
+      }
+      
+      if (data.session) {
+        console.log('[AuthSession] Session refreshed successfully');
+        setSession(data.session);
+        setUser(data.session.user);
+      }
+    } catch (err) {
+      console.error('[AuthSession] Unexpected error during refresh:', err);
+    }
+  };
 
   useEffect(() => {
     // Função para configurar a inscrição de eventos de autenticação
@@ -48,6 +70,15 @@ export const useAuthSession = (): UseAuthSessionReturn => {
               title: "Desconectado",
               description: "Sessão encerrada com sucesso"
             });
+          }
+
+          if (event === 'USER_UPDATED') {
+            toast({
+              title: "Dados atualizados",
+              description: "Suas permissões foram atualizadas"
+            });
+            
+            console.log('[AuthSession] User data updated:', newSession?.user?.user_metadata);
           }
 
           // Update loading state
@@ -101,5 +132,5 @@ export const useAuthSession = (): UseAuthSessionReturn => {
     };
   }, [toast]);
 
-  return { user, session, isLoading, error };
+  return { user, session, isLoading, error, refreshUser };
 };

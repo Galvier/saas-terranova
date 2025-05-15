@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, RefreshCcw } from 'lucide-react';
 import { deleteManager, getAllManagers } from '@/integrations/supabase';
 import { ManagerSearch } from '@/components/managers/ManagerSearch';
 import { ManagerActions } from '@/components/managers/ManagerActions';
@@ -21,9 +21,9 @@ const Managers = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user, manager: currentUserManager, refreshUser } = useAuth();
 
-  const { data: managersData, isLoading, error } = useQuery({
+  const { data: managersData, isLoading, error, refetch } = useQuery({
     queryKey: ['managers'],
     queryFn: async () => {
       const result = await getAllManagers();
@@ -78,6 +78,34 @@ const Managers = () => {
     }
   };
 
+  const handleRefreshData = async () => {
+    try {
+      await Promise.all([
+        refetch(), 
+        refreshUser()
+      ]);
+      toast({
+        title: "Dados atualizados",
+        description: "Lista de gestores e permissões atualizadas"
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar dados:", error);
+      toast({
+        title: "Erro na atualização",
+        description: "Não foi possível atualizar os dados",
+        variant: "destructive" 
+      });
+    }
+  };
+
+  // Check if the current user's email is in the managers list but with a different role
+  const currentUserManagerFromList = user?.email ? 
+    managers.find(m => m.email.toLowerCase() === user.email?.toLowerCase()) : 
+    undefined;
+
+  const hasRoleMismatch = currentUserManagerFromList && 
+    user?.user_metadata?.role !== currentUserManagerFromList.role;
+
   if (error) {
     return (
       <div className="p-4 text-red-500">
@@ -92,12 +120,23 @@ const Managers = () => {
         title="Gestores" 
         subtitle="Gerencie os gestores e suas permissões"
         actionButton={
-          isAdmin ? (
-            <Button onClick={() => navigate('/managers/new')}>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Novo Gestor
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleRefreshData}
+              className="flex items-center gap-1"
+            >
+              <RefreshCcw className="h-4 w-4" />
+              <span className="hidden sm:inline">Atualizar</span>
             </Button>
-          ) : undefined
+            
+            {isAdmin && (
+              <Button onClick={() => navigate('/managers/new')}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Novo Gestor
+              </Button>
+            )}
+          </div>
         }
       />
       

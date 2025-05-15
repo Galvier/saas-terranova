@@ -39,5 +39,22 @@ export const authRoles = {
   getUserRole: (user: User | null): string | null => {
     if (!user) return null;
     return user.user_metadata?.role || null;
+  },
+  
+  // Check if a user has a specific role
+  hasRole: (user: User | null, role: string): boolean => {
+    if (!user) return false;
+    
+    const userRole = user.user_metadata?.role;
+    const hasRole = userRole === role;
+    
+    console.log('[AuthRoles] Role check:', {
+      userId: user.id,
+      requestedRole: role,
+      userRole: userRole,
+      result: hasRole
+    });
+    
+    return hasRole;
   }
 };
