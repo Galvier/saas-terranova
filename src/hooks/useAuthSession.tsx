@@ -23,49 +23,60 @@ export const useAuthSession = (): UseAuthSessionReturn => {
   // Function to refresh user data
   const refreshUser = async (): Promise<void> => {
     try {
-      console.log('[AuthSession] Manual refresh of user data requested');
+      console.log('[AuthSession] Atualização manual dos dados do usuário solicitada');
       setIsLoading(true);
       
-      const { data, error: refreshError } = await supabase.auth.refreshSession();
+      // Use getSession() instead of refreshSession() as it's more reliable
+      const { data, error: sessionError } = await supabase.auth.getSession();
       
-      if (refreshError) {
-        console.error('[AuthSession] Error refreshing session:', refreshError);
-        toast({
-          title: "Erro na sincronização",
-          description: "Não foi possível atualizar seus dados: " + refreshError.message,
-          variant: "destructive"
-        });
+      if (sessionError) {
+        console.error('[AuthSession] Erro ao obter sessão:', sessionError);
+        throw sessionError;
+      }
+      
+      if (!data.session) {
+        console.log('[AuthSession] Nenhuma sessão encontrada');
+        setSession(null);
+        setUser(null);
         return;
       }
       
-      if (data.session) {
-        console.log('[AuthSession] Session refreshed successfully');
-        setSession(data.session);
-        setUser(data.session.user);
+      console.log('[AuthSession] Sessão obtida com sucesso');
+      setSession(data.session);
+      setUser(data.session.user);
+      
+      // Now explicitly refresh the session to ensure tokens are up to date
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.warn('[AuthSession] Aviso ao atualizar sessão:', refreshError);
+        // Continue with the current session
+      } else if (refreshData.session) {
+        console.log('[AuthSession] Sessão atualizada com sucesso');
+        setSession(refreshData.session);
+        setUser(refreshData.session.user);
         
-        // Log successful refresh
+        // Log successful refresh if we have a user
         try {
-          await createLog('info', 'Sessão sincronizada', {
-            user_id: data.session.user.id,
-            timestamp: new Date().toISOString()
-          }, data.session.user.id);
+          if (refreshData.session.user) {
+            await createLog('info', 'Sessão sincronizada', {
+              user_id: refreshData.session.user.id,
+              timestamp: new Date().toISOString()
+            }, refreshData.session.user.id);
+            
+            toast({
+              title: "Sincronização completa",
+              description: "Seus dados e permissões foram atualizados"
+            });
+          }
         } catch (logError) {
-          console.warn('[AuthSession] Error creating log for refresh:', logError);
+          console.warn('[AuthSession] Erro ao criar log para atualização:', logError);
         }
-        
-        toast({
-          title: "Sincronização completa",
-          description: "Seus dados e permissões foram atualizados"
-        });
-      } else {
-        console.log('[AuthSession] No session found after refresh');
-        toast({
-          title: "Sessão não encontrada",
-          description: "Por favor, faça login novamente"
-        });
       }
     } catch (err) {
-      console.error('[AuthSession] Unexpected error during refresh:', err);
+      console.error('[AuthSession] Erro inesperado durante atualização:', err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+      
       toast({
         title: "Erro inesperado",
         description: "Ocorreu um erro ao atualizar seus dados",
@@ -78,7 +89,7 @@ export const useAuthSession = (): UseAuthSessionReturn => {
 
   useEffect(() => {
     // Track if component is mounted to prevent state updates after unmount
-    const isMounted = { current: true };
+    let isMounted = true;
     
     // Function to set up authentication event subscription
     const setupAuthSubscription = () => {
@@ -87,7 +98,7 @@ export const useAuthSession = (): UseAuthSessionReturn => {
         
         // Set up subscription for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-          if (!isMounted.current) return;
+          if (!isMounted) return;
           
           console.log('[AuthSession] Evento de autenticação:', event);
           
@@ -121,8 +132,6 @@ export const useAuthSession = (): UseAuthSessionReturn => {
               title: "Desconectado",
               description: "Sessão encerrada com sucesso"
             });
-            
-            // No need to log sign out as the user ID would be missing
           }
 
           if (event === 'USER_UPDATED') {
@@ -131,7 +140,7 @@ export const useAuthSession = (): UseAuthSessionReturn => {
               description: "Suas permissões foram atualizadas"
             });
             
-            console.log('[AuthSession] User data updated:', newSession?.user?.user_metadata);
+            console.log('[AuthSession] Dados do usuário atualizados:', newSession?.user?.user_metadata);
             
             // Log user update with slight delay
             setTimeout(() => {
@@ -153,7 +162,7 @@ export const useAuthSession = (): UseAuthSessionReturn => {
 
         return subscription;
       } catch (err: any) {
-        if (!isMounted.current) return null;
+        if (!isMounted) return null;
         
         console.error('[AuthSession] Erro ao configurar listener:', err);
         setError(err);
@@ -167,35 +176,40 @@ export const useAuthSession = (): UseAuthSessionReturn => {
       try {
         console.log('[AuthSession] Verificando sessão existente');
         
-        // Set up the subscription first
+        // Set up the subscription first to not miss any auth events
         const subscription = setupAuthSubscription();
         
         // Check current session
         const { data, error } = await supabase.auth.getSession();
         
-        if (!isMounted.current) return () => {
+        if (!isMounted) {
           if (subscription) subscription.unsubscribe();
-        };
+          return;
+        }
         
-        if (error) throw error;
-        
-        console.log('[AuthSession] Sessão encontrada:', !!data.session);
-        setSession(data.session);
-        setUser(data.session?.user || null);
+        if (error) {
+          console.error('[AuthSession] Erro ao obter sessão:', error);
+          setError(error);
+        } else {
+          console.log('[AuthSession] Sessão encontrada:', !!data.session);
+          setSession(data.session);
+          setUser(data.session?.user || null);
+          
+          // Log successful initialization if there's a session
+          if (data.session?.user) {
+            setTimeout(() => {
+              if (!isMounted) return;
+              createLog('info', 'Sessão inicializada', {
+                user_id: data.session?.user.id,
+                timestamp: new Date().toISOString()
+              }, data.session?.user.id).catch(e => 
+                console.warn('[AuthSession] Error creating initialization log:', e)
+              );
+            }, 0);
+          }
+        }
         
         setIsLoading(false);
-        
-        // Log successful initialization if there's a session
-        if (data.session?.user) {
-          setTimeout(() => {
-            createLog('info', 'Sessão inicializada', {
-              user_id: data.session?.user.id,
-              timestamp: new Date().toISOString()
-            }, data.session?.user.id).catch(e => 
-              console.warn('[AuthSession] Error creating initialization log:', e)
-            );
-          }, 0);
-        }
         
         return () => {
           if (subscription) {
@@ -204,7 +218,7 @@ export const useAuthSession = (): UseAuthSessionReturn => {
           }
         };
       } catch (err: any) {
-        if (!isMounted.current) return () => {};
+        if (!isMounted) return () => {};
         
         console.error('[AuthSession] Erro ao inicializar autenticação:', err);
         setError(err);
@@ -217,8 +231,16 @@ export const useAuthSession = (): UseAuthSessionReturn => {
     
     // Cleanup function
     return () => {
-      isMounted.current = false;
-      cleanup.then(unsubscribe => unsubscribe());
+      isMounted = false;
+      if (cleanup instanceof Promise) {
+        cleanup.then(unsubscribe => {
+          if (unsubscribe && typeof unsubscribe === 'function') {
+            unsubscribe();
+          }
+        });
+      } else if (cleanup && typeof cleanup === 'function') {
+        cleanup();
+      }
     };
   }, [toast]);
 

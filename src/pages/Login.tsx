@@ -32,6 +32,7 @@ const Login = () => {
   const [loginAttempted, setLoginAttempted] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loginButtonDisabled, setLoginButtonDisabled] = useState(false);
 
   // Map ConnectionStatus component properties
   const statusMapping: StatusMapping = {
@@ -42,12 +43,17 @@ const Login = () => {
 
   // Check connection to Supabase on component mount
   useEffect(() => {
+    console.log('[Login] Inicializando componente de Login...');
+    
     const checkConnection = async () => {
       try {
+        setConnectionStatus('checking');
+        console.log('[Login] Verificando conexão com Supabase...');
+        
         // Simple query to check connection
         const { data } = await supabase.rpc('postgres_version');
         setConnectionStatus(data ? 'connected' : 'error');
-        console.log('[Login] Connection check success:', data);
+        console.log('[Login] Verificação de conexão bem-sucedida:', data);
         
         // Log connection attempt (without requiring auth)
         try {
@@ -56,10 +62,10 @@ const Login = () => {
             timestamp: new Date().toISOString() 
           });
         } catch (e) {
-          console.warn('[Login] Failed to log connection attempt:', e);
+          console.warn('[Login] Falha ao registrar tentativa de conexão:', e);
         }
       } catch (err) {
-        console.error('[Login] Connection error:', err);
+        console.error('[Login] Erro de conexão:', err);
         setConnectionStatus('error');
         
         // Try to log failure, but this will likely fail too
@@ -69,7 +75,7 @@ const Login = () => {
             timestamp: new Date().toISOString() 
           });
         } catch (e) {
-          console.warn('[Login] Failed to log connection error:', e);
+          console.warn('[Login] Falha ao registrar erro de conexão:', e);
         }
       }
     };
@@ -79,30 +85,28 @@ const Login = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    // Only redirect after login attempt or if user was already authenticated
-    if (isAuthenticated && (loginAttempted || !isLoading)) {
-      console.log('[Login] User authenticated, redirecting...');
+    if (isAuthenticated) {
+      console.log('[Login] Usuário autenticado, redirecionando...');
       
-      // Always force a refresh of user data after login to ensure we have the latest permissions
-      refreshUser().then(() => {
-        // Get the intended destination or default to dashboard
-        const from = location.state?.from || "/dashboard";
-        navigate(from, { replace: true });
-      });
+      // Get the intended destination or default to dashboard
+      const from = location.state?.from || "/dashboard";
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, isLoading, loginAttempted, navigate, location.state?.from, refreshUser]);
+  }, [isAuthenticated, navigate, location.state?.from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
+    setLoginButtonDisabled(true);
     
     if (!email || !password) {
       setLoginError("Por favor preencha email e senha");
+      setLoginButtonDisabled(false);
       return;
     }
 
     try {
-      console.log('[Login] Attempting login for:', email);
+      console.log('[Login] Tentando login para:', email);
       
       // Log login attempt (without requiring auth)
       try {
@@ -111,7 +115,7 @@ const Login = () => {
           timestamp: new Date().toISOString() 
         });
       } catch (e) {
-        console.warn('[Login] Failed to log login attempt:', e);
+        console.warn('[Login] Falha ao registrar tentativa de login:', e);
       }
       
       const success = await login(email, password);
@@ -127,11 +131,18 @@ const Login = () => {
             timestamp: new Date().toISOString() 
           });
         } catch (e) {
-          console.warn('[Login] Failed to log login failure:', e);
+          console.warn('[Login] Falha ao registrar erro de login:', e);
+        }
+      } else {
+        // Refresh user data immediately after successful login
+        try {
+          await refreshUser();
+        } catch (refreshError) {
+          console.error('[Login] Erro ao atualizar dados do usuário:', refreshError);
         }
       }
     } catch (error: any) {
-      console.error("[Login] Error:", error);
+      console.error("[Login] Erro:", error);
       setLoginError(error.message || "Ocorreu um erro durante o login");
       
       // Log error
@@ -142,8 +153,10 @@ const Login = () => {
           timestamp: new Date().toISOString() 
         });
       } catch (e) {
-        console.warn('[Login] Failed to log login error:', e);
+        console.warn('[Login] Falha ao registrar erro de login:', e);
       }
+    } finally {
+      setLoginButtonDisabled(false);
     }
   };
 
@@ -153,9 +166,9 @@ const Login = () => {
       // Simple query to check connection
       const { data } = await supabase.rpc('postgres_version');
       setConnectionStatus(data ? 'connected' : 'error');
-      console.log('[Login] Connection retry result:', data);
+      console.log('[Login] Resultado da tentativa de conexão:', data);
     } catch (err) {
-      console.error('[Login] Connection retry error:', err);
+      console.error('[Login] Erro na tentativa de conexão:', err);
       setConnectionStatus('error');
     }
   };
@@ -169,7 +182,7 @@ const Login = () => {
         description: "Suas permissões foram sincronizadas com sucesso",
       });
     } catch (error) {
-      console.error('[Login] Error refreshing permissions:', error);
+      console.error('[Login] Erro ao atualizar permissões:', error);
       toast({
         title: "Erro na atualização",
         description: "Não foi possível atualizar suas permissões",
@@ -191,7 +204,7 @@ const Login = () => {
 
         <ConnectionStatus 
           isCheckingConnection={statusMapping.checking}
-          connectionStatus={connectionStatus === 'connected'}
+          connectionStatus={statusMapping.connected}
           onRetryConnection={handleRetryConnection}
           connectionDetails={connectionStatus === 'error' 
             ? "Não foi possível conectar ao banco de dados. Verifique sua conexão e tente novamente." 
@@ -253,7 +266,7 @@ const Login = () => {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isLoading}
+                  disabled={isLoading || loginButtonDisabled}
                 >
                   {isLoading ? (
                     <>
@@ -283,7 +296,7 @@ const Login = () => {
                     className="w-full text-xs flex items-center justify-center mt-2"
                     onClick={handleRefreshPermissions}
                     type="button"
-                    disabled={isLoading || isRefreshing || !isAuthenticated}
+                    disabled={!isAuthenticated || isLoading || isRefreshing}
                   >
                     <RefreshCw className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
                     Sincronizar permissões

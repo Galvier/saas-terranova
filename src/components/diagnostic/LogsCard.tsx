@@ -46,32 +46,26 @@ export function LogsCard({
     setIsLoading(true);
     setHasError(false);
     try {
-      // Skip fetching if not authenticated
-      if (!isAuthenticated) {
-        setLogs([]);
-        setIsLoading(false);
-        console.log('[LogsCard] Not authenticated, skipping log fetch');
-        return;
-      }
+      console.log('[LogsCard] Buscando logs, autenticado:', isAuthenticated);
       
       const result = mode === 'sync' 
         ? await getAuthSyncLogs(limit) 
         : await getLatestLogs(limit);
         
       if (result.error) {
-        console.error('[LogsCard] Error fetching logs:', result.error);
+        console.error('[LogsCard] Erro ao buscar logs:', result.error);
         setHasError(true);
         toast({
           title: 'Erro ao buscar logs',
-          description: result.error.message,
+          description: result.error.message || 'Falha ao obter logs do servidor',
           variant: 'destructive'
         });
       } else {
         setLogs(result.data || []);
-        console.log('[LogsCard] Successfully fetched logs:', result.data?.length || 0);
+        console.log('[LogsCard] Logs obtidos com sucesso:', result.data?.length || 0);
       }
     } catch (error) {
-      console.error('[LogsCard] Error fetching logs:', error);
+      console.error('[LogsCard] Erro ao buscar logs:', error);
       setHasError(true);
       toast({
         title: 'Erro inesperado',
@@ -88,14 +82,14 @@ export function LogsCard({
     try {
       const result = await testLogCreation();
       if (result.error) {
-        console.error('[LogsCard] Error creating test log:', result.error);
+        console.error('[LogsCard] Erro ao criar log de teste:', result.error);
         toast({
           title: 'Erro ao criar log de teste',
-          description: result.error.message,
+          description: result.error.message || 'Falha ao criar log de teste',
           variant: 'destructive'
         });
       } else {
-        console.log('[LogsCard] Test log created successfully');
+        console.log('[LogsCard] Log de teste criado com sucesso');
         toast({
           title: 'Log de teste criado',
           description: 'O log foi criado com sucesso. Atualizando...',
@@ -103,7 +97,7 @@ export function LogsCard({
         await fetchLogs();
       }
     } catch (error) {
-      console.error('[LogsCard] Error creating test log:', error);
+      console.error('[LogsCard] Erro ao criar log de teste:', error);
       toast({
         title: 'Erro inesperado',
         description: 'Não foi possível criar o log de teste',
@@ -115,13 +109,9 @@ export function LogsCard({
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchLogs();
-    } else {
-      setIsLoading(false);
-      setLogs([]);
-    }
-  }, [mode, limit, isAuthenticated]);
+    // Fetch logs on component mount and when mode or limit changes
+    fetchLogs();
+  }, [mode, limit]);
 
   // Error view
   const renderError = () => (
@@ -153,16 +143,16 @@ export function LogsCard({
   const renderEmpty = () => (
     <div className="text-center py-8 text-muted-foreground">
       <p>Nenhum log encontrado</p>
-      {!isAuthenticated && (
-        <p className="text-sm mt-2">
-          Faça login para visualizar os logs do sistema
-        </p>
-      )}
+      <p className="text-sm mt-2">
+        {isAuthenticated 
+          ? 'Crie um log de teste para visualizar os registros'
+          : 'Faça login para visualizar os logs do sistema'}
+      </p>
     </div>
   );
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center">
           <FileText className="mr-2 h-5 w-5" />
@@ -172,9 +162,9 @@ export function LogsCard({
           {description}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow overflow-hidden">
         {isLoading ? (
-          <div className="flex justify-center py-8">
+          <div className="flex justify-center items-center h-full">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : hasError ? (
@@ -182,25 +172,27 @@ export function LogsCard({
         ) : logs.length === 0 ? (
           renderEmpty()
         ) : (
-          <ScrollArea className="h-[250px]">
+          <ScrollArea className="h-full">
             <div className="space-y-3">
               {logs.map((log) => (
                 <div key={log.id} className={`p-3 border rounded-md ${getLogLevelClass(log.level)}`}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium">{log.message}</div>
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-grow">
+                      <div className="font-medium break-words">{log.message}</div>
                       <div className="text-xs mt-1 opacity-70">
                         {new Date(log.created_at).toLocaleString()}
                       </div>
                     </div>
-                    <CustomBadge variant="outline">
+                    <CustomBadge variant="outline" className="shrink-0">
                       {log.level.toUpperCase()}
                     </CustomBadge>
                   </div>
                   {log.details && (
                     <div className="mt-2 pt-2 border-t border-gray-200 text-sm overflow-auto max-h-24">
-                      <pre className="text-xs whitespace-pre-wrap">
-                        {JSON.stringify(log.details, null, 2)}
+                      <pre className="text-xs whitespace-pre-wrap break-words">
+                        {typeof log.details === 'object'
+                          ? JSON.stringify(log.details, null, 2)
+                          : log.details}
                       </pre>
                     </div>
                   )}
@@ -230,7 +222,8 @@ export function LogsCard({
           variant="ghost" 
           size="sm" 
           onClick={fetchLogs} 
-          disabled={isLoading || !isAuthenticated}
+          disabled={isLoading}
+          title="Atualizar logs"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
