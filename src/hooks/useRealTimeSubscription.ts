@@ -23,16 +23,18 @@ export function useRealTimeSubscription(
     // Create a unique channel name for this table subscription
     const channelName = `table-changes-${table}-${Math.random().toString(36).substring(2, 9)}`;
     
-    // Configure the channel with proper event filters
-    const channel = supabase
-      .channel(channelName)
+    // Configure the channel with proper PostgreSQL change filter
+    const channel = supabase.channel(channelName);
+    
+    // Set up the subscription to PostgreSQL changes
+    channel
       .on(
         'postgres_changes',
-        { 
-          event: event, 
-          schema: schema, 
-          table: table, 
-          filter: filter 
+        {
+          event: event,
+          schema: schema,
+          table: table,
+          filter: filter
         },
         (payload) => {
           callback(payload);
@@ -40,11 +42,12 @@ export function useRealTimeSubscription(
       )
       .subscribe((status) => {
         setIsConnected(status === 'SUBSCRIBED');
+        console.log(`Realtime subscription status for ${table}:`, status);
       });
 
     // Cleanup function to remove channel when component unmounts
     return () => {
-      void supabase.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, [schema, table, event, filter, callback]);
 
