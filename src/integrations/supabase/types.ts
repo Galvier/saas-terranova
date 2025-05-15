@@ -517,11 +517,11 @@ export type Database = {
       get_admin_dashboard_config: {
         Args: { user_id_param: string }
         Returns: {
-          created_at: string
           id: string
-          metric_ids: string[]
-          updated_at: string
           user_id: string
+          metric_ids: string[]
+          created_at: string
+          updated_at: string
         }[]
       }
       get_all_departments: {
