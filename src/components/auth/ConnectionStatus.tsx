@@ -20,7 +20,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
 }) => {
   if (isCheckingConnection) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center p-6">
         <div className="flex flex-col items-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
           <p className="text-muted-foreground">Verificando conexão com o banco de dados...</p>
@@ -31,8 +31,8 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
 
   if (connectionStatus === false) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center max-w-md text-center p-4">
+      <div className="flex items-center justify-center p-6">
+        <div className="flex flex-col items-center max-w-md text-center">
           <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-bold mb-2">Erro de conexão</h2>
           <p className="text-muted-foreground mb-4">
