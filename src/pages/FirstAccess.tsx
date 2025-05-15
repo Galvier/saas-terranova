@@ -1,107 +1,59 @@
-
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import AppLogo from '@/components/AppLogo';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Shield } from 'lucide-react';
-import { RegistrationForm } from '@/components/auth/RegistrationForm';
+import { useNavigate } from 'react-router-dom';
 import { authCredentials } from '@/services/auth';
+import { RegistrationForm } from '@/components/auth/RegistrationForm';
 
-const FirstAccess = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+interface FirstAccessProps {
+  // You can define props here if needed
+}
+
+const FirstAccess: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!password) {
-      setPasswordStrength(0);
-      return;
-    }
-    let strength = 0;
-    if (password.length >= 8) strength += 25;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
-    if (/[0-9]/.test(password)) strength += 25;
-    if (/[^a-zA-Z0-9]/.test(password)) strength += 25;
-    setPasswordStrength(strength);
-  }, [password]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!name || !email || !password) {
+  const handleRegister = async (data: any) => {
+    if (!data.name || !data.email || !data.password) {
       toast({
-        title: "Campos incompletos",
-        description: "Todos os campos são obrigatórios",
-        variant: "destructive"
+        title: 'Erro ao registrar',
+        description: 'Por favor, preencha todos os campos.',
+        variant: 'destructive',
       });
       return;
     }
 
-    if (password !== confirmPassword) {
-      toast({
-        title: "Senhas não conferem",
-        description: "A senha e a confirmação precisam ser idênticas",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (password.length < 8) {
-      toast({
-        title: "Senha muito curta",
-        description: "A senha deve ter pelo menos 8 caracteres",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (passwordStrength < 50) {
-      toast({
-        title: "Senha fraca",
-        description: "Use uma combinação de letras, números e símbolos",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    
     try {
-      const result = await authCredentials.signUp({
-        name,
-        email,
-        password
-      });
+      setIsLoading(true);
       
+      // Use authCredentials.register instead of authService.signUp
+      const result = await authCredentials.register({
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        role: 'admin'
+      });
+
       if (result.error) {
-        throw new Error(result.error.message || "Erro ao criar usuário");
+        toast({
+          title: 'Erro ao registrar',
+          description: result.error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Registro bem-sucedido',
+          description: 'Seu acesso foi criado com sucesso.',
+        });
+        navigate('/login');
       }
-      
-      setSuccessMessage("Usuário administrador criado com sucesso!");
+    } catch (error) {
       toast({
-        title: "Configuração concluída",
-        description: "Use as credenciais criadas para fazer login"
-      });
-      
-      // Redirect to login after successful registration
-      setTimeout(() => {
-        navigate('/login', { state: { email: email } });
-      }, 2000);
-      
-    } catch (error: any) {
-      console.error("Erro ao criar usuário:", error);
-      toast({
-        title: "Erro ao criar usuário",
-        description: error.message || "Ocorreu um erro ao criar o usuário administrador",
-        variant: "destructive"
+        title: 'Erro inesperado',
+        description: 'Ocorreu um erro ao tentar registrar o usuário.',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -109,39 +61,23 @@ const FirstAccess = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-muted/30 p-4">
-      <div className="w-full max-w-md">
-        <div className="flex justify-center mb-6">
-          <AppLogo />
-        </div>
-        <Card className="border-primary/20 shadow-lg">
-          <CardHeader className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              <CardTitle className="text-2xl font-bold">Configuração Inicial</CardTitle>
-            </div>
-            <CardDescription>
-              Configure o primeiro usuário administrador para acessar o sistema
-            </CardDescription>
-          </CardHeader>
-          <RegistrationForm
-            name={name}
-            email={email}
-            password={password}
-            confirmPassword={confirmPassword}
-            passwordStrength={passwordStrength}
-            showPassword={showPassword}
-            isLoading={isLoading}
-            successMessage={successMessage}
-            onNameChange={setName}
-            onEmailChange={setEmail}
-            onPasswordChange={setPassword}
-            onConfirmPasswordChange={setConfirmPassword}
-            onToggleShowPassword={() => setShowPassword(!showPassword)}
-            onSubmit={handleSubmit}
-          />
-        </Card>
-      </div>
+    <div className="flex justify-center items-center h-screen bg-muted/30">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Criar Acesso Administrativo</CardTitle>
+          <CardDescription>
+            Crie o primeiro usuário administrador do sistema.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <RegistrationForm onSubmit={handleRegister} isLoading={isLoading} />
+        </CardContent>
+        <CardFooter>
+          <Button variant="secondary" onClick={() => navigate('/login')}>
+            Voltar para Login
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

@@ -1,6 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { formatCrudResult } from '@/integrations/supabase';
+import { createLog } from '@/services/logService';
 
 export interface AuthSession {
   user: User | null;
