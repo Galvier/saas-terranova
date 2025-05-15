@@ -1,118 +1,91 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
-import { CrudResult, formatCrudResult } from '@/integrations/supabase';
+import { formatCrudResult, type CrudResult } from '@/integrations/supabase/core';
+import { createLog } from '@/services/logService';
 
 export interface LoginCredentials {
   email: string;
   password: string;
 }
 
-export interface UserRegistrationData extends LoginCredentials {
+export interface UserRegistrationData {
+  email: string;
+  password: string;
   name?: string;
-  firstName?: string;
-  lastName?: string;
+  role?: string;
 }
 
 export interface AuthResult {
-  user: User | null;
-  error: any | null;
+  user: any;
+  session: any;
 }
 
 export const authCredentials = {
-  login: async ({ email, password }: LoginCredentials): Promise<CrudResult<User | null>> => {
+  login: async (credentials: LoginCredentials): Promise<CrudResult<AuthResult>> => {
     try {
-      console.log('[AuthCredentials] Iniciando login para:', email);
+      console.log('[AuthCredentials] Iniciando login com:', credentials.email);
       
-      // Verificar conexão com Supabase antes de tentar login
-      try {
-        const { data: connectionTest } = await supabase.rpc('postgres_version');
-        console.log('[AuthCredentials] Conexão Supabase OK:', connectionTest);
-      } catch (connError) {
-        console.error('[AuthCredentials] Erro na conexão com Supabase:', connError);
-        return formatCrudResult(null, new Error('Erro de conexão com o servidor. Verifique sua conexão e tente novamente.'));
-      }
-      
-      // Tentar login
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) {
-          console.error('[AuthCredentials] Erro no login:', error);
-          
-          // Tradução de erros comuns do Supabase Auth
-          if (error.message.includes('Invalid login credentials')) {
-            return formatCrudResult(null, new Error('Credenciais inválidas. Verifique seu email e senha.'));
-          }
-          if (error.message.includes('Email not confirmed')) {
-            return formatCrudResult(null, new Error('Email não confirmado. Verifique sua caixa de entrada.'));
-          }
-          
-          return formatCrudResult(null, error);
-        }
-        
-        console.log('[AuthCredentials] Login bem-sucedido para:', data.user?.email);
-        return formatCrudResult(data.user, null);
-      } catch (error: any) {
-        console.error('[AuthCredentials] Erro não tratado no login:', error);
-        return formatCrudResult(null, error);
-      }
-    } catch (error: any) {
-      console.error('[AuthCredentials] Erro não tratado no login:', error);
-      return formatCrudResult(null, error);
-    }
-  },
-  
-  diagnoseLoginIssue: async (): Promise<CrudResult<any>> => {
-    try {
-      // Verificação da conexão
-      console.log('[AuthCredentials] Executando diagnóstico de login...');
-      
-      const connectionTest = await supabase.rpc('postgres_version');
-      console.log('[AuthCredentials] Teste de conexão:', connectionTest);
-      
-      // Verificação das tabelas necessárias
-      const tablesCheck = {
-        managers: await supabase.rpc('check_table_exists_and_count', { table_name: 'managers' }),
-        departments: await supabase.rpc('check_table_exists_and_count', { table_name: 'departments' })
-      };
-      console.log('[AuthCredentials] Verificação de tabelas:', tablesCheck);
-      
-      // Verificar se a função de diagnóstico existe e chamá-la
-      const syncDiagnostic = await supabase.rpc('diagnose_auth_sync_issues');
-      console.log('[AuthCredentials] Diagnóstico de sincronização:', syncDiagnostic);
-      
-      // Resultado do diagnóstico
-      const diagnosticResult = {
-        connection: connectionTest,
-        tables: tablesCheck,
-        syncStatus: syncDiagnostic,
+      // Log de tentativa de login
+      await createLog('info', 'Tentativa de login', { 
+        email: credentials.email,
         timestamp: new Date().toISOString()
-      };
+      });
       
-      return formatCrudResult(diagnosticResult, null);
-    } catch (error) {
-      console.error('[AuthCredentials] Erro no diagnóstico de login:', error);
-      return formatCrudResult(null, error);
-    }
-  },
-  
-  signUp: async (credentials: UserRegistrationData): Promise<CrudResult<User | null>> => {
-    try {
-      console.log('[AuthCredentials] Iniciando registro para:', credentials.email);
-      
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
+      });
+      
+      if (error) {
+        console.error('[AuthCredentials] Erro no login:', error);
+        
+        // Log de erro no login
+        await createLog('error', 'Erro no login', { 
+          email: credentials.email,
+          error: error.message,
+          timestamp: new Date().toISOString()
+        });
+        
+        return formatCrudResult(null, error);
+      }
+      
+      console.log('[AuthCredentials] Login bem-sucedido para:', credentials.email);
+      
+      // Log de login bem-sucedido
+      await createLog('info', 'Login bem-sucedido', { 
+        email: credentials.email,
+        user_id: data.user?.id,
+        timestamp: new Date().toISOString()
+      }, data.user?.id);
+      
+      return formatCrudResult({
+        user: data.user,
+        session: data.session
+      }, null);
+    } catch (error) {
+      console.error('[AuthCredentials] Erro não tratado no login:', error);
+      
+      // Log de erro não tratado
+      await createLog('error', 'Erro não tratado no login', { 
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString()
+      });
+      
+      return formatCrudResult(null, error instanceof Error ? error : new Error(String(error)));
+    }
+  },
+
+  register: async (userData: UserRegistrationData): Promise<CrudResult<AuthResult>> => {
+    try {
+      console.log('[AuthCredentials] Iniciando registro para:', userData.email);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
         options: {
           data: {
-            first_name: credentials.firstName || credentials.name?.split(' ')[0] || '',
-            last_name: credentials.lastName || 
-              (credentials.name ? credentials.name.split(' ').slice(1).join(' ') : ''),
-            role: 'admin' // Define o tipo de usuário como admin para registro de primeiro acesso
+            display_name: userData.name,
+            role: userData.role || 'user'
           }
         }
       });
@@ -122,11 +95,15 @@ export const authCredentials = {
         return formatCrudResult(null, error);
       }
       
-      console.log('[AuthCredentials] Registro bem-sucedido para:', data.user?.email);
-      return formatCrudResult(data.user, null);
+      console.log('[AuthCredentials] Registro bem-sucedido para:', userData.email);
+      
+      return formatCrudResult({
+        user: data.user,
+        session: data.session
+      }, null);
     } catch (error) {
       console.error('[AuthCredentials] Erro não tratado no registro:', error);
-      return formatCrudResult(null, error);
+      return formatCrudResult(null, error instanceof Error ? error : new Error(String(error)));
     }
   }
 };
