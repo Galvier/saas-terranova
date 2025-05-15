@@ -14,6 +14,7 @@ interface MetricsTableProps {
   onAddValue: (metric: MetricDefinition) => void;
   onEdit: (metric: MetricDefinition) => void;
   onDelete: (metric: MetricDefinition) => void;
+  isAdmin?: boolean; // Adicionando propriedade isAdmin como opcional
 }
 
 const MetricsTable: React.FC<MetricsTableProps> = ({
@@ -21,6 +22,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   onAddValue,
   onEdit,
   onDelete,
+  isAdmin = true, // Valor padrão true para compatibilidade com código existente
 }) => {
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -174,41 +176,45 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                       </Tooltip>
                     </TooltipProvider>
 
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7"
-                            onClick={() => onEdit(metric)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Editar métrica</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => onDelete(metric)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Excluir métrica</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    {isAdmin && (
+                      <>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7"
+                                onClick={() => onEdit(metric)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Editar métrica</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                onClick={() => onDelete(metric)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Excluir métrica</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
