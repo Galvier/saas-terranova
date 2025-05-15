@@ -44,7 +44,7 @@ export function useRealTimeSubscription(
 
     // Cleanup function to remove channel when component unmounts
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [schema, table, event, filter, callback]);
 
