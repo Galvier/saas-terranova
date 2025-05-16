@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client'; 
@@ -183,7 +182,10 @@ export const useAuthSession = (): UseAuthSessionReturn => {
         const { data, error } = await supabase.auth.getSession();
         
         if (!isMounted) {
-          if (subscription) subscription.unsubscribe();
+          // Fixed: Check if subscription exists and if it has an unsubscribe method
+          if (subscription && typeof subscription.unsubscribe === 'function') {
+            subscription.unsubscribe();
+          }
           return;
         }
         
@@ -210,37 +212,22 @@ export const useAuthSession = (): UseAuthSessionReturn => {
         }
         
         setIsLoading(false);
-        
-        return () => {
-          if (subscription) {
-            console.log('[AuthSession] Cancelando inscrição de autenticação');
-            subscription.unsubscribe();
-          }
-        };
       } catch (err: any) {
-        if (!isMounted) return () => {};
+        if (!isMounted) return;
         
         console.error('[AuthSession] Erro ao inicializar autenticação:', err);
         setError(err);
         setIsLoading(false);
-        return () => {};
       }
     };
 
-    const cleanup = initializeAuth();
+    // Initialize authentication
+    initializeAuth();
     
     // Cleanup function
     return () => {
       isMounted = false;
-      if (cleanup instanceof Promise) {
-        cleanup.then(unsubscribe => {
-          if (unsubscribe && typeof unsubscribe === 'function') {
-            unsubscribe();
-          }
-        });
-      } else if (cleanup && typeof cleanup === 'function') {
-        cleanup();
-      }
+      // Note: The subscription cleanup is handled inside initializeAuth
     };
   }, [toast]);
 
