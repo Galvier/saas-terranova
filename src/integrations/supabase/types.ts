@@ -637,7 +637,9 @@ export type Database = {
         Returns: Json
       }
       save_admin_dashboard_config: {
-        Args: { metrics_ids: string[]; user_id: string }
+        Args:
+          | { metrics_ids: string[]; user_id: string }
+          | { metrics_ids: string[]; user_id: string }
         Returns: string
       }
       save_user_settings: {

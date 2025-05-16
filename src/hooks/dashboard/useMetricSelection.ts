@@ -47,7 +47,8 @@ export const useMetricSelection = () => {
   useEffect(() => {
     if (dashboardConfig && dashboardConfig.metric_ids && dashboardConfig.metric_ids.length > 0) {
       console.log("Setting selected metrics from dashboard config:", dashboardConfig.metric_ids);
-      setSelectedMetrics(dashboardConfig.metric_ids);
+      // Convert UUID array to string array if needed
+      setSelectedMetrics(dashboardConfig.metric_ids.map(id => String(id)));
     }
   }, [dashboardConfig]);
 
