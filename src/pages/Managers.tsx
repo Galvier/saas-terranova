@@ -4,8 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
-import { UserPlus, RefreshCcw } from 'lucide-react';
-import { deleteManager, getAllManagers } from '@/integrations/supabase';
+import { UserPlus, RefreshCcw, WrenchIcon } from 'lucide-react';
+import { deleteManager, getAllManagers, fixAuthManagerInconsistencies } from '@/integrations/supabase';
 import { ManagerSearch } from '@/components/managers/ManagerSearch';
 import { ManagerActions } from '@/components/managers/ManagerActions';
 import { ManagersTable } from '@/components/managers/ManagersTable';
@@ -18,6 +18,7 @@ const Managers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [managerToDelete, setManagerToDelete] = useState<Manager | null>(null);
+  const [isFixingInconsistencies, setIsFixingInconsistencies] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -107,6 +108,44 @@ const Managers = () => {
     }
   };
 
+  const handleFixInconsistencies = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Acesso negado",
+        description: "Apenas administradores podem executar funções de diagnóstico",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsFixingInconsistencies(true);
+    try {
+      const result = await fixAuthManagerInconsistencies();
+      if (result.error) {
+        throw new Error(result.message);
+      }
+      
+      const updatedCount = result.data?.managers_updated || 0;
+      
+      toast({
+        title: "Diagnóstico concluído",
+        description: `${updatedCount} registros de gestores foram atualizados.`
+      });
+      
+      if (updatedCount > 0) {
+        refetch();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro durante diagnóstico",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsFixingInconsistencies(false);
+    }
+  };
+
   if (error) {
     return (
       <div className="p-4 text-red-500">
@@ -132,10 +171,21 @@ const Managers = () => {
             </Button>
             
             {isAdmin && (
-              <Button onClick={() => navigate('/managers/new')}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Novo Gestor
-              </Button>
+              <>
+                <Button 
+                  variant="outline" 
+                  onClick={handleFixInconsistencies}
+                  disabled={isFixingInconsistencies}
+                  className="flex items-center gap-1"
+                >
+                  <WrenchIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">Corrigir Inconsistências</span>
+                </Button>
+                <Button onClick={() => navigate('/managers/new')}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Novo Gestor
+                </Button>
+              </>
             )}
           </div>
         }

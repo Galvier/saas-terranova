@@ -514,6 +514,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      fix_user_manager_inconsistencies: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_admin_dashboard_config: {
         Args: { user_id_param: string }
         Returns: {

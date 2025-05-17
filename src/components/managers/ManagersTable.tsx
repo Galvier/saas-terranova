@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Edit, MoreHorizontal, Trash2, Eye, RefreshCcw } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2, Eye, RefreshCcw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { Manager } from '@/integrations/supabase';
@@ -62,7 +62,7 @@ export const ManagersTable = ({ managers, isLoading, onDeleteManager, isAdmin }:
 
   // Check if current user's email is in the managers list
   const currentUserEmail = user?.email?.toLowerCase();
-  const currentUserManager = managers.find(m => m.email.toLowerCase() === currentUserEmail);
+  const currentUserManager = managers.find(m => m.email?.toLowerCase() === currentUserEmail);
   
   // Check for any mismatch between auth metadata and manager role
   const userMetadataRole = user?.user_metadata?.role;
@@ -96,70 +96,89 @@ export const ManagersTable = ({ managers, isLoading, onDeleteManager, isAdmin }:
               <TableHead>Departamento</TableHead>
               <TableHead>Função</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Conta</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6">
+                <TableCell colSpan={7} className="text-center py-6">
                   Carregando gestores...
                 </TableCell>
               </TableRow>
             ) : managers.length > 0 ? (
-              managers.map((manager) => (
-                <TableRow key={manager.id} className={manager.email.toLowerCase() === currentUserEmail ? "bg-primary/5" : undefined}>
-                  <TableCell className="font-medium">{manager.name}</TableCell>
-                  <TableCell>{manager.email}</TableCell>
-                  <TableCell>{manager.department_name || 'Não definido'}</TableCell>
-                  <TableCell>{manager.role || 'Gestor'}</TableCell>
-                  <TableCell>
-                    <CustomBadge variant={manager.is_active ? "success" : "secondary"}>
-                      {manager.is_active ? 'Ativo' : 'Inativo'}
-                    </CustomBadge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {isAdmin ? (
-                          <>
+              managers.map((manager) => {
+                const hasAuthUser = !!manager.user_id;
+                
+                return (
+                  <TableRow key={manager.id} className={manager.email?.toLowerCase() === currentUserEmail ? "bg-primary/5" : undefined}>
+                    <TableCell className="font-medium">{manager.name}</TableCell>
+                    <TableCell>{manager.email}</TableCell>
+                    <TableCell>{manager.department_name || 'Não definido'}</TableCell>
+                    <TableCell>
+                      <span className="flex items-center">
+                        {manager.role || 'Gestor'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <CustomBadge variant={manager.is_active ? "success" : "secondary"}>
+                        {manager.is_active ? 'Ativo' : 'Inativo'}
+                      </CustomBadge>
+                    </TableCell>
+                    <TableCell>
+                      {hasAuthUser ? (
+                        <CustomBadge variant="default">Sincronizada</CustomBadge>
+                      ) : (
+                        <div className="flex items-center">
+                          <CustomBadge variant="destructive">Não sincronizada</CustomBadge>
+                          <AlertCircle className="h-4 w-4 ml-1 text-amber-500" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {isAdmin ? (
+                            <>
+                              <DropdownMenuItem onClick={() => handleEditManager(manager.id)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => onDeleteManager(manager)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
                             <DropdownMenuItem onClick={() => handleEditManager(manager.id)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
+                              <Eye className="mr-2 h-4 w-4" />
+                              Visualizar
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => onDeleteManager(manager)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
+                          )}
+                          {manager.email?.toLowerCase() === currentUserEmail && (
+                            <DropdownMenuItem onClick={handleSyncUserData}>
+                              <RefreshCcw className="mr-2 h-4 w-4" />
+                              Sincronizar dados
                             </DropdownMenuItem>
-                          </>
-                        ) : (
-                          <DropdownMenuItem onClick={() => handleEditManager(manager.id)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Visualizar
-                          </DropdownMenuItem>
-                        )}
-                        {manager.email.toLowerCase() === currentUserEmail && (
-                          <DropdownMenuItem onClick={handleSyncUserData}>
-                            <RefreshCcw className="mr-2 h-4 w-4" />
-                            Sincronizar dados
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                   Nenhum gestor encontrado
                 </TableCell>
               </TableRow>

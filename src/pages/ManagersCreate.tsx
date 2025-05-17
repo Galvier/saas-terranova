@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import DepartmentsSelect from '@/components/DepartmentsSelect';
 import { createManager, getAllDepartments } from '@/integrations/supabase';
+import { Loader2 } from 'lucide-react';
 
 // Define form validation schema
 const formSchema = z.object({
@@ -33,7 +34,7 @@ const formSchema = z.object({
   role: z.enum(['admin', 'manager', 'viewer'], {
     required_error: 'Selecione uma função',
   }).default('manager'),
-  password: z.string().optional(),
+  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -41,6 +42,7 @@ type FormValues = z.infer<typeof formSchema>;
 const ManagersCreate = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Query to fetch departments for the select dropdown
   const { data: departments = [] } = useQuery({
@@ -60,12 +62,16 @@ const ManagersCreate = () => {
       email: '',
       is_active: true,
       role: 'manager',
+      password: ''
     },
   });
 
   // Handle form submission
   const onSubmit = async (values: FormValues) => {
+    setIsSubmitting(true);
     try {
+      console.log("Creating manager with values:", values);
+      
       const result = await createManager({
         name: values.name,
         email: values.email,
@@ -86,11 +92,14 @@ const ManagersCreate = () => {
 
       navigate('/managers');
     } catch (error: any) {
+      console.error('Error creating manager:', error);
       toast({
         title: 'Erro ao criar gestor',
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -204,29 +213,41 @@ const ManagersCreate = () => {
                 )}
               />
 
-              {/* Optional password field */}
               <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Senha (opcional)</FormLabel>
+                    <FormLabel>Senha</FormLabel>
                     <FormControl>
                       <Input 
                         type="password" 
-                        placeholder="Deixe em branco para gerar automaticamente" 
+                        placeholder="Digite a senha" 
                         {...field} 
                       />
                     </FormControl>
                     <FormDescription>
-                      Se deixado em branco, uma senha será gerada automaticamente.
+                      Senha para acesso ao sistema. Mínimo de 6 caracteres.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <Button type="submit" className="w-full">Criar Gestor</Button>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Criando gestor...
+                  </>
+                ) : (
+                  'Criar Gestor'
+                )}
+              </Button>
             </form>
           </Form>
         </CardContent>
