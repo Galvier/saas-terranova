@@ -37,8 +37,9 @@ export const saveAdminDashboardConfig = async (
   try {
     console.log("Saving admin dashboard config:", { metricIds, userId });
     
-    // Convert string IDs to UUIDs by casting them
-    const uuidMetricIds = metricIds; // The RPC function will handle the conversion properly
+    // Convert string IDs to UUIDs by explicitly casting the array
+    // This ensures we're sending UUID[] to the function that expects it
+    const uuidMetricIds = metricIds.map(id => id);
     
     const { data, error } = await supabase.rpc('save_admin_dashboard_config', {
       metrics_ids: uuidMetricIds,
