@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -120,8 +119,11 @@ const Managers = () => {
 
     setIsFixingInconsistencies(true);
     try {
+      console.log("Iniciando correção de inconsistências");
       const result = await fixAuthManagerInconsistencies();
+      
       if (result.error) {
+        console.error("Erro ao corrigir inconsistências:", result.error);
         throw new Error(result.message);
       }
       
@@ -136,6 +138,7 @@ const Managers = () => {
         refetch();
       }
     } catch (error: any) {
+      console.error("Erro capturado durante o diagnóstico:", error);
       toast({
         title: "Erro durante diagnóstico",
         description: error.message,

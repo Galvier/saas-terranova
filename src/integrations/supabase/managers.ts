@@ -1,4 +1,3 @@
-
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import { supabase } from './client';
 import type { Manager } from './types/manager';
@@ -164,6 +163,8 @@ export const getCurrentUserManager = async (): Promise<CrudResult<Manager>> => {
 // Add a new function to manually fix any sync issues
 export const fixAuthManagerInconsistencies = async (): Promise<CrudResult<any>> => {
   try {
+    console.log("Starting fix_user_manager_inconsistencies process");
+    
     const { data, error } = await callRPC<any>('fix_user_manager_inconsistencies', {});
     
     if (error) {
