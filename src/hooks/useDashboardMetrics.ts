@@ -13,9 +13,14 @@ export const useDashboardMetrics = (
   dateRangeType: DateRangeType,
   viewMode: 'all' | 'favorites'
 ) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, userDepartmentId } = useAuth();
   
-  // Use the extracted hooks
+  // Force department selection to user's department if not admin
+  const effectiveDepartment = !isAdmin && userDepartmentId 
+    ? userDepartmentId 
+    : selectedDepartment;
+  
+  // Use the extracted hooks with the effective department
   const {
     selectedMetrics,
     isLoadingConfig,
@@ -31,7 +36,7 @@ export const useDashboardMetrics = (
     isError: fetchingIsError,
     hasError: fetchingHasError,
     errorMessage: fetchingErrorMessage
-  } = useMetricsFetching(selectedDepartment, selectedDate, dateRangeType);
+  } = useMetricsFetching(effectiveDepartment, selectedDate, dateRangeType);
   
   const {
     filteredMetrics,
@@ -59,6 +64,8 @@ export const useDashboardMetrics = (
     kpiData,
     departmentPerformance,
     monthlyRevenue,
-    handleMetricSelectionChange
+    handleMetricSelectionChange,
+    // Add effective department to check if filtering was enforced
+    isFiltered: !isAdmin && userDepartmentId !== null
   };
 };

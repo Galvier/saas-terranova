@@ -364,6 +364,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          animations_enabled: boolean
+          created_at: string
+          density: string
+          id: string
+          notification_preferences: Json
+          theme: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          animations_enabled?: boolean
+          created_at?: string
+          density?: string
+          id?: string
+          notification_preferences?: Json
+          theme?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          animations_enabled?: boolean
+          created_at?: string
+          density?: string
+          id?: string
+          notification_preferences?: Json
+          theme?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null
@@ -481,14 +514,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      fix_user_manager_inconsistencies: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_admin_dashboard_config: {
         Args: { user_id_param: string }
         Returns: {
-          created_at: string
           id: string
-          metric_ids: string[]
-          updated_at: string
           user_id: string
+          metric_ids: string[]
+          created_at: string
+          updated_at: string
         }[]
       }
       get_all_departments: {
@@ -578,6 +615,19 @@ export type Database = {
           last_value_date: string
         }[]
       }
+      get_user_settings: {
+        Args: { user_id_param: string }
+        Returns: {
+          animations_enabled: boolean
+          created_at: string
+          density: string
+          id: string
+          notification_preferences: Json
+          theme: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       postgres_version: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -592,6 +642,16 @@ export type Database = {
       }
       save_admin_dashboard_config: {
         Args: { metrics_ids: string[]; user_id: string }
+        Returns: string
+      }
+      save_user_settings: {
+        Args: {
+          p_user_id: string
+          p_theme: string
+          p_density?: string
+          p_animations_enabled?: boolean
+          p_notification_preferences?: Json
+        }
         Returns: string
       }
       update_manager: {

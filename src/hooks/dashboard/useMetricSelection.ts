@@ -13,7 +13,7 @@ export const useMetricSelection = () => {
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  // Load admin dashboard configuration
+  // Load admin dashboard configuration - ensure this runs on initial load and login
   const { data: dashboardConfig, isLoading: isLoadingConfig, isError: isConfigError } = useQuery({
     queryKey: ['admin-dashboard-config', user?.id],
     queryFn: async () => {
@@ -25,6 +25,7 @@ export const useMetricSelection = () => {
         console.log("Dashboard config result:", result);
         
         if (result.error) {
+          setHasError(true);
           setErrorMessage("Erro ao carregar configuração do dashboard");
           throw new Error(result.message);
         }
@@ -32,22 +33,24 @@ export const useMetricSelection = () => {
         return result.data;
       } catch (error) {
         console.error("Error loading admin dashboard config:", error);
+        setHasError(true);
         setErrorMessage("Erro ao carregar configuração do dashboard");
         return null;
       }
     },
     enabled: !!user?.id && isAdmin,
-    staleTime: 0, // Always fetch updated data
-    gcTime: 0, // Don't keep in cache
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
   // Update selectedMetrics whenever dashboardConfig changes
   useEffect(() => {
     if (dashboardConfig && dashboardConfig.metric_ids && dashboardConfig.metric_ids.length > 0) {
       console.log("Setting selected metrics from dashboard config:", dashboardConfig.metric_ids);
-      setSelectedMetrics(dashboardConfig.metric_ids);
+      // Convert UUID array to string array if needed
+      setSelectedMetrics(dashboardConfig.metric_ids.map(id => String(id)));
     }
   }, [dashboardConfig]);
 
@@ -55,10 +58,13 @@ export const useMetricSelection = () => {
   const saveAdminDashboardConfigToSupabase = async (userId: string, metricIds: string[]) => {
     try {
       console.log("Saving admin dashboard config:", { userId, metricIds });
-      const timestamp = new Date().getTime();
+      setHasError(false);
+      
       const result = await saveAdminDashboardConfig(metricIds, userId);
       
       if (result.error) {
+        setHasError(true);
+        setErrorMessage(result.message || "Erro ao salvar configuração");
         throw new Error(result.message || "Erro ao salvar configuração");
       }
       
@@ -70,6 +76,9 @@ export const useMetricSelection = () => {
       return true;
     } catch (error: any) {
       console.error("Error saving dashboard config:", error);
+      setHasError(true);
+      setErrorMessage(error.message || "Ocorreu um erro ao salvar suas preferências");
+      
       toast({
         title: "Erro ao salvar configuração",
         description: error.message || "Ocorreu um erro ao salvar suas preferências",
@@ -86,11 +95,20 @@ export const useMetricSelection = () => {
     
     if (user?.id) {
       // Save to Supabase
-      saveAdminDashboardConfigToSupabase(user.id, newSelectedMetrics);
+      saveAdminDashboardConfigToSupabase(user.id, newSelectedMetrics)
+        .then(success => {
+          if (success) {
+            // Invalidate the query to force a fresh load on next access
+            queryClient.invalidateQueries({ queryKey: ['admin-dashboard-config'] });
+          }
+        });
+    } else {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para salvar configurações",
+        variant: "destructive"
+      });
     }
-    
-    // Invalidate the query to force a new load
-    queryClient.invalidateQueries({ queryKey: ['admin-dashboard-config'] });
   };
 
   return {

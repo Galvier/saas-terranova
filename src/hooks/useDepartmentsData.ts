@@ -1,9 +1,17 @@
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import { getAllDepartments, createDepartment, Department } from '@/integrations/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { Department } from '@/integrations/supabase/types/department';
+import { useState } from 'react';
 import { useRealTimeSubscription } from '@/hooks/useRealTimeSubscription';
+import { useToast } from '@/hooks/use-toast';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+
+// Function to get all departments
+const getAllDepartments = async () => {
+  const { data, error } = await supabase.rpc('get_all_departments');
+  if (error) throw error;
+  return { data, error: null, message: 'Departamentos obtidos com sucesso' };
+};
 
 export const useDepartmentsData = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -35,16 +43,20 @@ export const useDepartmentsData = () => {
     refetch();
   };
 
-  // Set up real-time subscription for departments and managers tables
-  const { isSubscribed } = useRealTimeSubscription({
-    tables: ['departments', 'managers'],
-    onData: handleRealtimeUpdate
-  });
+  // Set up real-time subscription for departments table
+  const { isConnected } = useRealTimeSubscription(
+    {
+      schema: 'public',
+      table: 'departments',
+      event: '*'
+    },
+    handleRealtimeUpdate
+  );
 
   console.log('Departments data:', departments);
-  console.log('Real-time subscription active:', isSubscribed);
+  console.log('Real-time subscription active:', isConnected);
 
-  // Dialog handlers
+  // Dialog handlers and other department-related functions
   const handleCloseCreateDialog = () => {
     setIsCreateDialogOpen(false);
   };
@@ -107,7 +119,7 @@ export const useDepartmentsData = () => {
     departments,
     isLoading,
     isError,
-    isSubscribed,
+    isSubscribed: isConnected,
     selectedDepartment,
     isCreateDialogOpen,
     isEditDialogOpen,

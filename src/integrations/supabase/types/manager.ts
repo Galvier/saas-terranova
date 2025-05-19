@@ -10,4 +10,5 @@ export interface Manager {
   created_at?: string;
   updated_at?: string;
   user_id?: string;
+  user_created?: boolean;
 }

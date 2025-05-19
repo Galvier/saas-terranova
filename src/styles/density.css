@@ -1,0 +1,87 @@
+
+/* Density styles for the application */
+
+/* Default density variables are already defined in index.css */
+/* This file contains specific styles for different density settings */
+
+/* Compact density styles */
+[data-density="compact"] .card {
+  padding: var(--content-spacing);
+}
+
+[data-density="compact"] .form-group {
+  margin-bottom: 0.5rem;
+}
+
+[data-density="compact"] button {
+  height: var(--input-height);
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+[data-density="compact"] input,
+[data-density="compact"] select,
+[data-density="compact"] textarea {
+  height: var(--input-height);
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+/* Default density styles */
+[data-density="default"] .card {
+  padding: var(--content-spacing);
+}
+
+[data-density="default"] .form-group {
+  margin-bottom: 1rem;
+}
+
+/* Comfortable density styles */
+[data-density="comfortable"] .card {
+  padding: var(--content-spacing);
+}
+
+[data-density="comfortable"] .form-group {
+  margin-bottom: 1.5rem;
+}
+
+[data-density="comfortable"] button {
+  height: var(--input-height);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+[data-density="comfortable"] input,
+[data-density="comfortable"] select,
+[data-density="comfortable"] textarea {
+  height: var(--input-height);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Mobile-first responsive adjustments */
+@media (max-width: 640px) {
+  [data-density] .card {
+    padding: calc(var(--content-spacing) * 0.75);
+  }
+  
+  [data-density] .form-group {
+    margin-bottom: calc(var(--content-spacing) * 0.5);
+  }
+  
+  [data-density] button,
+  [data-density] input,
+  [data-density] select,
+  [data-density] textarea {
+    height: calc(var(--input-height) * 0.9);
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+  
+  /* Increase touch target sizes for mobile */
+  [data-density] button,
+  [data-density] .interactive-element {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

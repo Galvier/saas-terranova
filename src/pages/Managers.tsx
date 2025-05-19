@@ -1,27 +1,29 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
-import { UserPlus } from 'lucide-react';
-import { deleteManager, getAllManagers } from '@/integrations/supabase';
+import { UserPlus, RefreshCcw, WrenchIcon } from 'lucide-react';
+import { deleteManager, getAllManagers, fixAuthManagerInconsistencies } from '@/integrations/supabase';
 import { ManagerSearch } from '@/components/managers/ManagerSearch';
 import { ManagerActions } from '@/components/managers/ManagerActions';
 import { ManagersTable } from '@/components/managers/ManagersTable';
 import { DeleteManagerDialog } from '@/components/managers/DeleteManagerDialog';
 import { useNavigate } from 'react-router-dom';
 import type { Manager } from '@/integrations/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 const Managers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [managerToDelete, setManagerToDelete] = useState<Manager | null>(null);
+  const [isFixingInconsistencies, setIsFixingInconsistencies] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { isAdmin, user, refreshUser } = useAuth();
 
-  const { data: managersData, isLoading, error } = useQuery({
+  const { data: managersData, isLoading, error, refetch } = useQuery({
     queryKey: ['managers'],
     queryFn: async () => {
       const result = await getAllManagers();
@@ -37,7 +39,7 @@ const Managers = () => {
   );
 
   const confirmDelete = async () => {
-    if (managerToDelete) {
+    if (managerToDelete && isAdmin) {
       try {
         const result = await deleteManager(managerToDelete.id);
         if (result.error) {
@@ -64,8 +66,87 @@ const Managers = () => {
   };
 
   const handleDeleteManager = (manager: Manager) => {
-    setManagerToDelete(manager);
-    setIsDeleteDialogOpen(true);
+    if (isAdmin) {
+      setManagerToDelete(manager);
+      setIsDeleteDialogOpen(true);
+    } else {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para remover gestores",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRefreshData = async () => {
+    try {
+      // Set up a loading toast
+      toast({
+        title: "Atualizando dados",
+        description: "Carregando informações mais recentes..."
+      });
+      
+      // Perform all refresh operations
+      await Promise.all([
+        refetch(),       // Refresh managers data
+        refreshUser()    // Refresh user session and metadata
+      ]);
+      
+      // Success toast
+      toast({
+        title: "Dados atualizados",
+        description: "Lista de gestores e permissões atualizadas com sucesso"
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar dados:", error);
+      toast({
+        title: "Erro na atualização",
+        description: "Não foi possível atualizar os dados",
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleFixInconsistencies = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Acesso negado",
+        description: "Apenas administradores podem executar funções de diagnóstico",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsFixingInconsistencies(true);
+    try {
+      console.log("Iniciando correção de inconsistências");
+      const result = await fixAuthManagerInconsistencies();
+      
+      if (result.error) {
+        console.error("Erro ao corrigir inconsistências:", result.error);
+        throw new Error(result.message);
+      }
+      
+      const updatedCount = result.data?.managers_updated || 0;
+      
+      toast({
+        title: "Diagnóstico concluído",
+        description: `${updatedCount} registros de gestores foram atualizados.`
+      });
+      
+      if (updatedCount > 0) {
+        refetch();
+      }
+    } catch (error: any) {
+      console.error("Erro capturado durante o diagnóstico:", error);
+      toast({
+        title: "Erro durante diagnóstico",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsFixingInconsistencies(false);
+    }
   };
 
   if (error) {
@@ -82,10 +163,34 @@ const Managers = () => {
         title="Gestores" 
         subtitle="Gerencie os gestores e suas permissões"
         actionButton={
-          <Button onClick={() => navigate('/managers/new')}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Novo Gestor
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleRefreshData}
+              className="flex items-center gap-1"
+            >
+              <RefreshCcw className="h-4 w-4" />
+              <span className="hidden sm:inline">Atualizar</span>
+            </Button>
+            
+            {isAdmin && (
+              <>
+                <Button 
+                  variant="outline" 
+                  onClick={handleFixInconsistencies}
+                  disabled={isFixingInconsistencies}
+                  className="flex items-center gap-1"
+                >
+                  <WrenchIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">Corrigir Inconsistências</span>
+                </Button>
+                <Button onClick={() => navigate('/managers/new')}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Novo Gestor
+                </Button>
+              </>
+            )}
+          </div>
         }
       />
       
@@ -94,21 +199,24 @@ const Managers = () => {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
         />
-        <ManagerActions />
+        {isAdmin && <ManagerActions />}
       </div>
       
       <ManagersTable 
         managers={filteredManagers}
         isLoading={isLoading}
         onDeleteManager={handleDeleteManager}
+        isAdmin={isAdmin}
       />
       
-      <DeleteManagerDialog 
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={confirmDelete}
-        manager={managerToDelete}
-      />
+      {isAdmin && (
+        <DeleteManagerDialog 
+          isOpen={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={confirmDelete}
+          manager={managerToDelete}
+        />
+      )}
     </div>
   );
 };

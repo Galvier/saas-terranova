@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +17,7 @@ import {
 import { CustomBadge } from '@/components/ui/custom-badge';
 import { Link } from 'react-router-dom';
 import { TriggerCard } from '@/components/diagnostic/TriggerCard';
+import { LogsCard } from '@/components/diagnostic/LogsCard';
 
 const ESSENTIAL_TABLES = [
   'users',
@@ -253,6 +253,11 @@ const Diagnostic = () => {
         </Card>
         
         <TriggerCard syncStatus={syncStatus} isLoading={isLoading} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <LogsCard mode="all" title="Logs Recentes" description="Últimos registros do sistema" limit={5} />
+        <LogsCard mode="sync" title="Logs de Sincronização" description="Registros de sincronização entre auth.users e managers" limit={5} />
       </div>
 
       {triggerFixed ? (

@@ -6,3 +6,6 @@ enabled_apis = ["rest", "graphql", "realtime"]
 
 [realtime]
 enabled = true
+
+[database]
+pool_timeout = 60

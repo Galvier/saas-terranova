@@ -1,56 +1,86 @@
 
+import { supabase } from '../client';
 import { callRPC, formatCrudResult, type CrudResult } from '../core';
 import type { DashboardConfig } from '../types/metric';
+import { toast } from '@/hooks/use-toast';
 
-// Function to save admin dashboard configuration
-export const saveAdminDashboardConfig = async (
-  metricIds: string[],
-  userId: string
-): Promise<CrudResult<string>> => {
+export const getAdminDashboardConfig = async (userId: string): Promise<CrudResult<DashboardConfig | null>> => {
   try {
-    console.log("Sending to server - metrics:", metricIds, "user:", userId);
-    const { data, error } = await callRPC<string>('save_admin_dashboard_config', {
-      metrics_ids: metricIds,
-      user_id: userId
-    });
-    console.log("Server response:", { data, error });
-    return formatCrudResult(data, error);
-  } catch (error) {
-    console.error('Error saving admin dashboard config:', error);
-    return formatCrudResult(null, error);
-  }
-};
-
-// Function to get admin dashboard configuration
-export const getAdminDashboardConfig = async (
-  userId: string
-): Promise<CrudResult<DashboardConfig>> => {
-  try {
-    console.log("Loading dashboard config for user ID:", userId);
-    const { data, error } = await callRPC<DashboardConfig>('get_admin_dashboard_config', {
+    console.log("Fetching admin dashboard config for user:", userId);
+    
+    const { data, error } = await supabase.rpc('get_admin_dashboard_config', {
       user_id_param: userId
     });
     
     if (error) {
-      console.error("Error fetching dashboard config:", error);
+      console.error("Error fetching admin dashboard config:", error);
       return formatCrudResult(null, error);
     }
     
-    if (!data) {
-      console.log("No dashboard config found for user:", userId);
-      return formatCrudResult({ 
-        id: "", 
-        user_id: userId, 
-        metric_ids: [], 
-        created_at: "", 
-        updated_at: "" 
-      }, null);
+    if (!data || data.length === 0) {
+      console.log("No admin dashboard config found for user");
+      return formatCrudResult(null, null);
     }
     
-    console.log("Found dashboard config:", data);
+    console.log("Successfully fetched admin dashboard config:", data[0]);
+    return formatCrudResult(data[0] as DashboardConfig, null);
+  } catch (error) {
+    console.error('Error in getAdminDashboardConfig:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+export const saveAdminDashboardConfig = async (
+  metricIds: string[], 
+  userId: string
+): Promise<CrudResult<string>> => {
+  try {
+    console.log("Saving admin dashboard config:", { metricIds, userId });
+    
+    // Ensure we're working with a valid array of UUIDs
+    if (!Array.isArray(metricIds)) {
+      throw new Error("metrics_ids must be an array");
+    }
+    
+    // Validate UUID format
+    const uuidMetricIds = metricIds.map(id => {
+      if (!id) throw new Error(`Invalid metric ID: ${id}`);
+      return id;
+    });
+    
+    console.log("Calling save_admin_dashboard_config with:", {
+      metrics_ids: uuidMetricIds,
+      user_id: userId
+    });
+    
+    const { data, error } = await supabase.rpc('save_admin_dashboard_config', {
+      metrics_ids: uuidMetricIds,
+      user_id: userId
+    });
+    
+    if (error) {
+      console.error("Error saving admin dashboard config:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar a configuração do dashboard",
+        variant: "destructive",
+      });
+      return formatCrudResult(null, error);
+    }
+    
+    console.log("Successfully saved admin dashboard config:", data);
+    toast({
+      title: "Configuração salva",
+      description: "Suas preferências do dashboard foram salvas",
+    });
     return formatCrudResult(data, null);
   } catch (error) {
-    console.error('Error fetching admin dashboard config:', error);
+    console.error('Error in saveAdminDashboardConfig:', error);
+    toast({
+      title: "Erro",
+      description: "Ocorreu um erro ao salvar a configuração do dashboard",
+      variant: "destructive",
+    });
     return formatCrudResult(null, error);
   }
 };
