@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +50,7 @@ export function useUserSettings() {
 
     setIsLoading(true);
     try {
+      console.log('[useUserSettings] Loading settings for user:', user.id);
       // Try to load from the new user_settings table first
       const { data, error } = await supabase
         .from('user_settings')
@@ -91,6 +93,7 @@ export function useUserSettings() {
           });
         }
       } else if (data) {
+        console.log('[useUserSettings] Settings loaded successfully:', data);
         // Use data from the new user_settings table
         const notificationPrefs = data.notification_preferences as Record<string, boolean>;
         setSettings({
@@ -120,7 +123,7 @@ export function useUserSettings() {
   const handleRealtimeUpdate = useCallback((payload: any) => {
     if (!user || payload.new.user_id !== user.id) return;
     
-    console.log('Settings updated in real-time:', payload);
+    console.log('[useUserSettings] Settings updated in real-time:', payload);
     const data = payload.new;
     const notificationPrefs = data.notification_preferences as Record<string, boolean>;
     
@@ -146,30 +149,9 @@ export function useUserSettings() {
     user ? handleRealtimeUpdate : () => {}
   );
 
-  // Apply effects from settings
+  // Save to localStorage whenever settings change
   useEffect(() => {
     if (isLoading) return;
-
-    // Apply theme
-    if (settings.theme === 'system') {
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.classList.remove('dark', 'light');
-      if (systemPrefersDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.add('light');
-      }
-    } else {
-      document.documentElement.classList.remove('dark', 'light');
-      document.documentElement.classList.add(settings.theme);
-    }
-    
-    // Apply animations
-    if (!settings.animationsEnabled) {
-      document.documentElement.classList.add('no-animations');
-    } else {
-      document.documentElement.classList.remove('no-animations');
-    }
     
     // Save to localStorage as a fallback
     if (user) {
@@ -188,6 +170,7 @@ export function useUserSettings() {
     
     setIsSaving(true);
     try {
+      console.log('[useUserSettings] Saving settings:', updatedSettings);
       // Save to the new user_settings table
       const { error } = await supabase.rpc('save_user_settings', {
         p_user_id: user.id,
