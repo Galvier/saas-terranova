@@ -37,9 +37,21 @@ export const saveAdminDashboardConfig = async (
   try {
     console.log("Saving admin dashboard config:", { metricIds, userId });
     
-    // Convert string IDs to UUIDs by explicitly casting the array
-    // This ensures we're sending UUID[] to the function that expects it
-    const uuidMetricIds = metricIds.map(id => id);
+    // Ensure we're working with a valid array of UUIDs
+    if (!Array.isArray(metricIds)) {
+      throw new Error("metrics_ids must be an array");
+    }
+    
+    // Validate UUID format
+    const uuidMetricIds = metricIds.map(id => {
+      if (!id) throw new Error(`Invalid metric ID: ${id}`);
+      return id;
+    });
+    
+    console.log("Calling save_admin_dashboard_config with:", {
+      metrics_ids: uuidMetricIds,
+      user_id: userId
+    });
     
     const { data, error } = await supabase.rpc('save_admin_dashboard_config', {
       metrics_ids: uuidMetricIds,

@@ -25,6 +25,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
 }) => {
   const [localSelection, setLocalSelection] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -33,6 +34,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
     if (open) {
       console.log("Dialog opened, setting localSelection to:", selectedMetrics);
       setLocalSelection([...selectedMetrics]);
+      setSaveError(null);
     }
   }, [open, selectedMetrics]);
 
@@ -57,6 +59,7 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
     }
     
     setIsSaving(true);
+    setSaveError(null);
     
     try {
       // Update parent component state first for immediate feedback
@@ -64,9 +67,10 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error saving configuration:", error);
+      setSaveError(error.message || "Ocorreu um erro ao salvar a configuração");
       toast({
         title: "Erro ao salvar configuração",
-        description: error.message || "Ocorreu um erro ao salvar a configuração",
+        description: error.message || "Ocorreu um erro ao salvar suas preferências",
         variant: "destructive"
       });
     } finally {
@@ -113,6 +117,13 @@ const MetricSelectionDialog: React.FC<MetricSelectionDialogProps> = ({
                   </label>
                 </div>
               ))}
+            </div>
+          )}
+          
+          {saveError && (
+            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-destructive">{saveError}</p>
             </div>
           )}
         </div>
