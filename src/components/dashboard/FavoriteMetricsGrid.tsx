@@ -4,6 +4,7 @@ import { MetricDefinition } from '@/integrations/supabase';
 import KpiCard from '@/components/KpiCard';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import PerformanceChart from '@/components/PerformanceChart';
 
 interface FavoriteMetricsGridProps {
   metrics: MetricDefinition[];
@@ -43,18 +44,49 @@ const FavoriteMetricsGrid: React.FC<FavoriteMetricsGridProps> = ({
     );
   }
   
+  // Group metrics by visualization type
+  const cardMetrics = favoriteMetrics.filter(m => !m.visualization_type || m.visualization_type === 'card');
+  const chartMetrics = favoriteMetrics.filter(m => m.visualization_type && m.visualization_type !== 'card');
+  
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
-      {favoriteMetrics.map(metric => (
-        <KpiCard
-          key={metric.id}
-          title={metric.name}
-          value={`${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`}
-          status={metric.status as 'success' | 'warning' | 'danger'}
-          changeLabel={metric.department_name ? `${metric.department_name}` : ''}
-          icon={null}
-        />
-      ))}
+    <div className="space-y-6">
+      {/* Render card metrics in a grid */}
+      {cardMetrics.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {cardMetrics.map(metric => (
+            <KpiCard
+              key={metric.id}
+              title={metric.name}
+              value={`${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`}
+              status={metric.status as 'success' | 'warning' | 'danger'}
+              changeLabel={metric.department_name ? `${metric.department_name}` : ''}
+              icon={null}
+            />
+          ))}
+        </div>
+      )}
+      
+      {/* Render chart metrics in a different layout */}
+      {chartMetrics.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {chartMetrics.map(metric => (
+            <PerformanceChart
+              key={metric.id}
+              title={metric.name}
+              data={[
+                { name: 'Atual', value: metric.current },
+                { name: 'Meta', value: metric.target }
+              ]}
+              type={metric.visualization_type === 'bar' ? 'bar' : 
+                    metric.visualization_type === 'line' ? 'line' : 
+                    metric.visualization_type === 'pie' ? 'pie' : 'bar'}
+              status={metric.status as 'success' | 'warning' | 'danger'}
+              percentage={metric.unit === '%'}
+              trend={metric.trend === 'up' ? 5 : metric.trend === 'down' ? -5 : 0}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
