@@ -53,7 +53,10 @@ export const createMetricDefinition = async (metric: {
       metric_frequency: metric.frequency || 'monthly',
       metric_is_active: metric.is_active !== undefined ? metric.is_active : true,
       metric_icon_name: metric.icon_name || null,
-      metric_lower_is_better: metric.lower_is_better !== undefined ? metric.lower_is_better : false
+      metric_lower_is_better: metric.lower_is_better !== undefined ? metric.lower_is_better : false,
+      metric_visualization_type: metric.visualization_type || 'card',
+      metric_priority: metric.priority || 'normal',
+      metric_default_period: metric.default_period || 'month'
     });
       
     return formatCrudResult(data, error);
@@ -90,7 +93,10 @@ export const updateMetricDefinition = async (metricId: string, metric: {
       metric_frequency: metric.frequency || 'monthly',
       metric_is_active: metric.is_active !== undefined ? metric.is_active : true,
       metric_icon_name: metric.icon_name || null,
-      metric_lower_is_better: metric.lower_is_better !== undefined ? metric.lower_is_better : false
+      metric_lower_is_better: metric.lower_is_better !== undefined ? metric.lower_is_better : false,
+      metric_visualization_type: metric.visualization_type || 'card',
+      metric_priority: metric.priority || 'normal',
+      metric_default_period: metric.default_period || 'month'
     });
     
     return formatCrudResult(data, error);

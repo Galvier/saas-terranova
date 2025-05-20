@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import Login from "./pages/Login";
 import FirstAccess from "./pages/FirstAccess";
 import Dashboard from "./pages/Dashboard";
@@ -52,35 +53,37 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/primeiro-acesso" element={<FirstAccess />} />
-            
-            {/* Public diagnostic routes - accessible without authentication */}
-            <Route path="/diagnostico" element={<Diagnostic />} />
-            <Route path="/admin/diagnostico" element={<Diagnostic />} />
-            
-            {/* Protected routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<AppLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/departments" element={<Navigate to="/setores" replace />} />
-                <Route path="/setores" element={<Departments />} />
-                <Route path="/managers" element={<Managers />} />
-                <Route path="/managers/new" element={<ManagersCreate />} />
-                <Route path="/managers/edit/:id" element={<ManagersUpdate />} />
-                <Route path="/metrics" element={<Metrics />} />
-                <Route path="/settings" element={<Settings />} />
+        <ThemeProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/primeiro-acesso" element={<FirstAccess />} />
+              
+              {/* Public diagnostic routes - accessible without authentication */}
+              <Route path="/diagnostico" element={<Diagnostic />} />
+              <Route path="/admin/diagnostico" element={<Diagnostic />} />
+              
+              {/* Protected routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<AppLayout />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/departments" element={<Navigate to="/setores" replace />} />
+                  <Route path="/setores" element={<Departments />} />
+                  <Route path="/managers" element={<Managers />} />
+                  <Route path="/managers/new" element={<ManagersCreate />} />
+                  <Route path="/managers/edit/:id" element={<ManagersUpdate />} />
+                  <Route path="/metrics" element={<Metrics />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
               </Route>
-            </Route>
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </ThemeProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
