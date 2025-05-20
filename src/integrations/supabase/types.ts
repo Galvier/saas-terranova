@@ -231,6 +231,7 @@ export type Database = {
       metrics_definition: {
         Row: {
           created_at: string | null
+          default_period: string
           department_id: string | null
           description: string | null
           frequency: string
@@ -239,12 +240,15 @@ export type Database = {
           is_active: boolean | null
           lower_is_better: boolean
           name: string
+          priority: string
           target: number
           unit: string
           updated_at: string | null
+          visualization_type: string
         }
         Insert: {
           created_at?: string | null
+          default_period?: string
           department_id?: string | null
           description?: string | null
           frequency?: string
@@ -253,12 +257,15 @@ export type Database = {
           is_active?: boolean | null
           lower_is_better?: boolean
           name: string
+          priority?: string
           target: number
           unit: string
           updated_at?: string | null
+          visualization_type?: string
         }
         Update: {
           created_at?: string | null
+          default_period?: string
           department_id?: string | null
           description?: string | null
           frequency?: string
@@ -267,9 +274,11 @@ export type Database = {
           is_active?: boolean | null
           lower_is_better?: boolean
           name?: string
+          priority?: string
           target?: number
           unit?: string
           updated_at?: string | null
+          visualization_type?: string
         }
         Relationships: [
           {
