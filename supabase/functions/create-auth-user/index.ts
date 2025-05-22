@@ -29,23 +29,32 @@ serve(async (req) => {
       throw new Error("Email is required");
     }
 
-    const { data: userCheckData } = await supabase.auth.admin.getUserByEmail(email);
+    // Check if user already exists using a compatible method for v2.38.4
+    const { data: existingUsers, error: userCheckError } = await supabase
+      .from('auth.users')
+      .select('id, email')
+      .eq('email', email)
+      .maybeSingle();
+    
+    if (userCheckError) {
+      console.error("Error checking existing user:", userCheckError);
+    }
     
     // Check if user already exists
-    if (userCheckData) {
+    if (existingUsers) {
       // User exists, return user data
-      console.log("User already exists:", userCheckData);
+      console.log("User already exists:", existingUsers);
       return new Response(
         JSON.stringify({ 
           message: "User already exists", 
-          user: userCheckData, 
+          user: existingUsers, 
           created: false 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create user with service role privileges
+    // Create user with service role privileges using compatible method
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password: password || undefined,

@@ -71,9 +71,14 @@ export function TriggerCard({ syncStatus, isLoading }: TriggerCardProps) {
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">Status:</span>
               <CustomBadge 
-                variant={hasAuthTrigger && hasManagerTrigger ? "success" : "destructive"}
+                variant={hasAuthTrigger && hasManagerTrigger && syncedUsersCount === managersCount ? "success" : "destructive"}
               >
-                {hasAuthTrigger && hasManagerTrigger ? 'Saudável' : 'Problema detectado'}
+                {hasAuthTrigger && hasManagerTrigger && syncedUsersCount === managersCount ? 
+                  'Saudável' : 
+                  syncedUsersCount < managersCount ? 
+                    'Usuários não sincronizados' : 
+                    'Problema detectado'
+                }
               </CustomBadge>
             </div>
           </div>

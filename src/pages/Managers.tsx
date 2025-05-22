@@ -202,9 +202,10 @@ const Managers = () => {
                 >
                   <WrenchIcon className={`h-4 w-4 ${isFixingInconsistencies ? 'animate-spin' : ''}`} />
                   <span className="hidden sm:inline">
-                    {unsyncedManagersCount > 0 
-                      ? `Corrigir (${unsyncedManagersCount})`
-                      : 'Corrigir Inconsistências'}
+                    {isFixingInconsistencies ? 'Corrigindo...' : 
+                      unsyncedManagersCount > 0 
+                        ? `Corrigir (${unsyncedManagersCount})`
+                        : 'Corrigir Inconsistências'}
                   </span>
                 </Button>
                 <Button onClick={() => navigate('/managers/new')}>

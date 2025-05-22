@@ -26,4 +26,4 @@ port = 54327
 
 [functions]
 [functions.create-auth-user]
-verify_jwt = true
+verify_jwt = false
