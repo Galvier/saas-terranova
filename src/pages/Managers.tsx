@@ -38,6 +38,9 @@ const Managers = () => {
     manager.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     manager.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  // Count managers without user_id
+  const unsyncedManagersCount = managers.filter(m => !m.user_id).length;
 
   const confirmDelete = async () => {
     if (managerToDelete && isAdmin) {
@@ -119,6 +122,12 @@ const Managers = () => {
     }
 
     setIsFixingInconsistencies(true);
+    
+    toast({
+      title: "Diagnóstico iniciado",
+      description: "Corrigindo inconsistências entre gestores e contas de usuários..."
+    });
+    
     try {
       console.log("Iniciando correção de inconsistências");
       const result = await fixAuthManagerInconsistencies();
@@ -129,13 +138,22 @@ const Managers = () => {
       }
       
       const updatedCount = result.data?.managers_updated || 0;
+      const additionalProcessed = result.data?.additional_users_processed || 0;
+      const totalFixed = result.data?.total_fixed || updatedCount;
       
-      toast({
-        title: "Diagnóstico concluído",
-        description: `${updatedCount} registros de gestores foram atualizados.`
-      });
+      if (totalFixed > 0) {
+        toast({
+          title: "Diagnóstico concluído",
+          description: `${totalFixed} registros de gestores foram atualizados. ${additionalProcessed > 0 ? `${additionalProcessed} usuários de autenticação foram criados.` : ''}`
+        });
+      } else {
+        toast({
+          title: "Diagnóstico concluído",
+          description: "Nenhuma inconsistência encontrada para corrigir."
+        });
+      }
       
-      if (updatedCount > 0) {
+      if (totalFixed > 0 || additionalProcessed > 0) {
         refetch();
       }
     } catch (error: any) {
@@ -179,11 +197,15 @@ const Managers = () => {
                 <Button 
                   variant="outline" 
                   onClick={handleFixInconsistencies}
-                  disabled={isFixingInconsistencies}
+                  disabled={isFixingInconsistencies || unsyncedManagersCount === 0}
                   className="flex items-center gap-1"
                 >
-                  <WrenchIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Corrigir Inconsistências</span>
+                  <WrenchIcon className={`h-4 w-4 ${isFixingInconsistencies ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">
+                    {unsyncedManagersCount > 0 
+                      ? `Corrigir (${unsyncedManagersCount})`
+                      : 'Corrigir Inconsistências'}
+                  </span>
                 </Button>
                 <Button onClick={() => navigate('/managers/new')}>
                   <UserPlus className="mr-2 h-4 w-4" />

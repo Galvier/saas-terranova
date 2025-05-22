@@ -39,28 +39,36 @@ export const createManager = async (
       return formatCrudResult(null, managerError);
     }
     
-    // If a password was provided and user doesn't exist yet, create an auth user
-    if (manager.password && managerData.user_created === true) {
+    // If a password was provided, create/update auth user through Edge Function
+    if (manager.password) {
       try {
-        // Create user in Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: manager.email,
-          password: manager.password,
-          email_confirm: true,
-          user_metadata: {
-            role: manager.role || 'manager',
-            department_id: manager.department_id,
-            display_name: manager.name
+        console.log('Creating auth user via Edge Function:', manager.email);
+        
+        // Call our Edge Function to create the auth user with admin privileges
+        const { data: authData, error: authFnError } = await supabase.functions.invoke('create-auth-user', {
+          body: {
+            email: manager.email,
+            password: manager.password,
+            metadata: {
+              role: manager.role || 'manager',
+              department_id: manager.department_id,
+              display_name: manager.name
+            }
           }
         });
         
-        if (authError) {
-          console.error('Error creating auth user:', authError);
+        if (authFnError) {
+          console.error('Edge function error creating auth user:', authFnError);
           // Still return success for manager creation, but log the auth error
           return formatCrudResult(managerData, null);
         }
         
-        console.log('Auth user created successfully:', authData);
+        console.log('Auth user creation response:', authData);
+        
+        // Run fix inconsistencies to ensure user_id is properly set in managers table
+        if (authData?.user) {
+          await fixAuthManagerInconsistencies();
+        }
       } catch (authErr) {
         console.error('Exception in auth user creation:', authErr);
         // Still return success for manager creation
@@ -161,7 +169,7 @@ export const getCurrentUserManager = async (): Promise<CrudResult<Manager>> => {
   }
 };
 
-// Add a new function to manually fix any sync issues
+// Function to manually fix any sync issues
 export const fixAuthManagerInconsistencies = async (): Promise<CrudResult<any>> => {
   try {
     console.log("Starting fix_user_manager_inconsistencies process");
@@ -173,10 +181,81 @@ export const fixAuthManagerInconsistencies = async (): Promise<CrudResult<any>> 
       return formatCrudResult(null, error);
     }
     
+    // If manager records were updated but some still need auth user creation,
+    // process each one with the edge function
+    const managersWithoutAuthUsers = await getManagersWithoutAuthUsers();
+    
+    if (managersWithoutAuthUsers.data && managersWithoutAuthUsers.data.length > 0) {
+      console.log(`Found ${managersWithoutAuthUsers.data.length} managers without auth users, attempting to create auth users`);
+      
+      // Create a temporary password for these users
+      // In a production system, you'd want to generate random secure passwords and notify users
+      const tempPassword = "ChangeMe123!";
+      
+      for (const manager of managersWithoutAuthUsers.data) {
+        try {
+          console.log(`Creating auth user for ${manager.email}`);
+          
+          // Call our Edge Function to create the auth user
+          const { data: authData, error: authFnError } = await supabase.functions.invoke('create-auth-user', {
+            body: {
+              email: manager.email,
+              password: tempPassword,
+              metadata: {
+                role: manager.role || 'manager',
+                department_id: manager.department_id,
+                display_name: manager.name
+              }
+            }
+          });
+          
+          if (authFnError) {
+            console.error(`Failed to create auth user for ${manager.email}:`, authFnError);
+          } else {
+            console.log(`Successfully created auth user for ${manager.email}`);
+          }
+        } catch (err) {
+          console.error(`Error creating auth user for ${manager.email}:`, err);
+        }
+      }
+      
+      // Run fix inconsistencies again to link newly created users
+      const { data: secondFixData } = await callRPC<any>('fix_user_manager_inconsistencies', {});
+      
+      // Combine the results
+      const combinedData = {
+        ...data,
+        additional_users_processed: managersWithoutAuthUsers.data.length,
+        total_fixed: (data?.managers_updated || 0) + (secondFixData?.managers_updated || 0)
+      };
+      
+      console.log('Combined fix results:', combinedData);
+      return formatCrudResult(combinedData, null);
+    }
+    
     console.log('Fixed inconsistencies result:', data);
     return formatCrudResult(data, null);
   } catch (error) {
     console.error('Exception in fixAuthManagerInconsistencies:', error);
+    return formatCrudResult(null, error);
+  }
+};
+
+// Helper function to get managers without associated auth users
+const getManagersWithoutAuthUsers = async (): Promise<CrudResult<Manager[]>> => {
+  try {
+    const { data: allManagers, error } = await supabase
+      .from('managers')
+      .select('*')
+      .is('user_id', null);
+      
+    if (error) {
+      throw error;
+    }
+    
+    return formatCrudResult(allManagers, null);
+  } catch (error) {
+    console.error('Error fetching managers without auth users:', error);
     return formatCrudResult(null, error);
   }
 };
