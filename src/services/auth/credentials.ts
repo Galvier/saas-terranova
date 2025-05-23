@@ -13,6 +13,7 @@ export interface UserRegistrationData {
   password: string;
   name?: string;
   role?: string;
+  department_id?: string;
 }
 
 export interface AuthResult {
