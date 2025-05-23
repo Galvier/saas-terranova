@@ -35,6 +35,20 @@ BEGIN
   )
   RETURNING id INTO new_id;
   
+  -- Log the creation
+  INSERT INTO logs (level, message, details) 
+  VALUES (
+    'info', 
+    'Manager created', 
+    jsonb_build_object(
+      'manager_id', new_id,
+      'email', manager_email,
+      'role', manager_role,
+      'has_auth_user', user_id IS NOT NULL,
+      'timestamp', now()
+    )
+  );
+  
   RETURN jsonb_build_object('id', new_id);
 END;
 $$ language plpgsql security definer;

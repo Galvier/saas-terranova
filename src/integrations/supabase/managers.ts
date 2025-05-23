@@ -2,6 +2,7 @@
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import { supabase } from './client';
 import type { Manager } from './types/manager';
+import { authCredentials } from '@/services/auth/credentials';
 
 export const getAllManagers = async (): Promise<CrudResult<Manager[]>> => {
   try {
@@ -24,7 +25,28 @@ export const createManager = async (
   }
 ): Promise<CrudResult<Manager>> => {
   try {
-    // First create the manager in the database
+    console.log('[CreateManager] Iniciando criação do gestor:', manager.email);
+    
+    // Step 1: Create auth user first (similar to First Access page)
+    if (manager.password) {
+      console.log('[CreateManager] Criando usuário auth com role:', manager.role);
+      
+      const authResult = await authCredentials.register({
+        email: manager.email,
+        password: manager.password,
+        name: manager.name,
+        role: manager.role || 'manager'
+      });
+      
+      if (authResult.error) {
+        console.error('[CreateManager] Erro ao criar usuário auth:', authResult.error);
+        return formatCrudResult(null, authResult.error);
+      }
+      
+      console.log('[CreateManager] Usuário auth criado com sucesso:', authResult.data?.user?.id);
+    }
+    
+    // Step 2: Create the manager in the database
     const { data: managerData, error: managerError } = await callRPC<Manager>('create_manager', {
       manager_name: manager.name,
       manager_email: manager.email,
@@ -35,49 +57,18 @@ export const createManager = async (
     });
     
     if (managerError) {
-      console.error('Error creating manager:', managerError);
+      console.error('[CreateManager] Erro ao criar manager:', managerError);
       return formatCrudResult(null, managerError);
     }
     
-    // If a password was provided, create/update auth user through Edge Function
-    if (manager.password) {
-      try {
-        console.log('Creating auth user via Edge Function:', manager.email);
-        
-        // Call our Edge Function to create the auth user with admin privileges
-        const { data: authData, error: authFnError } = await supabase.functions.invoke('create-auth-user', {
-          body: {
-            email: manager.email,
-            password: manager.password,
-            metadata: {
-              role: manager.role || 'manager',
-              department_id: manager.department_id,
-              display_name: manager.name
-            }
-          }
-        });
-        
-        if (authFnError) {
-          console.error('Edge function error creating auth user:', authFnError);
-          // Still return success for manager creation, but log the auth error
-          return formatCrudResult(managerData, null);
-        }
-        
-        console.log('Auth user creation response:', authData);
-        
-        // Run fix inconsistencies to ensure user_id is properly set in managers table
-        if (authData?.user) {
-          await fixAuthManagerInconsistencies();
-        }
-      } catch (authErr) {
-        console.error('Exception in auth user creation:', authErr);
-        // Still return success for manager creation
-      }
-    }
-
+    // Step 3: Run fix inconsistencies to ensure proper linking
+    console.log('[CreateManager] Executando correção de inconsistências');
+    await fixAuthManagerInconsistencies();
+    
+    console.log('[CreateManager] Gestor criado com sucesso:', managerData);
     return formatCrudResult(managerData, null);
   } catch (error) {
-    console.error('Error in createManager:', error);
+    console.error('[CreateManager] Erro geral na criação:', error);
     return formatCrudResult(null, error);
   }
 };
@@ -169,93 +160,22 @@ export const getCurrentUserManager = async (): Promise<CrudResult<Manager>> => {
   }
 };
 
-// Function to manually fix any sync issues
+// Simplified function to only fix existing inconsistencies
 export const fixAuthManagerInconsistencies = async (): Promise<CrudResult<any>> => {
   try {
-    console.log("Starting fix_user_manager_inconsistencies process");
+    console.log("[FixInconsistencies] Iniciando correção de inconsistências");
     
     const { data, error } = await callRPC<any>('fix_user_manager_inconsistencies', {});
     
     if (error) {
-      console.error('Error fixing inconsistencies:', error);
+      console.error('[FixInconsistencies] Erro na correção:', error);
       return formatCrudResult(null, error);
     }
     
-    // If manager records were updated but some still need auth user creation,
-    // process each one with the edge function
-    const managersWithoutAuthUsers = await getManagersWithoutAuthUsers();
-    
-    if (managersWithoutAuthUsers.data && managersWithoutAuthUsers.data.length > 0) {
-      console.log(`Found ${managersWithoutAuthUsers.data.length} managers without auth users, attempting to create auth users`);
-      
-      // Create a temporary password for these users
-      // In a production system, you'd want to generate random secure passwords and notify users
-      const tempPassword = "ChangeMe123!";
-      
-      for (const manager of managersWithoutAuthUsers.data) {
-        try {
-          console.log(`Creating auth user for ${manager.email}`);
-          
-          // Call our Edge Function to create the auth user
-          const { data: authData, error: authFnError } = await supabase.functions.invoke('create-auth-user', {
-            body: {
-              email: manager.email,
-              password: tempPassword,
-              metadata: {
-                role: manager.role || 'manager',
-                department_id: manager.department_id,
-                display_name: manager.name
-              }
-            }
-          });
-          
-          if (authFnError) {
-            console.error(`Failed to create auth user for ${manager.email}:`, authFnError);
-          } else {
-            console.log(`Successfully created auth user for ${manager.email}`);
-          }
-        } catch (err) {
-          console.error(`Error creating auth user for ${manager.email}:`, err);
-        }
-      }
-      
-      // Run fix inconsistencies again to link newly created users
-      const { data: secondFixData } = await callRPC<any>('fix_user_manager_inconsistencies', {});
-      
-      // Combine the results
-      const combinedData = {
-        ...data,
-        additional_users_processed: managersWithoutAuthUsers.data.length,
-        total_fixed: (data?.managers_updated || 0) + (secondFixData?.managers_updated || 0)
-      };
-      
-      console.log('Combined fix results:', combinedData);
-      return formatCrudResult(combinedData, null);
-    }
-    
-    console.log('Fixed inconsistencies result:', data);
+    console.log('[FixInconsistencies] Correção concluída:', data);
     return formatCrudResult(data, null);
   } catch (error) {
-    console.error('Exception in fixAuthManagerInconsistencies:', error);
-    return formatCrudResult(null, error);
-  }
-};
-
-// Helper function to get managers without associated auth users
-const getManagersWithoutAuthUsers = async (): Promise<CrudResult<Manager[]>> => {
-  try {
-    const { data: allManagers, error } = await supabase
-      .from('managers')
-      .select('*')
-      .is('user_id', null);
-      
-    if (error) {
-      throw error;
-    }
-    
-    return formatCrudResult(allManagers, null);
-  } catch (error) {
-    console.error('Error fetching managers without auth users:', error);
+    console.error('[FixInconsistencies] Erro geral:', error);
     return formatCrudResult(null, error);
   }
 };

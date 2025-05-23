@@ -77,7 +77,7 @@ export const authCredentials = {
 
   register: async (userData: UserRegistrationData): Promise<CrudResult<AuthResult>> => {
     try {
-      console.log('[AuthCredentials] Iniciando registro para:', userData.email);
+      console.log('[AuthCredentials] Iniciando registro para:', userData.email, 'com role:', userData.role);
       
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
@@ -85,7 +85,8 @@ export const authCredentials = {
         options: {
           data: {
             display_name: userData.name,
-            role: userData.role || 'user'
+            role: userData.role || 'user',
+            department_id: userData.department_id || null
           }
         }
       });
@@ -95,7 +96,15 @@ export const authCredentials = {
         return formatCrudResult(null, error);
       }
       
-      console.log('[AuthCredentials] Registro bem-sucedido para:', userData.email);
+      console.log('[AuthCredentials] Registro bem-sucedido para:', userData.email, 'user_id:', data.user?.id);
+      
+      // Log de registro bem-sucedido
+      await createLog('info', 'Registro bem-sucedido', { 
+        email: userData.email,
+        role: userData.role,
+        user_id: data.user?.id,
+        timestamp: new Date().toISOString()
+      }, data.user?.id);
       
       return formatCrudResult({
         user: data.user,
