@@ -10,13 +10,21 @@ create or replace function create_manager(
 )
 returns jsonb as $$
 DECLARE
-  new_id uuid;
+  new_manager_id uuid;
   user_id uuid;
+  user_exists boolean;
 BEGIN
-  -- Check if user with this email already exists
-  SELECT id INTO user_id FROM auth.users WHERE email = manager_email;
+  -- Verificar se já existe um usuário com este email
+  SELECT EXISTS (
+    SELECT 1 FROM auth.users WHERE email = manager_email
+  ) INTO user_exists;
   
-  -- Insert the new manager
+  -- Se existir, obter o ID do usuário
+  IF user_exists THEN
+    SELECT id INTO user_id FROM auth.users WHERE email = manager_email;
+  END IF;
+  
+  -- Primeiro: Inserir o manager na tabela
   INSERT INTO managers (
     name, 
     email,
@@ -33,22 +41,27 @@ BEGIN
     manager_role,
     user_id
   )
-  RETURNING id INTO new_id;
+  RETURNING id INTO new_manager_id;
   
-  -- Log the creation
+  -- Log da criação do manager
   INSERT INTO logs (level, message, details) 
   VALUES (
     'info', 
-    'Manager created', 
+    'Manager created successfully', 
     jsonb_build_object(
-      'manager_id', new_id,
+      'manager_id', new_manager_id,
       'email', manager_email,
       'role', manager_role,
-      'has_auth_user', user_id IS NOT NULL,
+      'had_existing_auth_user', user_exists,
       'timestamp', now()
     )
   );
   
-  RETURN jsonb_build_object('id', new_id);
+  -- Retornar informações sobre a criação
+  RETURN jsonb_build_object(
+    'id', new_manager_id,
+    'user_created', NOT user_exists AND manager_password IS NOT NULL,
+    'message', 'Manager created successfully'
+  );
 END;
 $$ language plpgsql security definer;

@@ -1,4 +1,3 @@
-
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import { supabase } from './client';
 import type { Manager } from './types/manager';
@@ -27,27 +26,9 @@ export const createManager = async (
   try {
     console.log('[CreateManager] Iniciando criação do gestor:', manager.email);
     
-    // Step 1: Create auth user first (similar to First Access page)
-    if (manager.password) {
-      console.log('[CreateManager] Criando usuário auth com role:', manager.role);
-      
-      const authResult = await authCredentials.register({
-        email: manager.email,
-        password: manager.password,
-        name: manager.name,
-        role: manager.role || 'manager'
-      });
-      
-      if (authResult.error) {
-        console.error('[CreateManager] Erro ao criar usuário auth:', authResult.error);
-        return formatCrudResult(null, authResult.error);
-      }
-      
-      console.log('[CreateManager] Usuário auth criado com sucesso:', authResult.data?.user?.id);
-    }
-    
-    // Step 2: Create the manager in the database
-    const { data: managerData, error: managerError } = await callRPC<Manager>('create_manager', {
+    // Step 1: Create the manager record first
+    console.log('[CreateManager] Criando registro do manager primeiro');
+    const { data: managerData, error: managerError } = await callRPC<any>('create_manager', {
       manager_name: manager.name,
       manager_email: manager.email,
       manager_department_id: manager.department_id,
@@ -61,12 +42,39 @@ export const createManager = async (
       return formatCrudResult(null, managerError);
     }
     
+    console.log('[CreateManager] Manager criado com sucesso:', managerData);
+    
+    // Step 2: Create auth user if password was provided and user doesn't exist
+    if (manager.password && !managerData.user_created) {
+      console.log('[CreateManager] Criando usuário auth com role:', manager.role);
+      
+      const authResult = await authCredentials.register({
+        email: manager.email,
+        password: manager.password,
+        name: manager.name,
+        role: manager.role || 'manager',
+        department_id: manager.department_id
+      });
+      
+      if (authResult.error) {
+        console.error('[CreateManager] Erro ao criar usuário auth:', authResult.error);
+        
+        // Log the auth creation error but don't fail the manager creation
+        console.log('[CreateManager] Manager foi criado mas falhou a criação do usuário auth');
+      } else {
+        console.log('[CreateManager] Usuário auth criado com sucesso:', authResult.data?.user?.id);
+      }
+    }
+    
     // Step 3: Run fix inconsistencies to ensure proper linking
     console.log('[CreateManager] Executando correção de inconsistências');
     await fixAuthManagerInconsistencies();
     
-    console.log('[CreateManager] Gestor criado com sucesso:', managerData);
-    return formatCrudResult(managerData, null);
+    // Step 4: Fetch the complete manager data
+    const completeManagerResult = await getManagerById(managerData.id);
+    
+    console.log('[CreateManager] Processo concluído com sucesso');
+    return formatCrudResult(completeManagerResult.data, null);
   } catch (error) {
     console.error('[CreateManager] Erro geral na criação:', error);
     return formatCrudResult(null, error);
@@ -160,10 +168,10 @@ export const getCurrentUserManager = async (): Promise<CrudResult<Manager>> => {
   }
 };
 
-// Simplified function to only fix existing inconsistencies
+// Enhanced function to fix existing inconsistencies and sync metadata
 export const fixAuthManagerInconsistencies = async (): Promise<CrudResult<any>> => {
   try {
-    console.log("[FixInconsistencies] Iniciando correção de inconsistências");
+    console.log("[FixInconsistencies] Iniciando correção abrangente de inconsistências");
     
     const { data, error } = await callRPC<any>('fix_user_manager_inconsistencies', {});
     
