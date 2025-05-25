@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Edit, MoreHorizontal, Trash2, Eye, RefreshCcw, AlertCircle, UserPlus } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2, Eye, RefreshCcw, AlertCircle, UserPlus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { CreateAuthDialog } from './CreateAuthDialog';
@@ -30,6 +30,7 @@ interface ManagersTableProps {
   onDeleteManager: (manager: Manager) => void;
   isAdmin: boolean;
   onRefreshData: () => void;
+  isFixingInconsistencies?: boolean;
 }
 
 export const ManagersTable = ({ 
@@ -37,7 +38,8 @@ export const ManagersTable = ({
   isLoading, 
   onDeleteManager, 
   isAdmin,
-  onRefreshData
+  onRefreshData,
+  isFixingInconsistencies = false
 }: ManagersTableProps) => {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
@@ -51,7 +53,6 @@ export const ManagersTable = ({
     if (isAdmin) {
       navigate(`/managers/edit/${id}`);
     } else {
-      // For non-admins, just view the manager details
       navigate(`/managers/edit/${id}`);
     }
   };
@@ -96,7 +97,6 @@ export const ManagersTable = ({
   };
 
   const handleCreateAuthSuccess = () => {
-    // Refresh the data to show updated sync status
     onRefreshData();
   };
 
@@ -149,6 +149,9 @@ export const ManagersTable = ({
               </TableRow>
             ) : managers.length > 0 ? (
               managers.map((manager) => {
+                // Debug log for each manager
+                console.log(`[ManagersTable] ${manager.name}: user_id=${manager.user_id}`);
+                
                 const hasAuthUser = !!manager.user_id;
                 
                 return (
@@ -167,7 +170,12 @@ export const ManagersTable = ({
                       </CustomBadge>
                     </TableCell>
                     <TableCell>
-                      {hasAuthUser ? (
+                      {isFixingInconsistencies ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm text-muted-foreground">Verificando...</span>
+                        </div>
+                      ) : hasAuthUser ? (
                         <CustomBadge variant="default">Sincronizada</CustomBadge>
                       ) : (
                         <div className="flex items-center gap-1">
