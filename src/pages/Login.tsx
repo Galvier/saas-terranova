@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -277,18 +276,6 @@ const Login = () => {
                     'Entrar'
                   )}
                 </Button>
-                <div className="text-sm text-center text-muted-foreground mt-2">
-                  Primeiro acesso?{' '}
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto"
-                    type="button"
-                    onClick={() => navigate('/primeiro-acesso')}
-                    disabled={isLoading}
-                  >
-                    Registre-se
-                  </Button>
-                </div>
                 <div className="w-full mt-2">
                   <Button
                     variant="outline"

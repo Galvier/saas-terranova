@@ -1,3 +1,4 @@
+
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import { supabase } from './client';
 import type { Manager } from './types/manager';
@@ -27,7 +28,7 @@ export const createManager = async (
     console.log('[CreateManager] Iniciando criação do gestor:', manager.email);
     
     // Step 1: Create the manager record first
-    console.log('[CreateManager] Criando registro do manager primeiro');
+    console.log('[CreateManager] Criando registro do manager');
     const { data: managerData, error: managerError } = await callRPC<any>('create_manager', {
       manager_name: manager.name,
       manager_email: manager.email,
@@ -44,8 +45,8 @@ export const createManager = async (
     
     console.log('[CreateManager] Manager criado com sucesso:', managerData);
     
-    // Step 2: Create auth user if password was provided and user doesn't exist
-    if (manager.password && !managerData.user_created) {
+    // Step 2: Create auth user if needed
+    if (managerData.auth_creation_needed && manager.password) {
       console.log('[CreateManager] Criando usuário auth com role:', manager.role);
       
       const authResult = await authCredentials.register({
@@ -58,9 +59,8 @@ export const createManager = async (
       
       if (authResult.error) {
         console.error('[CreateManager] Erro ao criar usuário auth:', authResult.error);
-        
-        // Log the auth creation error but don't fail the manager creation
-        console.log('[CreateManager] Manager foi criado mas falhou a criação do usuário auth');
+        // Manager foi criado mas falhou a criação do usuário auth
+        console.log('[CreateManager] Manager criado mas falhou a criação do usuário auth');
       } else {
         console.log('[CreateManager] Usuário auth criado com sucesso:', authResult.data?.user?.id);
       }
