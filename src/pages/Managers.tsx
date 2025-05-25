@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -138,22 +137,26 @@ const Managers = () => {
       }
       
       const updatedCount = result.data?.managers_updated || 0;
-      const additionalProcessed = result.data?.additional_users_processed || 0;
-      const totalFixed = result.data?.total_fixed || updatedCount;
+      const managersWithoutAuth = result.data?.managers_without_auth || 0;
       
-      if (totalFixed > 0) {
+      if (updatedCount > 0) {
         toast({
           title: "Diagnóstico concluído",
-          description: `${totalFixed} registros de gestores foram atualizados. ${additionalProcessed > 0 ? `${additionalProcessed} usuários de autenticação foram criados.` : ''}`
+          description: `${updatedCount} gestores foram sincronizados com contas existentes.${managersWithoutAuth > 0 ? ` ${managersWithoutAuth} gestores ainda precisam de conta de acesso.` : ''}`
+        });
+      } else if (managersWithoutAuth > 0) {
+        toast({
+          title: "Diagnóstico concluído",
+          description: `${managersWithoutAuth} gestores precisam de conta de acesso. Use "Criar conta de acesso" no menu de ações.`
         });
       } else {
         toast({
           title: "Diagnóstico concluído",
-          description: "Nenhuma inconsistência encontrada para corrigir."
+          description: "Todos os gestores estão sincronizados corretamente."
         });
       }
       
-      if (totalFixed > 0 || additionalProcessed > 0) {
+      if (updatedCount > 0) {
         refetch();
       }
     } catch (error: any) {
@@ -231,6 +234,7 @@ const Managers = () => {
         isLoading={isLoading}
         onDeleteManager={handleDeleteManager}
         isAdmin={isAdmin}
+        onRefreshData={handleRefreshData}
       />
       
       {isAdmin && (

@@ -419,6 +419,10 @@ export type Database = {
         Args: { table_name: string }
         Returns: Json
       }
+      create_auth_for_manager: {
+        Args: { manager_id_param: string; temp_password: string }
+        Returns: Json
+      }
       create_department: {
         Args: {
           department_name: string

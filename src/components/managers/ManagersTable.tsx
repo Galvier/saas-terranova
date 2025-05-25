@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Table,
@@ -17,9 +17,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Edit, MoreHorizontal, Trash2, Eye, RefreshCcw, AlertCircle } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2, Eye, RefreshCcw, AlertCircle, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { CreateAuthDialog } from './CreateAuthDialog';
+import { createAuthForManager } from '@/integrations/supabase/managers';
 import type { Manager } from '@/integrations/supabase';
 
 interface ManagersTableProps {
@@ -27,12 +29,23 @@ interface ManagersTableProps {
   isLoading: boolean;
   onDeleteManager: (manager: Manager) => void;
   isAdmin: boolean;
+  onRefreshData: () => void;
 }
 
-export const ManagersTable = ({ managers, isLoading, onDeleteManager, isAdmin }: ManagersTableProps) => {
+export const ManagersTable = ({ 
+  managers, 
+  isLoading, 
+  onDeleteManager, 
+  isAdmin,
+  onRefreshData
+}: ManagersTableProps) => {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
+  const [createAuthDialog, setCreateAuthDialog] = useState<{
+    isOpen: boolean;
+    manager: Manager | null;
+  }>({ isOpen: false, manager: null });
 
   const handleEditManager = (id: string) => {
     if (isAdmin) {
@@ -58,6 +71,33 @@ export const ManagersTable = ({ managers, isLoading, onDeleteManager, isAdmin }:
         variant: "destructive"
       });
     }
+  };
+
+  const handleCreateAuth = async (managerId: string, password: string): Promise<boolean> => {
+    try {
+      const result = await createAuthForManager(managerId, password);
+      
+      if (result.error) {
+        throw new Error(result.message);
+      }
+      
+      return true;
+    } catch (error: any) {
+      console.error('Erro ao criar conta de auth:', error);
+      throw error;
+    }
+  };
+
+  const handleCreateAuthClick = (manager: Manager) => {
+    setCreateAuthDialog({
+      isOpen: true,
+      manager
+    });
+  };
+
+  const handleCreateAuthSuccess = () => {
+    // Refresh the data to show updated sync status
+    onRefreshData();
   };
 
   // Check if current user's email is in the managers list
@@ -130,9 +170,9 @@ export const ManagersTable = ({ managers, isLoading, onDeleteManager, isAdmin }:
                       {hasAuthUser ? (
                         <CustomBadge variant="default">Sincronizada</CustomBadge>
                       ) : (
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-1">
                           <CustomBadge variant="destructive">Não sincronizada</CustomBadge>
-                          <AlertCircle className="h-4 w-4 ml-1 text-amber-500" />
+                          <AlertCircle className="h-4 w-4 text-amber-500" />
                         </div>
                       )}
                     </TableCell>
@@ -150,6 +190,12 @@ export const ManagersTable = ({ managers, isLoading, onDeleteManager, isAdmin }:
                                 <Edit className="mr-2 h-4 w-4" />
                                 Editar
                               </DropdownMenuItem>
+                              {!hasAuthUser && (
+                                <DropdownMenuItem onClick={() => handleCreateAuthClick(manager)}>
+                                  <UserPlus className="mr-2 h-4 w-4" />
+                                  Criar conta de acesso
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem 
                                 onClick={() => onDeleteManager(manager)}
                                 className="text-destructive focus:text-destructive"
@@ -186,6 +232,14 @@ export const ManagersTable = ({ managers, isLoading, onDeleteManager, isAdmin }:
           </TableBody>
         </Table>
       </div>
+
+      <CreateAuthDialog
+        isOpen={createAuthDialog.isOpen}
+        onOpenChange={(open) => setCreateAuthDialog({ isOpen: open, manager: null })}
+        manager={createAuthDialog.manager}
+        onSuccess={handleCreateAuthSuccess}
+        onCreateAuth={handleCreateAuth}
+      />
     </>
   );
 };

@@ -1,4 +1,3 @@
-
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import { supabase } from './client';
 import type { Manager } from './types/manager';
@@ -165,6 +164,59 @@ export const getCurrentUserManager = async (): Promise<CrudResult<Manager>> => {
   } catch (error) {
     console.error('Error fetching current user manager:', error);
     return formatCrudResult(null, error);
+  }
+};
+
+// Nova função para criar conta de auth para manager existente
+export const createAuthForManager = async (managerId: string, tempPassword: string): Promise<CrudResult<any>> => {
+  try {
+    console.log('[CreateAuthForManager] Iniciando criação de conta auth para manager:', managerId);
+    
+    const { data, error } = await callRPC<any>('create_auth_for_manager', {
+      manager_id_param: managerId,
+      temp_password: tempPassword
+    });
+    
+    if (error) {
+      console.error('[CreateAuthForManager] Erro:', error);
+      return formatCrudResult(null, error);
+    }
+    
+    if (!data.success) {
+      console.error('[CreateAuthForManager] Falha na preparação:', data.error);
+      return formatCrudResult(null, new Error(data.error));
+    }
+    
+    // Agora criar o usuário auth usando as credenciais
+    console.log('[CreateAuthForManager] Criando usuário auth:', data.email);
+    
+    const authResult = await authCredentials.register({
+      email: data.email,
+      password: tempPassword,
+      name: data.name,
+      role: data.role || 'manager',
+      department_id: data.department_id
+    });
+    
+    if (authResult.error) {
+      console.error('[CreateAuthForManager] Erro ao criar usuário auth:', authResult.error);
+      return formatCrudResult(null, authResult.error);
+    }
+    
+    console.log('[CreateAuthForManager] Usuário auth criado com sucesso');
+    
+    // Executar correção para associar o manager ao usuário criado
+    await fixAuthManagerInconsistencies();
+    
+    return formatCrudResult({
+      success: true,
+      manager_id: managerId,
+      user_id: authResult.data?.user?.id,
+      temp_password: tempPassword
+    }, null);
+  } catch (error) {
+    console.error('[CreateAuthForManager] Erro geral:', error);
+    return formatCrudResult(null, error instanceof Error ? error : new Error(String(error)));
   }
 };
 
