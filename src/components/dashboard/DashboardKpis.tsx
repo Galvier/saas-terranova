@@ -16,14 +16,14 @@ interface DashboardKpisProps {
 
 const DashboardKpis: React.FC<DashboardKpisProps> = ({ kpiData }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
       <KpiCard
         title="Vendas totais"
         value={`R$ ${kpiData.salesTotal.toLocaleString('pt-BR')}`}
         change={12.5}
         changeLabel="vs. período anterior"
         status="success"
-        icon={<ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+        icon={<ShoppingCart className="h-4 w-4 md:h-5 md:w-5 text-primary" />}
       />
       
       <KpiCard
@@ -32,7 +32,7 @@ const DashboardKpis: React.FC<DashboardKpisProps> = ({ kpiData }) => {
         change={-3.2}
         changeLabel="vs. período anterior"
         status="warning"
-        icon={<Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+        icon={<Users className="h-4 w-4 md:h-5 md:w-5 text-primary" />}
       />
       
       <KpiCard
@@ -41,7 +41,7 @@ const DashboardKpis: React.FC<DashboardKpisProps> = ({ kpiData }) => {
         change={0.5}
         changeLabel="vs. período anterior"
         status="success"
-        icon={<BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+        icon={<BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-primary" />}
       />
       
       <KpiCard
@@ -50,7 +50,7 @@ const DashboardKpis: React.FC<DashboardKpisProps> = ({ kpiData }) => {
         change={-1}
         changeLabel="vs. período anterior"
         status="danger"
-        icon={<FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
+        icon={<FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />}
       />
     </div>
   );

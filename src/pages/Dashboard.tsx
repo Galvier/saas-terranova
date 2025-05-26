@@ -117,123 +117,126 @@ const Dashboard = () => {
   });
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in space-y-4 md:space-y-6">
       <PageHeader
         title="Dashboard"
         subtitle="Visão geral dos indicadores de desempenho da empresa"
       />
       
-      <DashboardHeader 
-        departments={departments}
-        selectedDepartment={selectedDepartment}
-        onDepartmentChange={setSelectedDepartment}
-        departmentName={departmentName}
-        isAdmin={isAdmin}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onOpenMetricSelection={() => setIsMetricSelectionOpen(true)}
-      />
-      
-      <div className="mb-6">
-        <DateFilter
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-          dateRangeType={dateRangeType}
-          onDateRangeTypeChange={setDateRangeType as (type: DateRangeType) => void}
+      <div className="space-y-4 md:space-y-6">
+        <DashboardHeader 
+          departments={departments}
+          selectedDepartment={selectedDepartment}
+          onDepartmentChange={setSelectedDepartment}
+          departmentName={departmentName}
+          isAdmin={isAdmin}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onOpenMetricSelection={() => setIsMetricSelectionOpen(true)}
         />
-      </div>
-      
-      {isLoading || isLoadingConfig ? (
-        <div className="flex justify-center items-center h-64">
-          <p className="text-muted-foreground">Carregando indicadores...</p>
+        
+        <div className="w-full">
+          <DateFilter
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            dateRangeType={dateRangeType}
+            onDateRangeTypeChange={setDateRangeType as (type: DateRangeType) => void}
+          />
         </div>
-      ) : hasError ? (
-        <Card className="p-8 text-center">
-          <div className="flex flex-col items-center justify-center py-8">
-            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-            <h3 className="text-xl font-medium mb-2">Erro ao carregar métricas</h3>
-            <p className="text-muted-foreground mb-6">
-              {errorMessage || "Não foi possível carregar os dados de desempenho"}
-            </p>
-            <Button variant="outline" onClick={() => window.location.reload()}>
-              Tentar novamente
-            </Button>
+        
+        {isLoading || isLoadingConfig ? (
+          <div className="flex justify-center items-center h-32 md:h-64">
+            <p className="text-muted-foreground">Carregando indicadores...</p>
           </div>
-        </Card>
-      ) : metrics.length === 0 ? (
-        <Card className="p-8 text-center">
-          <div className="flex flex-col items-center justify-center py-8">
-            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
-            <p className="text-muted-foreground mb-6">
-              {viewMode === 'favorites' ? (
-                <>
-                  Você ainda não selecionou métricas favoritas ou não há métricas disponíveis para o período selecionado.
-                </>
-              ) : (
-                'Não há métricas disponíveis para o departamento e período selecionados.'
+        ) : hasError ? (
+          <Card className="p-4 md:p-8 text-center">
+            <div className="flex flex-col items-center justify-center py-4 md:py-8">
+              <AlertCircle className="h-8 w-8 md:h-12 md:w-12 text-destructive mb-4" />
+              <h3 className="text-lg md:text-xl font-medium mb-2">Erro ao carregar métricas</h3>
+              <p className="text-muted-foreground mb-4 md:mb-6 text-sm md:text-base">
+                {errorMessage || "Não foi possível carregar os dados de desempenho"}
+              </p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Tentar novamente
+              </Button>
+            </div>
+          </Card>
+        ) : metrics.length === 0 ? (
+          <Card className="p-4 md:p-8 text-center">
+            <div className="flex flex-col items-center justify-center py-4 md:py-8">
+              <AlertCircle className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg md:text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
+              <p className="text-muted-foreground mb-4 md:mb-6 text-sm md:text-base px-4">
+                {viewMode === 'favorites' ? (
+                  <>
+                    Você ainda não selecionou métricas favoritas ou não há métricas disponíveis para o período selecionado.
+                  </>
+                ) : (
+                  'Não há métricas disponíveis para o departamento e período selecionados.'
+                )}
+              </p>
+              {isAdmin && (
+                <div className="flex flex-col space-y-2 w-full max-w-xs">
+                  <Button 
+                    variant={viewMode === 'favorites' ? "outline" : "default"}
+                    onClick={() => setIsMetricSelectionOpen(true)}
+                    className="w-full"
+                  >
+                    Configurar dashboard
+                  </Button>
+                </div>
               )}
-            </p>
-            {isAdmin && (
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  variant={viewMode === 'favorites' ? "outline" : "default"}
-                  onClick={() => setIsMetricSelectionOpen(true)}
-                >
-                  Configurar dashboard
-                </Button>
+            </div>
+          </Card>
+        ) : (
+          <div className="space-y-4 md:space-y-6">
+            {viewMode === 'favorites' && isAdmin && selectedMetrics.length > 0 && (
+              <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-md">
+                <Star className="h-4 w-4 text-primary flex-shrink-0" />
+                <span className="text-sm font-medium">
+                  Dashboard personalizado: Métricas principais ({selectedMetrics.length} métricas)
+                </span>
+              </div>
+            )}
+            
+            {/* Conditional rendering based on user role and view mode */}
+            {!isAdmin ? (
+              /* Manager Dashboard - Only show their department metrics */
+              <ManagerDashboard 
+                metrics={metrics} 
+                departmentName={departmentName}
+              />
+            ) : showAnalyticsDashboard ? (
+              /* Admin Analytics Dashboard */
+              <AnalyticsDashboard metrics={metrics} />
+            ) : viewMode === 'favorites' ? (
+              /* Admin Favorites View */
+              <FavoriteMetricsGrid 
+                metrics={metrics} 
+                selectedMetrics={selectedMetrics} 
+                viewMode={viewMode}
+                onConfigureClick={() => setIsMetricSelectionOpen(true)}
+              />
+            ) : (
+              /* Admin Full Dashboard */
+              <div className="space-y-4 md:space-y-6">
+                <DashboardKpis kpiData={kpiData} />
+                
+                <DashboardCharts 
+                  departmentPerformance={departmentPerformance}
+                  monthlyRevenue={monthlyRevenue}
+                />
+                
+                <AdditionalMetricsGrid 
+                  metrics={metrics} 
+                  viewMode={viewMode} 
+                  isAdmin={isAdmin}
+                />
               </div>
             )}
           </div>
-        </Card>
-      ) : (
-        <>
-          {viewMode === 'favorites' && isAdmin && selectedMetrics.length > 0 && (
-            <div className="flex items-center gap-2 mb-4 bg-primary/5 p-2 rounded-md">
-              <Star className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">
-                Dashboard personalizado: Métricas principais ({selectedMetrics.length} métricas)
-              </span>
-            </div>
-          )}
-          
-          {/* Conditional rendering based on user role and view mode */}
-          {!isAdmin ? (
-            /* Manager Dashboard - Only show their department metrics */
-            <ManagerDashboard 
-              metrics={metrics} 
-              departmentName={departmentName}
-            />
-          ) : showAnalyticsDashboard ? (
-            /* Admin Analytics Dashboard */
-            <AnalyticsDashboard metrics={metrics} />
-          ) : viewMode === 'favorites' ? (
-            /* Admin Favorites View */
-            <FavoriteMetricsGrid 
-              metrics={metrics} 
-              selectedMetrics={selectedMetrics} 
-              viewMode={viewMode}
-              onConfigureClick={() => setIsMetricSelectionOpen(true)}
-            />
-          ) : (
-            /* Admin Full Dashboard */
-            <>
-              <DashboardKpis kpiData={kpiData} />
-              
-              <DashboardCharts 
-                departmentPerformance={departmentPerformance}
-                monthlyRevenue={monthlyRevenue}
-              />
-              
-              <AdditionalMetricsGrid 
-                metrics={metrics} 
-                viewMode={viewMode} 
-                isAdmin={isAdmin}
-              />
-            </>
-          )}
-        </>
-      )}
+        )}
+      </div>
       
       {/* Metric selection dialog for admin dashboard customization */}
       {isAdmin && (

@@ -1,0 +1,165 @@
+
+/* Mobile-first optimizations for Terranova Dashboard */
+
+/* Base mobile styles */
+@media (max-width: 640px) {
+  /* Reduce padding and margins for mobile */
+  .card {
+    padding: 1rem;
+  }
+  
+  /* Optimize touch targets */
+  button,
+  .interactive-element {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better text sizing for mobile */
+  .text-xs { font-size: 0.75rem; }
+  .text-sm { font-size: 0.875rem; }
+  .text-base { font-size: 1rem; }
+  .text-lg { font-size: 1.125rem; }
+  .text-xl { font-size: 1.25rem; }
+  
+  /* Stack forms vertically */
+  .form-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  /* Full width inputs on mobile */
+  input,
+  select,
+  textarea {
+    width: 100%;
+  }
+  
+  /* Better table responsiveness */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Hide non-essential columns on mobile */
+  .hidden-mobile {
+    display: none;
+  }
+  
+  /* Optimize dialog sizes */
+  .dialog-content {
+    width: 95vw;
+    max-width: 95vw;
+    margin: 0.5rem;
+  }
+  
+  /* Better spacing for mobile grids */
+  .grid-mobile {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-tablet {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  /* Show some columns that were hidden on mobile */
+  .hidden-mobile {
+    display: table-cell;
+  }
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  button,
+  a,
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem;
+  }
+  
+  /* Remove hover effects on touch devices */
+  .hover\:bg-gray-100:hover {
+    background-color: inherit;
+  }
+  
+  /* Use active states instead */
+  .active\:bg-gray-100:active {
+    background-color: #f3f4f6;
+  }
+}
+
+/* Improve readability on small screens */
+@media (max-width: 480px) {
+  /* Larger font sizes for better readability */
+  body {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  
+  /* Better contrast for mobile */
+  .text-muted-foreground {
+    color: #6b7280;
+  }
+  
+  /* Optimize spacing */
+  .space-y-1 > * + * { margin-top: 0.5rem; }
+  .space-y-2 > * + * { margin-top: 0.75rem; }
+  .space-y-3 > * + * { margin-top: 1rem; }
+  .space-y-4 > * + * { margin-top: 1.25rem; }
+  .space-y-6 > * + * { margin-top: 2rem; }
+}
+
+/* Landscape mode optimizations for mobile */
+@media (max-width: 640px) and (orientation: landscape) {
+  /* Reduce header heights in landscape */
+  .header-mobile {
+    height: 3rem;
+  }
+  
+  /* Optimize content area */
+  .content-landscape {
+    height: calc(100vh - 3rem);
+    overflow-y: auto;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Sharper icons and images */
+  .icon,
+  .chart {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Dark mode mobile optimizations */
+@media (prefers-color-scheme: dark) and (max-width: 640px) {
+  /* Better contrast in dark mode on mobile */
+  .card {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+  
+  /* Optimize text colors */
+  .text-muted-foreground {
+    color: #9ca3af;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .transition-all,
+  .transition-colors {
+    animation: none;
+    transition: none;
+  }
+}

@@ -3,6 +3,17 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, ClipboardList, Home, LogOut, Settings, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar';
 import AppLogo from './AppLogo';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -96,38 +107,44 @@ const AppSidebar = () => {
   };
 
   return (
-    <div className="h-screen w-64 flex flex-col bg-terranova-blue text-white border-r border-terranova-blue-light">
-      <div className="p-4 border-b border-terranova-blue-light bg-white">
+    <Sidebar className="border-r border-terranova-blue-light">
+      <SidebarHeader className="border-b border-terranova-blue-light bg-white p-4">
         <AppLogo />
-      </div>
+      </SidebarHeader>
       
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            
-            return (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-                    isActive
-                      ? 'bg-white text-terranova-blue'
-                      : 'text-white hover:bg-terranova-blue-light hover:text-white'
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.title}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      <SidebarContent className="bg-terranova-blue">
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link
+                        to={item.path}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                          isActive
+                            ? 'bg-white text-terranova-blue'
+                            : 'text-white hover:bg-terranova-blue-light hover:text-white'
+                        }`}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
       
-      <div className="p-4 border-t border-terranova-blue-light mt-auto">
+      <SidebarFooter className="bg-terranova-blue border-t border-terranova-blue-light p-4">
         <div className="mb-4">
-          <div className="text-sm font-medium">{getUserDisplayName()}</div>
+          <div className="text-sm font-medium text-white">{getUserDisplayName()}</div>
           <div className="text-xs text-gray-300">{getUserRole()}</div>
         </div>
         <Button
@@ -140,8 +157,8 @@ const AppSidebar = () => {
           <LogOut className={`h-4 w-4 ${isLoggingOut ? 'animate-spin' : ''}`} />
           {isLoggingOut ? 'Saindo...' : 'Sair'}
         </Button>
-      </div>
-    </div>
+      </SidebarFooter>
+    </Sidebar>
   );
 };
 

@@ -17,7 +17,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
   monthlyRevenue 
 }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
       <PerformanceChart
         title="Desempenho por departamento"
         data={departmentPerformance.length > 0 ? departmentPerformance : [{ name: 'Carregando...', value: 0 }]}
