@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Star, AlertCircle } from 'lucide-react';
@@ -24,7 +25,11 @@ import ManagerDashboard from '@/components/dashboard/ManagerDashboard';
 const Dashboard = () => {
   const { user, isAdmin, userDepartmentId } = useAuth();
   
-  const [selectedDepartment, setSelectedDepartment] = useState<string>(isAdmin ? "all" : userDepartmentId || "");
+  // Initialize selectedDepartment correctly based on user role
+  const [selectedDepartment, setSelectedDepartment] = useState<string>(() => {
+    return isAdmin ? "all" : userDepartmentId || "";
+  });
+  
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dateRangeType, setDateRangeType] = useState<DateRangeType>('month');
   
@@ -45,6 +50,23 @@ const Dashboard = () => {
       return result.data || [];
     }
   });
+
+  // Fix initial department synchronization for admin users
+  useEffect(() => {
+    console.log('[Dashboard] User role synchronization:', {
+      isAdmin,
+      userDepartmentId,
+      currentSelectedDepartment: selectedDepartment
+    });
+    
+    if (isAdmin && selectedDepartment !== "all") {
+      console.log('[Dashboard] Fixing admin department selection to "all"');
+      setSelectedDepartment("all");
+    } else if (!isAdmin && userDepartmentId && selectedDepartment !== userDepartmentId) {
+      console.log('[Dashboard] Fixing manager department selection to their department');
+      setSelectedDepartment(userDepartmentId);
+    }
+  }, [isAdmin, userDepartmentId]);
   
   // Set department name when department is selected
   useEffect(() => {
@@ -87,6 +109,12 @@ const Dashboard = () => {
 
   console.log("Dashboard rendering - metrics count:", metrics?.length || 0);
   console.log("Selected metrics:", selectedMetrics);
+  console.log("Dashboard state:", {
+    selectedDepartment,
+    isAdmin,
+    userDepartmentId,
+    showAnalyticsDashboard
+  });
 
   return (
     <div className="animate-fade-in">
