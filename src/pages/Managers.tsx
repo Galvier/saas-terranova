@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,6 @@ import PageHeader from '@/components/PageHeader';
 import { UserPlus, RefreshCcw, WrenchIcon } from 'lucide-react';
 import { deleteManager, getAllManagers, fixAuthManagerInconsistencies } from '@/integrations/supabase';
 import { ManagerSearch } from '@/components/managers/ManagerSearch';
-import { ManagerActions } from '@/components/managers/ManagerActions';
 import { ManagersTable } from '@/components/managers/ManagersTable';
 import { DeleteManagerDialog } from '@/components/managers/DeleteManagerDialog';
 import { useNavigate } from 'react-router-dom';
@@ -52,8 +52,8 @@ const Managers = () => {
     manager.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  // Count managers without user_id
-  const unsyncedManagersCount = managers.filter(m => !m.user_id).length;
+  // Count managers without user_id (apenas para admins)
+  const unsyncedManagersCount = isAdmin ? managers.filter(m => !m.user_id).length : 0;
   
   console.log('[Managers] Unsynced managers count:', unsyncedManagersCount);
 
@@ -211,7 +211,7 @@ const Managers = () => {
     <div className="animate-fade-in space-y-6">
       <PageHeader 
         title="Gestores" 
-        subtitle="Gerencie os gestores e suas permissões"
+        subtitle={isAdmin ? "Gerencie os gestores e suas permissões" : "Visualize a lista de gestores"}
         actionButton={
           <div className="flex gap-2">
             <Button 
@@ -254,7 +254,6 @@ const Managers = () => {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
         />
-        {isAdmin && <ManagerActions />}
       </div>
       
       <ManagersTable 

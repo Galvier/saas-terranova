@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Edit, MoreHorizontal, Trash2, Eye, RefreshCcw, AlertCircle, UserPlus, Loader2 } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2, RefreshCcw, AlertCircle, UserPlus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { CreateAuthDialog } from './CreateAuthDialog';
@@ -50,10 +50,15 @@ export const ManagersTable = ({
   }>({ isOpen: false, manager: null });
 
   const handleEditManager = (id: string) => {
+    // Apenas admins podem editar gestores
     if (isAdmin) {
       navigate(`/managers/edit/${id}`);
     } else {
-      navigate(`/managers/edit/${id}`);
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para editar gestores",
+        variant: "destructive"
+      });
     }
   };
 
@@ -135,6 +140,15 @@ export const ManagersTable = ({
         </div>
       )}
 
+      {/* Mensagem informativa para gestores não-admin */}
+      {!isAdmin && (
+        <div className="mb-4 p-4 border border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 rounded-md">
+          <p className="text-sm text-blue-700 dark:text-blue-400">
+            <strong>Visualização somente leitura:</strong> Como gestor, você pode visualizar a lista de gestores mas não pode realizar edições, criações ou exclusões. Entre em contato com um administrador para alterações.
+          </p>
+        </div>
+      )}
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -145,7 +159,7 @@ export const ManagersTable = ({
               <TableHead>Função</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Conta</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              {(isAdmin || currentUserManager) && <TableHead className="text-right">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -161,9 +175,10 @@ export const ManagersTable = ({
                 console.log(`[ManagersTable] ${manager.name}: user_id=${manager.user_id}`);
                 
                 const hasAuthUser = !!manager.user_id;
+                const isCurrentUser = manager.email?.toLowerCase() === currentUserEmail;
                 
                 return (
-                  <TableRow key={manager.id} className={manager.email?.toLowerCase() === currentUserEmail ? "bg-primary/5" : undefined}>
+                  <TableRow key={manager.id} className={isCurrentUser ? "bg-primary/5" : undefined}>
                     <TableCell className="font-medium">{manager.name}</TableCell>
                     <TableCell>{manager.email}</TableCell>
                     <TableCell>{manager.department_name || 'Não definido'}</TableCell>
@@ -192,49 +207,46 @@ export const ManagersTable = ({
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {isAdmin ? (
-                            <>
-                              <DropdownMenuItem onClick={() => handleEditManager(manager.id)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Editar
-                              </DropdownMenuItem>
-                              {!hasAuthUser && (
-                                <DropdownMenuItem onClick={() => handleCreateAuthClick(manager)}>
-                                  <UserPlus className="mr-2 h-4 w-4" />
-                                  Criar conta de acesso
+                    {(isAdmin || isCurrentUser) && (
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {isAdmin && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleEditManager(manager.id)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Editar
                                 </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem 
-                                onClick={() => onDeleteManager(manager)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Excluir
+                                {!hasAuthUser && (
+                                  <DropdownMenuItem onClick={() => handleCreateAuthClick(manager)}>
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    Criar conta de acesso
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem 
+                                  onClick={() => onDeleteManager(manager)}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {isCurrentUser && (
+                              <DropdownMenuItem onClick={handleSyncUserData}>
+                                <RefreshCcw className="mr-2 h-4 w-4" />
+                                Sincronizar dados
                               </DropdownMenuItem>
-                            </>
-                          ) : (
-                            <DropdownMenuItem onClick={() => handleEditManager(manager.id)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Visualizar
-                            </DropdownMenuItem>
-                          )}
-                          {manager.email?.toLowerCase() === currentUserEmail && (
-                            <DropdownMenuItem onClick={handleSyncUserData}>
-                              <RefreshCcw className="mr-2 h-4 w-4" />
-                              Sincronizar dados
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })
