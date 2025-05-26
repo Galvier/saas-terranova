@@ -90,6 +90,14 @@ export const ManagersTable = ({
   };
 
   const handleCreateAuthClick = (manager: Manager) => {
+    if (!isAdmin) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para criar contas de acesso",
+        variant: "destructive"
+      });
+      return;
+    }
     setCreateAuthDialog({
       isOpen: true,
       manager
@@ -241,13 +249,15 @@ export const ManagersTable = ({
         </Table>
       </div>
 
-      <CreateAuthDialog
-        isOpen={createAuthDialog.isOpen}
-        onOpenChange={(open) => setCreateAuthDialog({ isOpen: open, manager: null })}
-        manager={createAuthDialog.manager}
-        onSuccess={handleCreateAuthSuccess}
-        onCreateAuth={handleCreateAuth}
-      />
+      {isAdmin && (
+        <CreateAuthDialog
+          isOpen={createAuthDialog.isOpen}
+          onOpenChange={(open) => setCreateAuthDialog({ isOpen: open, manager: null })}
+          manager={createAuthDialog.manager}
+          onSuccess={handleCreateAuthSuccess}
+          onCreateAuth={handleCreateAuth}
+        />
+      )}
     </>
   );
 };

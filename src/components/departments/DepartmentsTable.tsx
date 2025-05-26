@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, X, MoreHorizontal, Plus } from 'lucide-react';
+import { Check, X, MoreHorizontal, Plus, Eye } from 'lucide-react';
 
 import {
   Table,
@@ -25,12 +25,14 @@ interface DepartmentsTableProps {
   departments: Department[];
   onEdit: (department: Department) => void;
   onDelete: (department: Department) => void;
+  isAdmin?: boolean;
 }
 
 const DepartmentsTable: React.FC<DepartmentsTableProps> = ({
   departments,
   onEdit,
   onDelete,
+  isAdmin = false,
 }) => {
   const navigate = useNavigate();
 
@@ -87,12 +89,21 @@ const DepartmentsTable: React.FC<DepartmentsTableProps> = ({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(department)}>
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onDelete(department)}>
-                        Excluir
-                      </DropdownMenuItem>
+                      {isAdmin ? (
+                        <>
+                          <DropdownMenuItem onClick={() => onEdit(department)}>
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onDelete(department)}>
+                            Excluir
+                          </DropdownMenuItem>
+                        </>
+                      ) : (
+                        <DropdownMenuItem onClick={() => onEdit(department)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Visualizar
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
