@@ -1,6 +1,7 @@
 import { callRPC, formatCrudResult, type CrudResult } from './core';
 import { supabase } from './client';
 import type { Manager } from './types/manager';
+import { authCredentials } from '@/services/auth/credentials';
 
 export const getAllManagers = async (): Promise<CrudResult<Manager[]>> => {
   try {
@@ -23,8 +24,11 @@ export const createManager = async (
   }
 ): Promise<CrudResult<Manager>> => {
   try {
-    // First create the manager in the database
-    const { data: managerData, error: managerError } = await callRPC<Manager>('create_manager', {
+    console.log('[CreateManager] Iniciando criação do gestor:', manager.email);
+    
+    // Step 1: Create the manager record first
+    console.log('[CreateManager] Criando registro do manager');
+    const { data: managerData, error: managerError } = await callRPC<any>('create_manager', {
       manager_name: manager.name,
       manager_email: manager.email,
       manager_department_id: manager.department_id,
@@ -34,41 +38,44 @@ export const createManager = async (
     });
     
     if (managerError) {
-      console.error('Error creating manager:', managerError);
+      console.error('[CreateManager] Erro ao criar manager:', managerError);
       return formatCrudResult(null, managerError);
     }
     
-    // If a password was provided and user doesn't exist yet, create an auth user
-    if (manager.password && managerData.user_created === true) {
-      try {
-        // Create user in Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: manager.email,
-          password: manager.password,
-          email_confirm: true,
-          user_metadata: {
-            role: manager.role || 'manager',
-            department_id: manager.department_id,
-            display_name: manager.name
-          }
-        });
-        
-        if (authError) {
-          console.error('Error creating auth user:', authError);
-          // Still return success for manager creation, but log the auth error
-          return formatCrudResult(managerData, null);
-        }
-        
-        console.log('Auth user created successfully:', authData);
-      } catch (authErr) {
-        console.error('Exception in auth user creation:', authErr);
-        // Still return success for manager creation
+    console.log('[CreateManager] Manager criado com sucesso:', managerData);
+    
+    // Step 2: Create auth user if needed
+    if (managerData.auth_creation_needed && manager.password) {
+      console.log('[CreateManager] Criando usuário auth com role:', manager.role);
+      
+      const authResult = await authCredentials.register({
+        email: manager.email,
+        password: manager.password,
+        name: manager.name,
+        role: manager.role || 'manager',
+        department_id: manager.department_id
+      });
+      
+      if (authResult.error) {
+        console.error('[CreateManager] Erro ao criar usuário auth:', authResult.error);
+        // Manager foi criado mas falhou a criação do usuário auth
+        console.log('[CreateManager] Manager criado mas falhou a criação do usuário auth');
+      } else {
+        console.log('[CreateManager] Usuário auth criado com sucesso:', authResult.data?.user?.id);
       }
     }
-
-    return formatCrudResult(managerData, null);
+    
+    // Step 3: Run fix inconsistencies to ensure proper linking
+    console.log('[CreateManager] Executando correção de inconsistências');
+    await fixAuthManagerInconsistencies();
+    
+    // Step 4: Fetch the complete manager data
+    const completeManagerResult = await getManagerById(managerData.id);
+    
+    console.log('[CreateManager] Processo concluído com sucesso');
+    return formatCrudResult(completeManagerResult.data, null);
   } catch (error) {
-    console.error('Error in createManager:', error);
+    console.error('[CreateManager] Erro geral na criação:', error);
     return formatCrudResult(null, error);
   }
 };
@@ -160,22 +167,75 @@ export const getCurrentUserManager = async (): Promise<CrudResult<Manager>> => {
   }
 };
 
-// Add a new function to manually fix any sync issues
+// Nova função para criar conta de auth para manager existente
+export const createAuthForManager = async (managerId: string, tempPassword: string): Promise<CrudResult<any>> => {
+  try {
+    console.log('[CreateAuthForManager] Iniciando criação de conta auth para manager:', managerId);
+    
+    const { data, error } = await callRPC<any>('create_auth_for_manager', {
+      manager_id_param: managerId,
+      temp_password: tempPassword
+    });
+    
+    if (error) {
+      console.error('[CreateAuthForManager] Erro:', error);
+      return formatCrudResult(null, error);
+    }
+    
+    if (!data.success) {
+      console.error('[CreateAuthForManager] Falha na preparação:', data.error);
+      return formatCrudResult(null, new Error(data.error));
+    }
+    
+    // Agora criar o usuário auth usando as credenciais
+    console.log('[CreateAuthForManager] Criando usuário auth:', data.email);
+    
+    const authResult = await authCredentials.register({
+      email: data.email,
+      password: tempPassword,
+      name: data.name,
+      role: data.role || 'manager',
+      department_id: data.department_id
+    });
+    
+    if (authResult.error) {
+      console.error('[CreateAuthForManager] Erro ao criar usuário auth:', authResult.error);
+      return formatCrudResult(null, authResult.error);
+    }
+    
+    console.log('[CreateAuthForManager] Usuário auth criado com sucesso');
+    
+    // Executar correção para associar o manager ao usuário criado
+    await fixAuthManagerInconsistencies();
+    
+    return formatCrudResult({
+      success: true,
+      manager_id: managerId,
+      user_id: authResult.data?.user?.id,
+      temp_password: tempPassword
+    }, null);
+  } catch (error) {
+    console.error('[CreateAuthForManager] Erro geral:', error);
+    return formatCrudResult(null, error instanceof Error ? error : new Error(String(error)));
+  }
+};
+
+// Enhanced function to fix existing inconsistencies and sync metadata
 export const fixAuthManagerInconsistencies = async (): Promise<CrudResult<any>> => {
   try {
-    console.log("Starting fix_user_manager_inconsistencies process");
+    console.log("[FixInconsistencies] Iniciando correção abrangente de inconsistências");
     
     const { data, error } = await callRPC<any>('fix_user_manager_inconsistencies', {});
     
     if (error) {
-      console.error('Error fixing inconsistencies:', error);
+      console.error('[FixInconsistencies] Erro na correção:', error);
       return formatCrudResult(null, error);
     }
     
-    console.log('Fixed inconsistencies result:', data);
+    console.log('[FixInconsistencies] Correção concluída:', data);
     return formatCrudResult(data, null);
   } catch (error) {
-    console.error('Exception in fixAuthManagerInconsistencies:', error);
+    console.error('[FixInconsistencies] Erro geral:', error);
     return formatCrudResult(null, error);
   }
 };

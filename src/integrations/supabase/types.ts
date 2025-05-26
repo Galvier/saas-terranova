@@ -406,27 +406,6 @@ export type Database = {
         }
         Relationships: []
       }
-      users: {
-        Row: {
-          created_at: string | null
-          email: string
-          id: string
-          name: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          id?: string
-          name?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          id?: string
-          name?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -438,6 +417,10 @@ export type Database = {
       }
       check_table_exists_and_count: {
         Args: { table_name: string }
+        Returns: Json
+      }
+      create_auth_for_manager: {
+        Args: { manager_id_param: string; temp_password: string }
         Returns: Json
       }
       create_department: {
@@ -562,6 +545,7 @@ export type Database = {
           role: string
           created_at: string
           updated_at: string
+          user_id: string
         }[]
       }
       get_current_user_manager: {

@@ -26,17 +26,36 @@ const Managers = () => {
   const { data: managersData, isLoading, error, refetch } = useQuery({
     queryKey: ['managers'],
     queryFn: async () => {
+      console.log('[Managers] Fetching managers data...');
       const result = await getAllManagers();
       if (result.error) throw new Error(result.message);
+      console.log('[Managers] Raw managers data:', result.data);
       return result.data || [];
     }
   });
 
   const managers = managersData || [];
+  
+  // Debug: Log sync status calculation
+  useEffect(() => {
+    if (managers.length > 0) {
+      console.log('[Managers] Sync status analysis:');
+      managers.forEach(manager => {
+        const hasAuthUser = !!manager.user_id;
+        console.log(`- ${manager.name} (${manager.email}): user_id=${manager.user_id}, synced=${hasAuthUser}`);
+      });
+    }
+  }, [managers]);
+  
   const filteredManagers = managers.filter(manager => 
     manager.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     manager.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  // Count managers without user_id
+  const unsyncedManagersCount = managers.filter(m => !m.user_id).length;
+  
+  console.log('[Managers] Unsynced managers count:', unsyncedManagersCount);
 
   const confirmDelete = async () => {
     if (managerToDelete && isAdmin) {
@@ -80,23 +99,27 @@ const Managers = () => {
 
   const handleRefreshData = async () => {
     try {
-      // Set up a loading toast
+      console.log('[Managers] Refreshing all data...');
+      
       toast({
         title: "Atualizando dados",
         description: "Carregando informações mais recentes..."
       });
       
-      // Perform all refresh operations
+      // Force a complete refresh of managers data
+      await queryClient.invalidateQueries({ queryKey: ['managers'] });
       await Promise.all([
-        refetch(),       // Refresh managers data
-        refreshUser()    // Refresh user session and metadata
+        refetch(),
+        refreshUser()
       ]);
       
-      // Success toast
-      toast({
-        title: "Dados atualizados",
-        description: "Lista de gestores e permissões atualizadas com sucesso"
-      });
+      // Add a small delay to ensure database changes are reflected
+      setTimeout(() => {
+        toast({
+          title: "Dados atualizados",
+          description: "Lista de gestores e permissões atualizadas com sucesso"
+        });
+      }, 500);
     } catch (error) {
       console.error("Erro ao atualizar dados:", error);
       toast({
@@ -118,27 +141,54 @@ const Managers = () => {
     }
 
     setIsFixingInconsistencies(true);
+    
+    toast({
+      title: "Diagnóstico iniciado",
+      description: "Corrigindo inconsistências entre gestores e contas de usuários..."
+    });
+    
     try {
-      console.log("Iniciando correção de inconsistências");
+      console.log('[Managers] Iniciando correção de inconsistências');
       const result = await fixAuthManagerInconsistencies();
       
       if (result.error) {
-        console.error("Erro ao corrigir inconsistências:", result.error);
+        console.error('[Managers] Erro ao corrigir inconsistências:', result.error);
         throw new Error(result.message);
       }
       
       const updatedCount = result.data?.managers_updated || 0;
+      const managersWithoutAuth = result.data?.managers_without_auth || 0;
       
-      toast({
-        title: "Diagnóstico concluído",
-        description: `${updatedCount} registros de gestores foram atualizados.`
-      });
+      console.log('[Managers] Resultado da correção:', { updatedCount, managersWithoutAuth });
+      
+      // Force immediate refresh of data after fix
+      console.log('[Managers] Forçando atualização dos dados após correção...');
+      await queryClient.invalidateQueries({ queryKey: ['managers'] });
+      
+      // Wait a moment for the database to settle, then refetch
+      setTimeout(async () => {
+        await refetch();
+        console.log('[Managers] Dados atualizados após correção');
+      }, 1000);
       
       if (updatedCount > 0) {
-        refetch();
+        toast({
+          title: "Diagnóstico concluído",
+          description: `${updatedCount} gestores foram sincronizados com contas existentes.${managersWithoutAuth > 0 ? ` ${managersWithoutAuth} gestores ainda precisam de conta de acesso.` : ''}`
+        });
+      } else if (managersWithoutAuth > 0) {
+        toast({
+          title: "Diagnóstico concluído",
+          description: `${managersWithoutAuth} gestores precisam de conta de acesso. Use "Criar conta de acesso" no menu de ações.`
+        });
+      } else {
+        toast({
+          title: "Diagnóstico concluído",
+          description: "Todos os gestores estão sincronizados corretamente."
+        });
       }
     } catch (error: any) {
-      console.error("Erro capturado durante o diagnóstico:", error);
+      console.error('[Managers] Erro capturado durante o diagnóstico:', error);
       toast({
         title: "Erro durante diagnóstico",
         description: error.message,
@@ -181,8 +231,13 @@ const Managers = () => {
                   disabled={isFixingInconsistencies}
                   className="flex items-center gap-1"
                 >
-                  <WrenchIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Corrigir Inconsistências</span>
+                  <WrenchIcon className={`h-4 w-4 ${isFixingInconsistencies ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">
+                    {isFixingInconsistencies ? 'Corrigindo...' : 
+                      unsyncedManagersCount > 0 
+                        ? `Corrigir (${unsyncedManagersCount})`
+                        : 'Corrigir Inconsistências'}
+                  </span>
                 </Button>
                 <Button onClick={() => navigate('/managers/new')}>
                   <UserPlus className="mr-2 h-4 w-4" />
@@ -207,6 +262,8 @@ const Managers = () => {
         isLoading={isLoading}
         onDeleteManager={handleDeleteManager}
         isAdmin={isAdmin}
+        onRefreshData={handleRefreshData}
+        isFixingInconsistencies={isFixingInconsistencies}
       />
       
       {isAdmin && (

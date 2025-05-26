@@ -2,10 +2,28 @@
 project_id = "wjuzzjitpkhjjxujxftm"
 
 [api]
-enabled_apis = ["rest", "graphql", "realtime"]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+
+[studio]
+port = 54323
+
+[inbucket]
+port = 54324
+
+[storage]
+port = 54325
+
+[auth]
+port = 54326
 
 [realtime]
-enabled = true
+port = 54327
 
-[database]
-pool_timeout = 60
+[functions]
+[functions.create-auth-user]
+verify_jwt = false

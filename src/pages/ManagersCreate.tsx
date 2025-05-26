@@ -24,6 +24,7 @@ import { useQuery } from '@tanstack/react-query';
 import DepartmentsSelect from '@/components/DepartmentsSelect';
 import { createManager, getAllDepartments } from '@/integrations/supabase';
 import { Loader2 } from 'lucide-react';
+import PasswordInput from '@/components/managers/PasswordInput';
 
 // Define form validation schema
 const formSchema = z.object({
@@ -35,6 +36,10 @@ const formSchema = z.object({
     required_error: 'Selecione uma função',
   }).default('manager'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  password_confirm: z.string().min(6, 'Confirme a senha'),
+}).refine(data => data.password === data.password_confirm, {
+  message: "As senhas não conferem",
+  path: ["password_confirm"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -62,7 +67,8 @@ const ManagersCreate = () => {
       email: '',
       is_active: true,
       role: 'manager',
-      password: ''
+      password: '',
+      password_confirm: ''
     },
   });
 
@@ -87,7 +93,7 @@ const ManagersCreate = () => {
 
       toast({
         title: 'Gestor criado com sucesso',
-        description: `${values.name} foi adicionado como gestor.`,
+        description: `${values.name} foi adicionado como gestor e usuário do sistema.`,
       });
 
       navigate('/managers');
@@ -119,7 +125,7 @@ const ManagersCreate = () => {
         <CardHeader>
           <CardTitle>Dados do Gestor</CardTitle>
           <CardDescription>
-            Preencha os dados abaixo para adicionar um novo gestor.
+            Preencha os dados abaixo para adicionar um novo gestor. Uma conta de usuário será criada automaticamente.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -220,14 +226,40 @@ const ManagersCreate = () => {
                   <FormItem>
                     <FormLabel>Senha</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Digite a senha" 
-                        {...field} 
+                      <PasswordInput
+                        label="Senha"
+                        value={field.value}
+                        onChange={field.onChange}
+                        showStrengthIndicator={true}
+                        placeholder="Digite uma senha segura"
                       />
                     </FormControl>
                     <FormDescription>
                       Senha para acesso ao sistema. Mínimo de 6 caracteres.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password_confirm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar Senha</FormLabel>
+                    <FormControl>
+                      <PasswordInput
+                        label="Confirmar Senha"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Confirme a senha"
+                        isConfirmPassword={true}
+                        confirmValue={form.getValues("password")}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Repita a senha para confirmação.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
