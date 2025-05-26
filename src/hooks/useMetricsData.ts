@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -20,6 +21,11 @@ export const useMetricsData = () => {
   const queryClient = useQueryClient();
   const { isAdmin, userDepartmentId } = useAuth();
 
+  // Force department selection to user's department if not admin
+  const effectiveDepartment = !isAdmin && userDepartmentId 
+    ? userDepartmentId 
+    : selectedDepartment;
+
   // Fetch departments data
   const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
     queryKey: ['departments'],
@@ -32,25 +38,25 @@ export const useMetricsData = () => {
 
   // Set department name when department is selected
   useEffect(() => {
-    if (selectedDepartment === 'all') {
+    if (effectiveDepartment === 'all') {
       setDepartmentName("Todos os setores");
     } else {
-      const dept = departments.find(d => d.id === selectedDepartment);
+      const dept = departments.find(d => d.id === effectiveDepartment);
       setDepartmentName(dept?.name || "");
     }
-  }, [selectedDepartment, departments]);
+  }, [effectiveDepartment, departments]);
 
   // Fetch metrics data with proper error handling
   const { data: metrics = [], isLoading: isLoadingMetrics } = useQuery({
-    queryKey: ['metrics', selectedDepartment, format(selectedDate, 'yyyy-MM-dd')],
+    queryKey: ['metrics', effectiveDepartment, format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       console.log("Fetching metrics with params:", {
-        department: selectedDepartment,
+        department: effectiveDepartment,
         date: format(selectedDate, 'yyyy-MM-dd')
       });
       
       const result = await getMetricsByDepartment(
-        selectedDepartment === "all" ? undefined : selectedDepartment,
+        effectiveDepartment === "all" ? undefined : effectiveDepartment,
         format(selectedDate, 'yyyy-MM-dd')
       );
       
@@ -92,23 +98,17 @@ export const useMetricsData = () => {
   // Set initial department based on user role
   useEffect(() => {
     try {
-      // Try to load from localStorage if user has a saved preference
-      const savedDepartment = localStorage.getItem('metricsSelectedDepartment');
-      
-      if (savedDepartment) {
-        // Only apply saved preference if user is admin or it's their department
-        if (isAdmin || savedDepartment === userDepartmentId) {
-          setSelectedDepartment(savedDepartment);
-          return;
-        }
+      // For non-admin users, force their department
+      if (!isAdmin && userDepartmentId) {
+        setSelectedDepartment(userDepartmentId);
+        return;
       }
       
-      // If no saved preference or not applicable, use defaults
-      if (!isAdmin && userDepartmentId) {
-        // Managers default to their department and can't change
-        setSelectedDepartment(userDepartmentId);
+      // For admins, try to load from localStorage
+      const savedDepartment = localStorage.getItem('metricsSelectedDepartment');
+      if (savedDepartment && isAdmin) {
+        setSelectedDepartment(savedDepartment);
       } else if (isAdmin) {
-        // Admins default to "all departments"
         setSelectedDepartment('all');
       }
     } catch (error) {
@@ -116,21 +116,25 @@ export const useMetricsData = () => {
     }
   }, [isAdmin, userDepartmentId]);
   
-  // Save department preference whenever it changes
+  // Save department preference for admins only
   useEffect(() => {
     try {
-      if (selectedDepartment && (isAdmin || selectedDepartment === userDepartmentId)) {
+      if (isAdmin && selectedDepartment) {
         localStorage.setItem('metricsSelectedDepartment', selectedDepartment);
       }
     } catch (error) {
       console.error("Error saving department preference:", error);
     }
-  }, [selectedDepartment, isAdmin, userDepartmentId]);
+  }, [selectedDepartment, isAdmin]);
 
-  // Modify handleDeleteClick to check if the user can delete the metric
+  // Check if user can modify a specific metric
+  const canModifyMetric = (metric: MetricDefinition) => {
+    return isAdmin || metric.department_id === userDepartmentId;
+  };
+
+  // Modify handleDeleteClick to check permissions
   const handleDeleteClick = (metric: MetricDefinition) => {
-    // If user is not admin, check if they're trying to modify a metric from another department
-    if (!isAdmin && metric.department_id !== userDepartmentId) {
+    if (!canModifyMetric(metric)) {
       toast({
         title: "Acesso negado",
         description: "Você não tem permissão para excluir métricas de outros setores",
@@ -143,10 +147,9 @@ export const useMetricsData = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  // Modify handleEditClick to check if the user can edit the metric
+  // Modify handleEditClick to check permissions
   const handleEditClick = (metric: MetricDefinition) => {
-    // If user is not admin, check if they're trying to modify a metric from another department
-    if (!isAdmin && metric.department_id !== userDepartmentId) {
+    if (!canModifyMetric(metric)) {
       toast({
         title: "Acesso negado",
         description: "Você não tem permissão para editar métricas de outros setores",
@@ -229,7 +232,7 @@ export const useMetricsData = () => {
     departments,
     metrics,
     isLoading,
-    selectedDepartment,
+    selectedDepartment: effectiveDepartment,
     setSelectedDepartment,
     selectedDate,
     setSelectedDate,

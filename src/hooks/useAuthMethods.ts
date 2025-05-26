@@ -48,21 +48,72 @@ export const useAuthMethods = (): UseAuthMethodsReturn => {
   };
 
   const logout = async (): Promise<void> => {
+    // Prevenir múltiplas tentativas de logout simultâneas
+    if (isAuthenticating) {
+      console.log('[AuthMethods] Logout já em progresso, ignorando nova tentativa');
+      return;
+    }
+
     try {
       setIsAuthenticating(true);
       console.log('[AuthMethods] Iniciando logout');
       
+      // Verificar se existe uma sessão ativa antes de tentar logout
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log('[AuthMethods] Nenhuma sessão ativa encontrada, limpando estado local');
+        toast({
+          title: "Sessão encerrada",
+          description: "Você foi desconectado com sucesso"
+        });
+        return;
+      }
+      
+      console.log('[AuthMethods] Sessão ativa encontrada, realizando logout');
       const result = await authService.logout();
       
       if (result.error) {
-        console.error('[AuthMethods] Erro durante logout:', result.error);
-        toast({
-          title: "Erro ao desconectar",
-          description: result.error.message || "Falha ao fazer logout",
-          variant: "destructive"
-        });
+        // Tratar "Session not found" como logout bem-sucedido
+        if (result.error.message?.includes('Session not found') || 
+            result.error.message?.includes('session_not_found')) {
+          console.log('[AuthMethods] Sessão já invalidada, tratando como logout bem-sucedido');
+          toast({
+            title: "Sessão encerrada",
+            description: "Você foi desconectado com sucesso"
+          });
+        } else {
+          console.error('[AuthMethods] Erro durante logout:', result.error);
+          toast({
+            title: "Erro ao desconectar",
+            description: result.error.message || "Falha ao fazer logout",
+            variant: "destructive"
+          });
+        }
       } else {
         console.log('[AuthMethods] Logout concluído com sucesso');
+        toast({
+          title: "Sessão encerrada",
+          description: "Você foi desconectado com sucesso"
+        });
+      }
+    } catch (error: any) {
+      console.error('[AuthMethods] Erro não tratado durante logout:', error);
+      
+      // Tratar erros de sessão como logout bem-sucedido
+      if (error.message?.includes('Session not found') || 
+          error.message?.includes('Auth session missing')) {
+        console.log('[AuthMethods] Erro de sessão tratado como logout bem-sucedido');
+        toast({
+          title: "Sessão encerrada",
+          description: "Você foi desconectado com sucesso"
+        });
+      } else {
+        toast({
+          title: "Erro ao desconectar",
+          description: "Ocorreu um erro durante o logout",
+          variant: "destructive"
+        });
       }
     } finally {
       setIsAuthenticating(false);

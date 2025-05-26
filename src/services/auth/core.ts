@@ -40,15 +40,27 @@ export const authCore = {
     try {
       console.log('[AuthCore] Iniciando processo de logout');
       
+      // Verificar se existe uma sessão antes de tentar logout
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.log('[AuthCore] Nenhuma sessão ativa para fazer logout');
+        
+        await createLog('info', 'Tentativa de logout sem sessão ativa', { 
+          timestamp: new Date().toISOString() 
+        });
+        
+        return formatCrudResult(null, null);
+      }
+      
       // Criar log antes do logout para ter acesso ao usuário atual
       try {
-        const session = await supabase.auth.getSession();
-        if (session.data?.session?.user) {
+        if (sessionData.session.user) {
           await createLog('info', 'Iniciando logout', { 
-            user_id: session.data.session.user.id,
-            email: session.data.session.user.email,
+            user_id: sessionData.session.user.id,
+            email: sessionData.session.user.email,
             timestamp: new Date().toISOString() 
-          }, session.data.session.user.id);
+          }, sessionData.session.user.id);
         }
       } catch (logError) {
         console.warn('[AuthCore] Erro ao criar log de logout:', logError);
@@ -58,6 +70,18 @@ export const authCore = {
       
       if (error) {
         console.error('[AuthCore] Erro ao realizar logout:', error);
+        
+        // Tratar "Session not found" como sucesso
+        if (error.message?.includes('Session not found') || 
+            error.message?.includes('session_not_found')) {
+          console.log('[AuthCore] Erro de sessão tratado como logout bem-sucedido');
+          
+          await createLog('info', 'Logout bem-sucedido (sessão já invalidada)', { 
+            timestamp: new Date().toISOString() 
+          });
+          
+          return formatCrudResult(null, null);
+        }
         
         await createLog('error', 'Erro no logout', { 
           error: error.message,
@@ -76,6 +100,20 @@ export const authCore = {
       return formatCrudResult(null, null);
     } catch (error) {
       console.error('[AuthCore] Erro não tratado no logout:', error);
+      
+      // Tratar erros de sessão como sucesso
+      if (error instanceof Error && 
+          (error.message?.includes('Session not found') || 
+           error.message?.includes('Auth session missing'))) {
+        console.log('[AuthCore] Erro de sessão tratado como logout bem-sucedido');
+        
+        await createLog('info', 'Logout bem-sucedido (erro de sessão tratado)', { 
+          error: error.message,
+          timestamp: new Date().toISOString() 
+        });
+        
+        return formatCrudResult(null, null);
+      }
       
       await createLog('error', 'Erro não tratado no logout', { 
         error: error instanceof Error ? error.message : String(error),

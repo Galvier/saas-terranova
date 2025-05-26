@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { MetricDefinition, getMetricsByDepartment } from '@/integrations/supabase';
 import { DateRangeType } from '@/components/filters/DateFilter';
+import { useAuth } from '@/hooks/useAuth';
 
 export const useMetricsFetching = (
   selectedDepartment: string,
@@ -12,19 +13,25 @@ export const useMetricsFetching = (
   dateRangeType: DateRangeType
 ) => {
   const { toast } = useToast();
+  const { isAdmin, userDepartmentId } = useAuth();
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
+  // Force department selection to user's department if not admin
+  const effectiveDepartment = !isAdmin && userDepartmentId 
+    ? userDepartmentId 
+    : selectedDepartment;
+
   // Load metrics data with filters
   const { data: metrics = [], isLoading, isError } = useQuery({
-    queryKey: ['dashboard-metrics', selectedDepartment, format(selectedDate, 'yyyy-MM-dd')],
+    queryKey: ['dashboard-metrics', effectiveDepartment, format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       try {
         setHasError(false);
         setErrorMessage("");
-        console.log("Fetching metrics for department:", selectedDepartment, "date:", format(selectedDate, 'yyyy-MM-dd'));
+        console.log("Fetching metrics for department:", effectiveDepartment, "date:", format(selectedDate, 'yyyy-MM-dd'));
         const result = await getMetricsByDepartment(
-          selectedDepartment === "all" ? undefined : selectedDepartment,
+          effectiveDepartment === "all" ? undefined : effectiveDepartment,
           format(selectedDate, 'yyyy-MM-dd')
         );
         

@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Check, X, MoreHorizontal, Plus } from 'lucide-react';
+import { Check, X, MoreHorizontal, Eye } from 'lucide-react';
 
 import {
   Table,
@@ -25,82 +24,95 @@ interface DepartmentsTableProps {
   departments: Department[];
   onEdit: (department: Department) => void;
   onDelete: (department: Department) => void;
+  isAdmin?: boolean;
 }
 
 const DepartmentsTable: React.FC<DepartmentsTableProps> = ({
   departments,
   onEdit,
   onDelete,
+  isAdmin = false,
 }) => {
-  const navigate = useNavigate();
+  console.log('[DepartmentsTable] Rendering with isAdmin:', isAdmin);
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Descrição</TableHead>
-            <TableHead>Gestor</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {departments.length === 0 ? (
+    <div className="w-full">
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center">
-                Nenhum setor encontrado.
-              </TableCell>
+              <TableHead>Nome</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead>Gestor</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
-          ) : (
-            departments.map((department) => (
-              <TableRow key={department.id}>
-                <TableCell className="font-medium">{department.name}</TableCell>
-                <TableCell>{department.description}</TableCell>
-                <TableCell>
-                  {department.manager_name ? (
-                    <span>{department.manager_name}</span>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {department.is_active ? (
-                    <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">
-                      <Check className="mr-1 h-3.5 w-3.5 text-green-700" />
-                      <span>Ativo</span>
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-rose-50 text-rose-700 hover:bg-rose-50">
-                      <X className="mr-1 h-3.5 w-3.5 text-rose-700" />
-                      <span>Inativo</span>
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Abrir menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(department)}>
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onDelete(department)}>
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+          </TableHeader>
+          <TableBody>
+            {departments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center">
+                  Nenhum setor encontrado.
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              departments.map((department) => (
+                <TableRow key={department.id}>
+                  <TableCell className="font-medium">{department.name}</TableCell>
+                  <TableCell>{department.description}</TableCell>
+                  <TableCell>
+                    {department.manager_name ? (
+                      <span>{department.manager_name}</span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {department.is_active ? (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">
+                        <Check className="mr-1 h-3.5 w-3.5 text-green-700" />
+                        <span>Ativo</span>
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-rose-50 text-rose-700 hover:bg-rose-50">
+                        <X className="mr-1 h-3.5 w-3.5 text-rose-700" />
+                        <span>Inativo</span>
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isAdmin ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Abrir menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEdit(department)}>
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onDelete(department)}>
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <div className="flex justify-end">
+                        <Button variant="ghost" size="sm" className="h-8 px-3 text-muted-foreground cursor-default">
+                          <Eye className="mr-1 h-3.5 w-3.5" />
+                          Visualizar
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

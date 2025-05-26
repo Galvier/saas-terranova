@@ -12,6 +12,7 @@ import MetricValueFields from './form/MetricValueFields';
 import MetricConfigFields from './form/MetricConfigFields';
 import VisualizationConfigFields from './form/VisualizationConfigFields';
 import { z } from 'zod';
+import { useAuth } from '@/hooks/useAuth';
 
 interface MetricFormProps {
   departments: Department[];
@@ -21,7 +22,13 @@ interface MetricFormProps {
 
 const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric }) => {
   const { toast } = useToast();
+  const { isAdmin, userDepartmentId } = useAuth();
   const isEditing = !!metric;
+  
+  // For non-admin users, set department_id to their department
+  const defaultDepartmentId = !isAdmin && userDepartmentId 
+    ? userDepartmentId 
+    : metric?.department_id || '';
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -30,7 +37,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
       description: metric?.description || '',
       unit: metric?.unit || 'R$',
       target: metric?.target || 0,
-      department_id: metric?.department_id || '',
+      department_id: defaultDepartmentId,
       frequency: (metric?.frequency as z.infer<typeof FrequencyEnum>) || 'monthly',
       is_active: metric?.is_active ?? true,
       lower_is_better: metric?.lower_is_better ?? false,
@@ -42,6 +49,11 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      // For non-admin users, force department_id to their department
+      const departmentId = !isAdmin && userDepartmentId 
+        ? userDepartmentId 
+        : values.department_id;
+
       let result;
       
       if (isEditing && metric) {
@@ -50,7 +62,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
           description: values.description || '',
           unit: values.unit,
           target: values.target,
-          department_id: values.department_id,
+          department_id: departmentId,
           frequency: values.frequency,
           is_active: values.is_active,
           lower_is_better: values.lower_is_better,
@@ -65,7 +77,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
           description: values.description || '',
           unit: values.unit,
           target: values.target,
-          department_id: values.department_id,
+          department_id: departmentId,
           frequency: values.frequency,
           is_active: values.is_active,
           lower_is_better: values.lower_is_better,
@@ -100,7 +112,12 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <BasicMetricFields form={form} />
         <MetricValueFields form={form} />
-        <MetricConfigFields form={form} departments={departments} />
+        <MetricConfigFields 
+          form={form} 
+          departments={departments}
+          isAdmin={isAdmin}
+          userDepartmentId={userDepartmentId}
+        />
         <VisualizationConfigFields form={form} />
         
         <Button type="submit" className="w-full">

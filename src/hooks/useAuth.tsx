@@ -62,8 +62,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Log the role sources for debugging
   if (user && !isLoading) {
     console.log('[AuthProvider] Role sources:', {
+      userEmail: user.email,
       userMetadataRole,
-      managerRole
+      managerRole,
+      finalRole: userMetadataRole || managerRole
     });
   }
   
@@ -75,9 +77,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Get the effective role, prioritizing auth metadata
   const userRole = userMetadataRole || managerRole || null;
 
-  // Log for diagnostics
+  // Enhanced logging for diagnostics
   if (user && !isLoading) {
-    console.log('[AuthProvider] User status:', {
+    console.log('[AuthProvider] Final user status:', {
       id: user.id,
       email: user.email,
       authMetadataRole: userMetadataRole,
@@ -85,7 +87,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isAdmin,
       isManager,
       isViewer,
-      effectiveRole: userRole
+      effectiveRole: userRole,
+      isAuthenticated
     });
   }
 

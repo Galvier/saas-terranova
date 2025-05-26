@@ -11,9 +11,21 @@ import { formSchema } from './metricFormSchema';
 interface MetricConfigFieldsProps {
   form: UseFormReturn<z.infer<typeof formSchema>>;
   departments: Department[];
+  isAdmin?: boolean;
+  userDepartmentId?: string | null;
 }
 
-const MetricConfigFields: React.FC<MetricConfigFieldsProps> = ({ form, departments }) => {
+const MetricConfigFields: React.FC<MetricConfigFieldsProps> = ({ 
+  form, 
+  departments, 
+  isAdmin = true, 
+  userDepartmentId 
+}) => {
+  // Filter departments for non-admin users
+  const availableDepartments = !isAdmin && userDepartmentId 
+    ? departments.filter(dept => dept.id === userDepartmentId)
+    : departments;
+
   return (
     <>
       <FormField
@@ -22,20 +34,29 @@ const MetricConfigFields: React.FC<MetricConfigFieldsProps> = ({ form, departmen
         render={({ field }) => (
           <FormItem>
             <FormLabel>Departamento</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select 
+              onValueChange={field.onChange} 
+              defaultValue={field.value}
+              disabled={!isAdmin && !!userDepartmentId} // Convert to boolean
+            >
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um departamento" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {departments.map((dept) => (
+                {availableDepartments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {!isAdmin && userDepartmentId && (
+              <FormDescription>
+                Como gestor, você só pode criar métricas para o seu departamento
+              </FormDescription>
+            )}
             <FormMessage />
           </FormItem>
         )}
