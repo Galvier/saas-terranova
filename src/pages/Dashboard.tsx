@@ -19,6 +19,7 @@ import DashboardKpis from '@/components/dashboard/DashboardKpis';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import FavoriteMetricsGrid from '@/components/dashboard/FavoriteMetricsGrid';
 import AdditionalMetricsGrid from '@/components/dashboard/AdditionalMetricsGrid';
+import ManagerDashboard from '@/components/dashboard/ManagerDashboard';
 
 const Dashboard = () => {
   const { user, isAdmin, userDepartmentId } = useAuth();
@@ -168,11 +169,18 @@ const Dashboard = () => {
             </div>
           )}
           
-          {/* Conditional rendering of dashboards based on viewMode and selectedDepartment */}
-          {showAnalyticsDashboard ? (
+          {/* Conditional rendering based on user role and view mode */}
+          {!isAdmin ? (
+            /* Manager Dashboard - Only show their department metrics */
+            <ManagerDashboard 
+              metrics={metrics} 
+              departmentName={departmentName}
+            />
+          ) : showAnalyticsDashboard ? (
+            /* Admin Analytics Dashboard */
             <AnalyticsDashboard metrics={metrics} />
           ) : viewMode === 'favorites' ? (
-            /* Only show selected metrics in favorites view */
+            /* Admin Favorites View */
             <FavoriteMetricsGrid 
               metrics={metrics} 
               selectedMetrics={selectedMetrics} 
@@ -180,6 +188,7 @@ const Dashboard = () => {
               onConfigureClick={() => setIsMetricSelectionOpen(true)}
             />
           ) : (
+            /* Admin Full Dashboard */
             <>
               <DashboardKpis kpiData={kpiData} />
               
@@ -191,6 +200,7 @@ const Dashboard = () => {
               <AdditionalMetricsGrid 
                 metrics={metrics} 
                 viewMode={viewMode} 
+                isAdmin={isAdmin}
               />
             </>
           )}

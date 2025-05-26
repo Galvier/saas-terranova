@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MetricDefinition } from '@/integrations/supabase';
 import KpiCard from '@/components/KpiCard';
@@ -7,9 +6,17 @@ import PerformanceChart from '@/components/PerformanceChart';
 interface AdditionalMetricsGridProps {
   metrics: MetricDefinition[];
   viewMode: 'all' | 'favorites';
+  isAdmin?: boolean;
 }
 
-const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({ metrics, viewMode }) => {
+const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({ 
+  metrics, 
+  viewMode,
+  isAdmin = true 
+}) => {
+  // Only render for admin users
+  if (!isAdmin) return null;
+  
   // Only render these cards in 'all' view mode
   if (viewMode === 'favorites') return null;
   
