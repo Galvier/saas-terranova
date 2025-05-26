@@ -22,6 +22,8 @@ const Departments = () => {
   const queryClient = useQueryClient();
   const { isAdmin } = useAuth();
 
+  console.log('[Departments] Current user isAdmin:', isAdmin);
+
   const { data: departments = [], isLoading } = useQuery({
     queryKey: ['departments'],
     queryFn: async () => {
@@ -32,19 +34,40 @@ const Departments = () => {
   });
 
   const handleCreateDepartment = () => {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para criar setores",
+        variant: "destructive"
+      });
+      return;
+    }
     setEditingDepartment(null);
     setIsEditDialogOpen(true);
   };
 
   const handleEditDepartment = (department: Department) => {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      toast({
+        title: "Acesso negado", 
+        description: "Você não tem permissão para editar setores",
+        variant: "destructive"
+      });
+      return;
+    }
     setEditingDepartment(department);
     setIsEditDialogOpen(true);
   };
 
   const handleDeleteDepartment = (department: Department) => {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para excluir setores", 
+        variant: "destructive"
+      });
+      return;
+    }
     setDeletingDepartment(department);
     setIsDeleteDialogOpen(true);
   };
@@ -88,7 +111,7 @@ const Departments = () => {
     <div className="animate-fade-in space-y-6">
       <PageHeader
         title="Setores"
-        subtitle="Gerencie os setores da sua organização"
+        subtitle={isAdmin ? "Gerencie os setores da sua organização" : "Visualize os setores da organização"}
         actionButton={
           isAdmin ? (
             <Button onClick={handleCreateDepartment}>
@@ -98,6 +121,14 @@ const Departments = () => {
           ) : undefined
         }
       />
+
+      {!isAdmin && (
+        <div className="mb-4 p-4 border border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 rounded-md">
+          <p className="text-sm text-blue-700 dark:text-blue-400">
+            <strong>Visualização somente leitura:</strong> Como gestor, você pode visualizar os setores mas não pode realizar edições, criações ou exclusões. Entre em contato com um administrador para alterações.
+          </p>
+        </div>
+      )}
 
       <DepartmentsTable
         departments={departments}
