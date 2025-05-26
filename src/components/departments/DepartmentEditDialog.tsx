@@ -51,13 +51,13 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
       setName(department.name);
       setDescription(department.description || '');
       setIsActive(department.is_active);
-      setManagerId(department.manager_id || '');
+      setManagerId(department.manager_id || 'none');
     } else {
       // Default values for new department
       setName('');
       setDescription('');
       setIsActive(true);
-      setManagerId('');
+      setManagerId('none');
     }
   }, [department]);
 
@@ -66,6 +66,9 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
     setIsEditing(true);
 
     try {
+      // Convert 'none' back to null for the database
+      const managerIdValue = managerId === 'none' ? null : managerId;
+      
       if (department) {
         // Update existing department
         const result = await updateDepartment(
@@ -73,7 +76,7 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
           name,
           description,
           isActive,
-          managerId || null
+          managerIdValue
         );
         
         if (result.error) {
@@ -90,7 +93,7 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
           name,
           description,
           isActive,
-          managerId || null
+          managerIdValue
         );
         
         if (result.error) {
@@ -155,7 +158,7 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
                 <SelectValue placeholder="Selecione um gestor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum gestor</SelectItem>
+                <SelectItem value="none">Nenhum gestor</SelectItem>
                 {activeManagers.map((manager) => (
                   <SelectItem key={manager.id} value={manager.id}>
                     {manager.name} ({manager.email})
