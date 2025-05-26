@@ -57,7 +57,7 @@ const MetricsPage = () => {
         <div className="text-center py-8">Carregando métricas...</div>
       ) : metrics.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
-          Nenhuma métrica encontrada. {isAdmin && "Crie uma nova métrica para começar."}
+          Nenhuma métrica encontrada. Crie uma nova métrica para começar.
         </div>
       ) : (
         <MetricsTable 
@@ -65,7 +65,6 @@ const MetricsPage = () => {
           onAddValue={handleMetricActions.handleAddValueClick}
           onEdit={handleMetricActions.handleEditClick}
           onDelete={handleMetricActions.handleDeleteClick}
-          isAdmin={isAdmin}
         />
       )}
 

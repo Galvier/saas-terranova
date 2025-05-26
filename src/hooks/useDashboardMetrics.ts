@@ -66,6 +66,7 @@ export const useDashboardMetrics = (
     monthlyRevenue,
     handleMetricSelectionChange,
     // Add effective department to check if filtering was enforced
-    isFiltered: !isAdmin && userDepartmentId !== null
+    isFiltered: !isAdmin && userDepartmentId !== null,
+    effectiveDepartment
   };
 };

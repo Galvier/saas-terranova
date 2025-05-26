@@ -11,7 +11,7 @@ interface MetricsHeaderProps {
   selectedDepartment: string;
   setSelectedDepartment: (value: string) => void;
   setIsCreateDialogOpen: (value: boolean) => void;
-  isAdmin?: boolean; // Adicionando propriedade isAdmin como opcional
+  isAdmin?: boolean;
 }
 
 const MetricsHeader: React.FC<MetricsHeaderProps> = ({
@@ -19,7 +19,7 @@ const MetricsHeader: React.FC<MetricsHeaderProps> = ({
   selectedDepartment,
   setSelectedDepartment,
   setIsCreateDialogOpen,
-  isAdmin = true, // Valor padrão true para compatibilidade com código existente
+  isAdmin = true,
 }) => {
   return (
     <>
@@ -36,15 +36,14 @@ const MetricsHeader: React.FC<MetricsHeaderProps> = ({
           className="w-full sm:w-[280px]"
         />
 
-        {isAdmin && (
-          <Button 
-            className="flex items-center gap-2 w-full sm:w-auto bg-terranova-blue hover:bg-terranova-blue-light"
-            onClick={() => setIsCreateDialogOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Nova Métrica
-          </Button>
-        )}
+        {/* Show "Nova Métrica" button for admins and managers */}
+        <Button 
+          className="flex items-center gap-2 w-full sm:w-auto bg-terranova-blue hover:bg-terranova-blue-light"
+          onClick={() => setIsCreateDialogOpen(true)}
+        >
+          <Plus className="h-4 w-4" />
+          Nova Métrica
+        </Button>
       </div>
     </>
   );

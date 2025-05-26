@@ -8,13 +8,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { MetricDefinition } from '@/integrations/supabase';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAuth } from '@/hooks/useAuth';
 
 interface MetricsTableProps {
   metrics: MetricDefinition[];
   onAddValue: (metric: MetricDefinition) => void;
   onEdit: (metric: MetricDefinition) => void;
   onDelete: (metric: MetricDefinition) => void;
-  isAdmin?: boolean; // Adicionando propriedade isAdmin como opcional
 }
 
 const MetricsTable: React.FC<MetricsTableProps> = ({
@@ -22,8 +22,9 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   onAddValue,
   onEdit,
   onDelete,
-  isAdmin = true, // Valor padrão true para compatibilidade com código existente
 }) => {
+  const { isAdmin, userDepartmentId } = useAuth();
+
   const getStatusVariant = (status: string) => {
     switch (status) {
       case 'success': return 'success';
@@ -67,6 +68,11 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     }
   };
 
+  // Check if user can edit/delete a specific metric
+  const canEditMetric = (metric: MetricDefinition) => {
+    return isAdmin || metric.department_id === userDepartmentId;
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -87,6 +93,8 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
         <TableBody>
           {metrics.map((metric) => {
             const isCurrencyUnit = metric.unit === 'R$';
+            const canEdit = canEditMetric(metric);
+            
             return (
               <TableRow key={metric.id} className="hover:bg-muted/50">
                 <TableCell className="font-medium">
@@ -158,6 +166,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-center gap-2">
+                    {/* Todos podem registrar valores */}
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -176,7 +185,8 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                       </Tooltip>
                     </TooltipProvider>
 
-                    {isAdmin && (
+                    {/* Apenas admins ou gestores do setor podem editar/excluir */}
+                    {canEdit && (
                       <>
                         <TooltipProvider>
                           <Tooltip>
