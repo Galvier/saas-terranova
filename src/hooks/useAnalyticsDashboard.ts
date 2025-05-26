@@ -19,6 +19,8 @@ interface AnalyticsDashboardData {
 const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardData => {
   // Calculate all dashboard statistics based on metrics
   return useMemo(() => {
+    console.log('[useAnalyticsDashboard] Processing metrics:', metrics.length);
+    
     // Group metrics by department for easier processing
     const departmentMap = new Map<string, { metrics: MetricDefinition[], total: number, achieved: number }>();
     
@@ -35,6 +37,13 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
     
     // Process metrics to calculate performance values
     metrics.forEach(metric => {
+      console.log('[useAnalyticsDashboard] Processing metric:', {
+        name: metric.name,
+        target: metric.target,
+        current: metric.current,
+        lastValueDate: metric.last_value_date
+      });
+      
       // Get department data
       const deptName = metric.department_name || 'Desconhecido';
       if (!departmentMap.has(deptName)) {
@@ -47,12 +56,29 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
       // Count metrics without targets
       if (!metric.target) {
         withoutTarget++;
+        console.log('[useAnalyticsDashboard] Metric without target:', metric.name);
         return;
       }
       
-      // Count metrics without current values
-      if (!metric.current && metric.current !== 0) {
+      // Improved logic for counting metrics without current values
+      // A metric has no current value if:
+      // 1. current is null/undefined AND last_value_date is null
+      // 2. OR current is 0 AND last_value_date is null (no values ever recorded)
+      const hasNoCurrentValue = (
+        (metric.current === null || metric.current === undefined) && 
+        metric.last_value_date === null
+      ) || (
+        metric.current === 0 && 
+        metric.last_value_date === null
+      );
+      
+      if (hasNoCurrentValue) {
         withoutCurrentValue++;
+        console.log('[useAnalyticsDashboard] Metric without current value:', {
+          name: metric.name,
+          current: metric.current,
+          lastValueDate: metric.last_value_date
+        });
         return;
       }
       
@@ -70,7 +96,6 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
       }
       
       // Determine if metric is critical (status is 'danger' or health below 60%)
-      // Corrected: Now also checking status === 'danger'
       if (healthPercentage < 60 || metric.status === 'danger') {
         criticalCount++;
         criticalMetricsArray.push({
@@ -78,6 +103,14 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
           health: healthPercentage
         });
       }
+    });
+
+    console.log('[useAnalyticsDashboard] Summary:', {
+      totalMetrics: metrics.length,
+      withoutTarget,
+      withoutCurrentValue,
+      totalWithTargets,
+      achieving
     });
 
     // Calculate metrics achieving target percentage
