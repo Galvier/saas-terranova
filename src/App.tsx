@@ -62,8 +62,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/primeiro-acesso" element={<FirstAccess />} />
               
-              {/* Public diagnostic routes - accessible without authentication */}
-              <Route path="/diagnostico" element={<Diagnostic />} />
+              {/* Public diagnostic route - accessible without authentication */}
               <Route path="/admin/diagnostico" element={<Diagnostic />} />
               
               {/* Protected routes */}
