@@ -37,7 +37,7 @@ const MetricConfigFields: React.FC<MetricConfigFieldsProps> = ({
             <Select 
               onValueChange={field.onChange} 
               defaultValue={field.value}
-              disabled={!isAdmin && userDepartmentId} // Disable for non-admin users
+              disabled={!isAdmin && !!userDepartmentId} // Convert to boolean
             >
               <FormControl>
                 <SelectTrigger>
