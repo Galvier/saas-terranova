@@ -17,6 +17,7 @@ const Departments = () => {
   const [deletingDepartment, setDeletingDepartment] = useState<Department | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAdmin } = useAuth();
@@ -50,6 +51,7 @@ const Departments = () => {
 
   const confirmDelete = async () => {
     if (deletingDepartment && isAdmin) {
+      setIsDeleting(true);
       try {
         const result = await deleteDepartment(deletingDepartment.id);
         if (result.error) {
@@ -68,10 +70,11 @@ const Departments = () => {
           description: error.message,
           variant: "destructive"
         });
+      } finally {
+        setIsDeleting(false);
+        setDeletingDepartment(null);
+        setIsDeleteDialogOpen(false);
       }
-      
-      setDeletingDepartment(null);
-      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -117,6 +120,7 @@ const Departments = () => {
             isOpen={isDeleteDialogOpen}
             onOpenChange={setIsDeleteDialogOpen}
             onConfirm={confirmDelete}
+            isDeleting={isDeleting}
           />
         </>
       )}
