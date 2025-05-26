@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, ClipboardList, Home, LogOut, Settings, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,8 @@ const navItems: SidebarItem[] = [
 const AppSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, user, manager, isAdmin } = useAuth();
+  const { logout, user, manager, isAdmin, isLoading } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Format user display name from manager data, user metadata, or email
   const getUserDisplayName = () => {
@@ -68,13 +69,29 @@ const AppSidebar = () => {
   };
   
   const handleLogout = async () => {
+    // Prevenir múltiplos cliques durante o logout
+    if (isLoggingOut || isLoading) {
+      console.log('[AppSidebar] Logout já em progresso ou carregando, ignorando tentativa');
+      return;
+    }
+
     try {
+      setIsLoggingOut(true);
+      console.log('[AppSidebar] Iniciando processo de logout');
+      
       await logout();
-      navigate('/login');
+      
+      // Navegar para login após logout bem-sucedido
+      console.log('[AppSidebar] Redirecionando para login');
+      navigate('/login', { replace: true });
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-      // Redirect to login even if there's an error
-      navigate('/login');
+      console.error('[AppSidebar] Erro ao fazer logout:', error);
+      
+      // Mesmo com erro, redirecionar para login para garantir que o usuário saia
+      console.log('[AppSidebar] Redirecionando para login mesmo com erro');
+      navigate('/login', { replace: true });
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -118,9 +135,10 @@ const AppSidebar = () => {
           size="sm"
           className="w-full flex items-center gap-2 bg-white hover:bg-gray-100 text-terranova-blue"
           onClick={handleLogout}
+          disabled={isLoggingOut || isLoading}
         >
-          <LogOut className="h-4 w-4" />
-          Sair
+          <LogOut className={`h-4 w-4 ${isLoggingOut ? 'animate-spin' : ''}`} />
+          {isLoggingOut ? 'Saindo...' : 'Sair'}
         </Button>
       </div>
     </div>
