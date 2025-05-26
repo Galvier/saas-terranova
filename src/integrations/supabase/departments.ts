@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { formatCrudResult } from './core';
 import type { Department } from './types/department';
@@ -58,7 +59,9 @@ export const createDepartment = async (
   manager_id: string | null = null
 ) => {
   try {
-    // Usar a função SQL create_department com SECURITY DEFINER
+    console.log(`Creating department with manager_id: ${manager_id}`);
+    
+    // Use the SQL function create_department with SECURITY DEFINER
     const { data, error } = await supabase.rpc('create_department', {
       department_name: name,
       department_description: description,

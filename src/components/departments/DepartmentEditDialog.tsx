@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Department, createDepartment, updateDepartment } from '@/integrations/supabase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Department, createDepartment, updateDepartment, getAllManagers } from '@/integrations/supabase';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 interface DepartmentEditDialogProps {
   isOpen: boolean;
@@ -26,8 +28,22 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [isActive, setIsActive] = React.useState(true);
+  const [managerId, setManagerId] = React.useState<string>('');
   const [isEditing, setIsEditing] = React.useState(false);
   const { toast } = useToast();
+
+  // Fetch available managers
+  const { data: managersData = [] } = useQuery({
+    queryKey: ['managers'],
+    queryFn: async () => {
+      const result = await getAllManagers();
+      if (result.error) throw new Error(result.message);
+      return result.data || [];
+    }
+  });
+
+  // Filter active managers
+  const activeManagers = managersData.filter(manager => manager.is_active);
 
   // Reset form when department changes
   React.useEffect(() => {
@@ -35,11 +51,13 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
       setName(department.name);
       setDescription(department.description || '');
       setIsActive(department.is_active);
+      setManagerId(department.manager_id || '');
     } else {
       // Default values for new department
       setName('');
       setDescription('');
       setIsActive(true);
+      setManagerId('');
     }
   }, [department]);
 
@@ -54,7 +72,8 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
           department.id,
           name,
           description,
-          isActive
+          isActive,
+          managerId || null
         );
         
         if (result.error) {
@@ -70,7 +89,8 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
         const result = await createDepartment(
           name,
           description,
-          isActive
+          isActive,
+          managerId || null
         );
         
         if (result.error) {
@@ -126,6 +146,23 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
               onChange={(e) => setDescription(e.target.value)} 
               placeholder="Descrição do setor" 
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="manager">Gestor Responsável</Label>
+            <Select value={managerId} onValueChange={setManagerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um gestor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhum gestor</SelectItem>
+                {activeManagers.map((manager) => (
+                  <SelectItem key={manager.id} value={manager.id}>
+                    {manager.name} ({manager.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex items-center space-x-2">
