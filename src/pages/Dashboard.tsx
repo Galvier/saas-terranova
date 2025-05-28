@@ -41,6 +41,9 @@ const Dashboard = () => {
   // Determine if we should show the analytics dashboard
   const showAnalyticsDashboard = viewMode === 'all' && selectedDepartment === 'all' && isAdmin;
   
+  // Check if we're viewing a specific department
+  const isSpecificDepartment = selectedDepartment !== 'all';
+  
   // Load departments
   const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
     queryKey: ['departments'],
@@ -114,7 +117,8 @@ const Dashboard = () => {
     selectedDepartment,
     isAdmin,
     userDepartmentId,
-    showAnalyticsDashboard
+    showAnalyticsDashboard,
+    isSpecificDepartment
   });
 
   return (
@@ -208,7 +212,7 @@ const Dashboard = () => {
                 departmentName={departmentName}
               />
             ) : showAnalyticsDashboard ? (
-              /* Admin Analytics Dashboard */
+              /* Admin Analytics Dashboard - only for "all departments" view */
               <AnalyticsDashboard metrics={metrics} />
             ) : viewMode === 'favorites' ? (
               /* Admin Favorites View */
@@ -219,25 +223,32 @@ const Dashboard = () => {
                 onConfigureClick={() => setIsMetricSelectionOpen(true)}
               />
             ) : (
-              /* Admin Full Dashboard */
+              /* Admin Dashboard - differentiate between "all departments" and specific department */
               <div className="space-y-4 md:space-y-6">
-                <DashboardKpis 
-                  kpiData={kpiData} 
-                  showAllKpis={selectedDepartment === 'all'}
-                  selectedDepartment={selectedDepartment}
-                />
+                {/* Show generic KPIs and Charts only for "all departments" view */}
+                {!isSpecificDepartment && (
+                  <>
+                    <DashboardKpis 
+                      kpiData={kpiData} 
+                      showAllKpis={selectedDepartment === 'all'}
+                      selectedDepartment={selectedDepartment}
+                    />
+                    
+                    <DashboardCharts 
+                      departmentPerformance={departmentPerformance}
+                      monthlyRevenue={monthlyRevenue}
+                      shouldShowCharts={shouldShowCharts}
+                      selectedDepartment={selectedDepartment}
+                    />
+                  </>
+                )}
                 
-                <DashboardCharts 
-                  departmentPerformance={departmentPerformance}
-                  monthlyRevenue={monthlyRevenue}
-                  shouldShowCharts={shouldShowCharts}
-                  selectedDepartment={selectedDepartment}
-                />
-                
+                {/* Always show the real metrics for any department */}
                 <AdditionalMetricsGrid 
                   metrics={metrics} 
                   viewMode={viewMode} 
                   isAdmin={isAdmin}
+                  selectedDepartment={selectedDepartment}
                 />
               </div>
             )}
