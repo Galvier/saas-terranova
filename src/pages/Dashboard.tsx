@@ -93,7 +93,7 @@ const Dashboard = () => {
     }
   }, [isAdmin]);
 
-  // Use custom hook for dashboard metrics - unchanged usage pattern
+  // Use custom hook for dashboard metrics
   const {
     metrics,
     isLoading,
@@ -104,6 +104,7 @@ const Dashboard = () => {
     kpiData,
     departmentPerformance,
     monthlyRevenue,
+    shouldShowCharts,
     handleMetricSelectionChange
   } = useDashboardMetrics(selectedDepartment, selectedDate, dateRangeType, viewMode);
 
@@ -220,11 +221,15 @@ const Dashboard = () => {
             ) : (
               /* Admin Full Dashboard */
               <div className="space-y-4 md:space-y-6">
-                <DashboardKpis kpiData={kpiData} />
+                <DashboardKpis 
+                  kpiData={kpiData} 
+                  showAllKpis={selectedDepartment === 'all'}
+                />
                 
                 <DashboardCharts 
                   departmentPerformance={departmentPerformance}
                   monthlyRevenue={monthlyRevenue}
+                  shouldShowCharts={shouldShowCharts}
                 />
                 
                 <AdditionalMetricsGrid 

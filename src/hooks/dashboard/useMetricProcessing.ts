@@ -6,7 +6,8 @@ export const useMetricProcessing = (
   metrics: MetricDefinition[], 
   viewMode: 'all' | 'favorites', 
   selectedMetrics: string[],
-  isAdmin: boolean
+  isAdmin: boolean,
+  selectedDepartment: string
 ) => {
   // Filter metrics based on view mode and selected metrics
   const filteredMetrics = useMemo(() => {
@@ -54,7 +55,7 @@ export const useMetricProcessing = (
     }));
   }, [filteredMetrics]);
   
-  // Calculate KPI metrics
+  // Calculate KPI metrics with availability flags
   const kpiData = useMemo(() => {
     // Default values
     let salesTotal = 0;
@@ -62,16 +63,26 @@ export const useMetricProcessing = (
     let conversionRate = 0;
     let openProjects = 0;
     
+    // Track which KPIs have actual data from metrics
+    let hasSalesData = false;
+    let hasCustomerData = false;
+    let hasConversionData = false;
+    let hasProjectData = false;
+    
     // Find specific metrics by name or type
     filteredMetrics.forEach((metric) => {
       if (metric.name.toLowerCase().includes('venda') || metric.name.toLowerCase().includes('receita')) {
         salesTotal += metric.current;
+        hasSalesData = true;
       } else if (metric.name.toLowerCase().includes('cliente') || metric.name.toLowerCase().includes('usuário')) {
         newCustomers += Math.round(metric.current);
+        hasCustomerData = true;
       } else if (metric.name.toLowerCase().includes('conversão') || metric.name.toLowerCase().includes('taxa')) {
         conversionRate = metric.current;
+        hasConversionData = true;
       } else if (metric.name.toLowerCase().includes('projeto') || metric.name.toLowerCase().includes('tarefa')) {
         openProjects += Math.round(metric.current);
+        hasProjectData = true;
       }
     });
     
@@ -79,23 +90,17 @@ export const useMetricProcessing = (
       salesTotal,
       newCustomers,
       conversionRate,
-      openProjects
+      openProjects,
+      // Availability flags for each KPI
+      hasSalesData,
+      hasCustomerData,
+      hasConversionData,
+      hasProjectData
     };
   }, [filteredMetrics]);
   
-  // Create monthly revenue data
+  // Create monthly revenue data - only if there are revenue metrics
   const monthlyRevenue = useMemo(() => {
-    if (!filteredMetrics.length) {
-      return [
-        { name: 'Jan', value: 120000 },
-        { name: 'Fev', value: 140000 },
-        { name: 'Mar', value: 160000 },
-        { name: 'Abr', value: 180000 },
-        { name: 'Mai', value: 190000 },
-        { name: 'Jun', value: 170000 },
-      ];
-    }
-    
     // Find revenue metrics
     const revenueMetrics = filteredMetrics.filter((metric) => 
       metric.name.toLowerCase().includes('receita') && 
@@ -103,15 +108,7 @@ export const useMetricProcessing = (
     );
     
     if (revenueMetrics.length === 0) {
-      // Use sample data if no revenue metrics available
-      return [
-        { name: 'Jan', value: 120000 },
-        { name: 'Fev', value: 140000 },
-        { name: 'Mar', value: 160000 },
-        { name: 'Abr', value: 180000 },
-        { name: 'Mai', value: 190000 },
-        { name: 'Jun', value: 170000 },
-      ];
+      return [];
     }
     
     // Process actual revenue data if available
@@ -125,10 +122,30 @@ export const useMetricProcessing = (
     });
   }, [filteredMetrics]);
 
+  // Check if charts should be shown based on selected department
+  const shouldShowCharts = useMemo(() => {
+    const isAllDepartments = selectedDepartment === 'all';
+    const hasRevenueData = monthlyRevenue.length > 0;
+    const hasDepartmentData = departmentPerformance.length > 0;
+    
+    return {
+      departmentPerformance: isAllDepartments && hasDepartmentData,
+      monthlyRevenue: hasRevenueData,
+      // Show KPIs only if we're viewing all departments OR if there's actual data for the specific department
+      showKpis: isAllDepartments || (
+        kpiData.hasSalesData || 
+        kpiData.hasCustomerData || 
+        kpiData.hasConversionData || 
+        kpiData.hasProjectData
+      )
+    };
+  }, [selectedDepartment, monthlyRevenue.length, departmentPerformance.length, kpiData]);
+
   return {
     filteredMetrics,
     departmentPerformance,
     kpiData,
-    monthlyRevenue
+    monthlyRevenue,
+    shouldShowCharts
   };
 };

@@ -62,12 +62,8 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
       
       // Improved logic for counting metrics without current values
       // A metric has no current value if:
-      // 1. current is null/undefined AND last_value_date is null
-      // 2. OR current is 0 AND last_value_date is null (no values ever recorded)
+      // 1. current is 0 AND last_value_date is null (no values ever recorded)
       const hasNoCurrentValue = (
-        (metric.current === null || metric.current === undefined) && 
-        metric.last_value_date === null
-      ) || (
         metric.current === 0 && 
         metric.last_value_date === null
       );
