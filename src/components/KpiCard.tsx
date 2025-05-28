@@ -24,18 +24,17 @@ const KpiCard: React.FC<KpiCardProps> = ({
   icon,
 }) => {
   const renderChange = () => {
-    if (change === undefined) return null;
+    // Don't render change if it's undefined or null
+    if (change === undefined || change === null) return null;
     
     const isPositive = change > 0;
     const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
-    const statusColor = status === 'success' ? 'text-success' : 
-                        status === 'warning' ? 'text-warning' : 'text-destructive';
     const changeColor = isPositive ? 'text-success' : 'text-destructive';
     
     return (
       <div className={`flex items-center ${changeColor}`}>
         <Icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-        <span className="text-xs sm:text-sm">{Math.abs(change)}%</span>
+        <span className="text-xs sm:text-sm">{Math.abs(change).toFixed(1)}%</span>
         {changeLabel && <span className="ml-1 text-muted-foreground text-xs hidden sm:inline">{changeLabel}</span>}
       </div>
     );
@@ -76,7 +75,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
         </TooltipTrigger>
         <TooltipContent>
           <p>{title}</p>
-          {changeLabel && <p className="text-muted-foreground text-xs">{changeLabel}</p>}
+          {changeLabel && change !== undefined && <p className="text-muted-foreground text-xs">{changeLabel}</p>}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
