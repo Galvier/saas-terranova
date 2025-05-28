@@ -122,13 +122,13 @@ const Dashboard = () => {
   });
 
   return (
-    <div className="animate-fade-in space-y-4 md:space-y-6">
+    <div className="animate-fade-in space-y-4 md:space-y-6 lg:space-y-8">
       <PageHeader
         title="Dashboard"
         subtitle="Visão geral dos indicadores de desempenho da empresa"
       />
       
-      <div className="space-y-4 md:space-y-6">
+      <div className="space-y-4 md:space-y-6 lg:space-y-8">
         <DashboardHeader 
           departments={departments}
           selectedDepartment={selectedDepartment}
@@ -150,28 +150,31 @@ const Dashboard = () => {
         </div>
         
         {isLoading || isLoadingConfig ? (
-          <div className="flex justify-center items-center h-32 md:h-64">
-            <p className="text-muted-foreground">Carregando indicadores...</p>
+          <div className="flex justify-center items-center h-48 md:h-64">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-b-2 border-primary"></div>
+              <p className="text-muted-foreground text-sm md:text-base">Carregando indicadores...</p>
+            </div>
           </div>
         ) : hasError ? (
-          <Card className="p-4 md:p-8 text-center">
-            <div className="flex flex-col items-center justify-center py-4 md:py-8">
-              <AlertCircle className="h-8 w-8 md:h-12 md:w-12 text-destructive mb-4" />
-              <h3 className="text-lg md:text-xl font-medium mb-2">Erro ao carregar métricas</h3>
-              <p className="text-muted-foreground mb-4 md:mb-6 text-sm md:text-base">
+          <Card className="p-6 md:p-8 text-center">
+            <div className="flex flex-col items-center justify-center py-6 md:py-8">
+              <AlertCircle className="h-12 w-12 md:h-16 md:w-16 text-destructive mb-4" />
+              <h3 className="text-lg md:text-xl lg:text-2xl font-medium mb-2">Erro ao carregar métricas</h3>
+              <p className="text-muted-foreground mb-4 md:mb-6 text-sm md:text-base px-4">
                 {errorMessage || "Não foi possível carregar os dados de desempenho"}
               </p>
-              <Button variant="outline" onClick={() => window.location.reload()}>
+              <Button variant="outline" onClick={() => window.location.reload()} className="w-full sm:w-auto">
                 Tentar novamente
               </Button>
             </div>
           </Card>
         ) : metrics.length === 0 ? (
-          <Card className="p-4 md:p-8 text-center">
-            <div className="flex flex-col items-center justify-center py-4 md:py-8">
-              <AlertCircle className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg md:text-xl font-medium mb-2">Nenhuma métrica encontrada</h3>
-              <p className="text-muted-foreground mb-4 md:mb-6 text-sm md:text-base px-4">
+          <Card className="p-6 md:p-8 text-center">
+            <div className="flex flex-col items-center justify-center py-6 md:py-8">
+              <AlertCircle className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg md:text-xl lg:text-2xl font-medium mb-2">Nenhuma métrica encontrada</h3>
+              <p className="text-muted-foreground mb-4 md:mb-6 text-sm md:text-base px-4 max-w-md">
                 {viewMode === 'favorites' ? (
                   <>
                     Você ainda não selecionou métricas favoritas ou não há métricas disponíveis para o período selecionado.
@@ -181,7 +184,7 @@ const Dashboard = () => {
                 )}
               </p>
               {isAdmin && (
-                <div className="flex flex-col space-y-2 w-full max-w-xs">
+                <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
                   <Button 
                     variant={viewMode === 'favorites' ? "outline" : "default"}
                     onClick={() => setIsMetricSelectionOpen(true)}
@@ -194,11 +197,11 @@ const Dashboard = () => {
             </div>
           </Card>
         ) : (
-          <div className="space-y-4 md:space-y-6">
+          <div className="space-y-6 md:space-y-8">
             {viewMode === 'favorites' && isAdmin && selectedMetrics.length > 0 && (
-              <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-md">
-                <Star className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="text-sm font-medium">
+              <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <Star className="h-5 w-5 text-primary flex-shrink-0" />
+                <span className="text-sm md:text-base font-medium">
                   Dashboard personalizado: Métricas principais ({selectedMetrics.length} métricas)
                 </span>
               </div>
@@ -224,7 +227,7 @@ const Dashboard = () => {
               />
             ) : (
               /* Admin Dashboard - differentiate between "all departments" and specific department */
-              <div className="space-y-4 md:space-y-6">
+              <div className="space-y-6 md:space-y-8">
                 {/* Show generic KPIs and Charts only for "all departments" view */}
                 {!isSpecificDepartment && (
                   <>

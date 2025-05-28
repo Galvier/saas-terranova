@@ -79,12 +79,12 @@ const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({
   const sectionTitle = isSpecificDepartment ? 'Indicadores' : 'Métricas';
   
   return (
-    <>
-      {/* Render card metrics in a grid */}
+    <div className="space-y-6 md:space-y-8">
+      {/* Render card metrics in a responsive grid */}
       {cardMetrics.length > 0 && (
-        <>
-          <h2 className="text-xl font-semibold mb-4 mt-8">{sectionTitle}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <section>
+          <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">{sectionTitle}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {cardMetrics.map(metric => {
               const change = calculateChange(metric);
               return (
@@ -99,14 +99,14 @@ const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({
               );
             })}
           </div>
-        </>
+        </section>
       )}
       
-      {/* Render chart metrics in a different layout */}
+      {/* Render chart metrics in a responsive layout */}
       {chartMetrics.length > 0 && (
-        <>
-          <h2 className="text-xl font-semibold mb-4 mt-8">Análises de desempenho</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section>
+          <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">Análises de desempenho</h2>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
             {chartMetrics.map(metric => {
               const change = calculateChange(metric);
               return (
@@ -124,9 +124,9 @@ const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({
               );
             })}
           </div>
-        </>
+        </section>
       )}
-    </>
+    </div>
   );
 };
 
