@@ -14,12 +14,14 @@ interface DashboardChartsProps {
     departmentPerformance: boolean;
     monthlyRevenue: boolean;
   };
+  selectedDepartment?: string; // Add this to help with conditional rendering
 }
 
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ 
   departmentPerformance,
   monthlyRevenue,
-  shouldShowCharts
+  shouldShowCharts,
+  selectedDepartment = 'all'
 }) => {
   // Don't render anything if no charts should be shown
   if (!shouldShowCharts.departmentPerformance && !shouldShowCharts.monthlyRevenue) {
@@ -28,7 +30,8 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-      {shouldShowCharts.departmentPerformance && (
+      {/* Department Performance Chart - only in "all departments" view */}
+      {shouldShowCharts.departmentPerformance && selectedDepartment === 'all' && (
         <PerformanceChart
           title="Desempenho por departamento"
           data={departmentPerformance.length > 0 ? departmentPerformance : [{ name: 'Carregando...', value: 0 }]}
@@ -39,7 +42,8 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
         />
       )}
       
-      {shouldShowCharts.monthlyRevenue && (
+      {/* Monthly Revenue Chart - only if there are actual revenue metrics */}
+      {shouldShowCharts.monthlyRevenue && monthlyRevenue.length > 0 && (
         <PerformanceChart
           title="Receita mensal (R$)"
           data={monthlyRevenue}

@@ -224,12 +224,14 @@ const Dashboard = () => {
                 <DashboardKpis 
                   kpiData={kpiData} 
                   showAllKpis={selectedDepartment === 'all'}
+                  selectedDepartment={selectedDepartment}
                 />
                 
                 <DashboardCharts 
                   departmentPerformance={departmentPerformance}
                   monthlyRevenue={monthlyRevenue}
                   shouldShowCharts={shouldShowCharts}
+                  selectedDepartment={selectedDepartment}
                 />
                 
                 <AdditionalMetricsGrid 

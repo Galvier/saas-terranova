@@ -17,9 +17,14 @@ export interface KpiData {
 interface DashboardKpisProps {
   kpiData: KpiData;
   showAllKpis?: boolean; // When true, show all KPIs regardless of data availability
+  selectedDepartment?: string; // To determine visibility logic
 }
 
-const DashboardKpis: React.FC<DashboardKpisProps> = ({ kpiData, showAllKpis = false }) => {
+const DashboardKpis: React.FC<DashboardKpisProps> = ({ 
+  kpiData, 
+  showAllKpis = false,
+  selectedDepartment = 'all'
+}) => {
   const kpis = [
     {
       title: "Vendas totais",
@@ -59,8 +64,16 @@ const DashboardKpis: React.FC<DashboardKpisProps> = ({ kpiData, showAllKpis = fa
     }
   ];
 
-  // Filter KPIs based on data availability unless showAllKpis is true
-  const visibleKpis = showAllKpis ? kpis : kpis.filter(kpi => kpi.hasData);
+  // Determine which KPIs to show based on department and data availability
+  const visibleKpis = useMemo(() => {
+    // For "all departments" view, show KPIs that have data or if showAllKpis is true
+    if (selectedDepartment === 'all') {
+      return showAllKpis ? kpis : kpis.filter(kpi => kpi.hasData);
+    }
+    
+    // For specific departments, only show KPIs that have actual data
+    return kpis.filter(kpi => kpi.hasData);
+  }, [kpis, selectedDepartment, showAllKpis]);
 
   // Don't render anything if no KPIs should be shown
   if (visibleKpis.length === 0) {
