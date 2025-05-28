@@ -60,23 +60,17 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
         return;
       }
       
-      // Improved logic for counting metrics without current values
+      // Fixed logic for counting metrics without current values
       // A metric has no current value if:
-      // 1. current is 0 AND last_value_date is null (no values ever recorded)
-      // OR 2. current is 0 AND it's been more than expected frequency since last update
-      const hasNoCurrentValue = (
-        (metric.current === 0 && metric.last_value_date === null) ||
-        (metric.current === 0 && metric.last_value_date && 
-         isMetricOutdated(metric.last_value_date, metric.frequency || 'monthly'))
-      );
+      // current === 0 AND last_value_date is null (never had any data recorded)
+      const hasNoCurrentValue = (metric.current === 0 && metric.last_value_date === null);
       
       if (hasNoCurrentValue) {
         withoutCurrentValue++;
         console.log('[useAnalyticsDashboard] Metric without current value:', {
           name: metric.name,
           current: metric.current,
-          lastValueDate: metric.last_value_date,
-          frequency: metric.frequency
+          lastValueDate: metric.last_value_date
         });
         return;
       }
@@ -169,28 +163,6 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
       metricsWithoutCurrentValue: withoutCurrentValue
     };
   }, [metrics]);
-};
-
-// Helper function to check if a metric is outdated based on its frequency
-const isMetricOutdated = (lastValueDate: string, frequency: string): boolean => {
-  const lastDate = new Date(lastValueDate);
-  const now = new Date();
-  const daysDiff = Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-  
-  switch (frequency) {
-    case 'daily':
-      return daysDiff > 7; // More than a week without daily updates
-    case 'weekly':
-      return daysDiff > 21; // More than 3 weeks without weekly updates
-    case 'monthly':
-      return daysDiff > 45; // More than 45 days without monthly updates
-    case 'quarterly':
-      return daysDiff > 120; // More than 4 months without quarterly updates
-    case 'yearly':
-      return daysDiff > 400; // More than 13 months without yearly updates
-    default:
-      return daysDiff > 35; // Default to monthly-like behavior
-  }
 };
 
 // Helper function to calculate health percentage

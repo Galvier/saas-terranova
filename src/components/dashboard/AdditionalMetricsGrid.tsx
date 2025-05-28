@@ -23,18 +23,14 @@ const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({
   // Only render these cards in 'all' view mode
   if (viewMode === 'favorites') return null;
   
-  // Filter out metrics that don't have valid data
-  const validMetrics = metrics.filter(metric => {
-    // Only show metrics that have either:
-    // 1. A target value greater than 0, OR
-    // 2. A current value greater than 0 AND a last_value_date
-    return (metric.target > 0) || (metric.current > 0 && metric.last_value_date);
-  });
+  // Show ALL metrics - don't filter out any based on values
+  // Users should see all created metrics, even if they have no data
+  const allMetrics = metrics;
   
-  if (validMetrics.length === 0) return null;
+  if (allMetrics.length === 0) return null;
   
   // Sort metrics by priority and status
-  const sortedMetrics = [...validMetrics].sort((a, b) => {
+  const sortedMetrics = [...allMetrics].sort((a, b) => {
     const priorityOrder = { 'critical': 0, 'high': 1, 'normal': 2 };
     const aPriority = a.priority ? priorityOrder[a.priority as keyof typeof priorityOrder] || 2 : 2;
     const bPriority = b.priority ? priorityOrder[b.priority as keyof typeof priorityOrder] || 2 : 2;
@@ -52,9 +48,10 @@ const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({
   const cardMetrics = sortedMetrics.filter(m => !m.visualization_type || m.visualization_type === 'card');
   const chartMetrics = sortedMetrics.filter(m => m.visualization_type && m.visualization_type !== 'card');
   
-  // Calculate realistic change for metrics with valid data
+  // Calculate realistic change for metrics with valid data only
   const calculateChange = (metric: MetricDefinition): number | undefined => {
-    // Don't show change if metric has no target or current value is 0
+    // Only show trend for metrics that have valid data:
+    // - Must have target AND current value > 0 AND last_value_date exists
     if (!metric.target || metric.current === 0 || !metric.last_value_date) {
       return undefined;
     }
