@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ShoppingCart, Users, BarChart3, FileText } from 'lucide-react';
 import KpiCard from '@/components/KpiCard';
 
