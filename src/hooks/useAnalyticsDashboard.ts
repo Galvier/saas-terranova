@@ -22,7 +22,7 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
     console.log('[useAnalyticsDashboard] Processing metrics:', metrics.length);
     
     // Group metrics by department for easier processing
-    const departmentMap = new Map<string, { metrics: MetricDefinition[], total: number, achieved: number }>();
+    const departmentMap = new Map<string, { metrics: MetricDefinition[], total: number, achieved: number, validMetrics: number }>();
     
     // Calculate metrics achieving target
     let achieving = 0;
@@ -47,30 +47,15 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
       // Get department data
       const deptName = metric.department_name || 'Desconhecido';
       if (!departmentMap.has(deptName)) {
-        departmentMap.set(deptName, { metrics: [], total: 0, achieved: 0 });
+        departmentMap.set(deptName, { metrics: [], total: 0, achieved: 0, validMetrics: 0 });
       }
       const deptData = departmentMap.get(deptName)!;
       deptData.metrics.push(metric);
       deptData.total++;
       
-      // Count metrics without targets
-      if (!metric.target) {
-        withoutTarget++;
-        console.log('[useAnalyticsDashboard] Metric without target:', metric.name);
-        return;
-      }
-      
-      // Improved logic for counting metrics without current values
-      // A metric has no current value if:
-      // 1. current is null/undefined AND last_value_date is null
-      // 2. OR current is 0 AND last_value_date is null (no values ever recorded)
-      const hasNoCurrentValue = (
-        (metric.current === null || metric.current === undefined) && 
-        metric.last_value_date === null
-      ) || (
-        metric.current === 0 && 
-        metric.last_value_date === null
-      );
+      // First, check for metrics without current values
+      // A metric has no current value if: current === 0 AND last_value_date is null
+      const hasNoCurrentValue = (metric.current === 0 && metric.last_value_date === null);
       
       if (hasNoCurrentValue) {
         withoutCurrentValue++;
@@ -79,11 +64,24 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
           current: metric.current,
           lastValueDate: metric.last_value_date
         });
-        return;
+        // Don't return here - continue to check for target
       }
       
-      // Count metrics with targets
+      // Count metrics without targets
+      if (!metric.target) {
+        withoutTarget++;
+        console.log('[useAnalyticsDashboard] Metric without target:', metric.name);
+        return; // Skip further processing for metrics without targets
+      }
+      
+      // Only process metrics that have both target and actual current value
+      if (hasNoCurrentValue) {
+        return; // Skip performance calculations for metrics without current values
+      }
+      
+      // Count metrics with targets and valid current values
       totalWithTargets++;
+      deptData.validMetrics++;
       
       // Calculate health percentage
       const healthPercentage = calculateHealthPercentage(metric);
@@ -128,12 +126,12 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
       (a.health || 0) - (b.health || 0)
     );
     
-    // Calculate department performance
+    // Calculate department performance - only consider departments with valid metrics
     const deptPerformance = Array.from(departmentMap.entries())
-      .filter(([name, data]) => data.total > 0)
+      .filter(([name, data]) => data.validMetrics > 0) // Only departments with metrics that have both target and current value
       .map(([name, data]) => ({
         name,
-        value: Math.round((data.achieved / data.total) * 100)
+        value: Math.round((data.achieved / data.validMetrics) * 100)
       }))
       .sort((a, b) => b.value - a.value);
     

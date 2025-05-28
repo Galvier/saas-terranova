@@ -42,8 +42,9 @@ export const useDashboardMetrics = (
     filteredMetrics,
     departmentPerformance,
     kpiData,
-    monthlyRevenue
-  } = useMetricProcessing(metrics, viewMode, selectedMetrics, isAdmin);
+    monthlyRevenue,
+    shouldShowCharts
+  } = useMetricProcessing(metrics, viewMode, selectedMetrics, isAdmin, effectiveDepartment);
   
   // Save preferences to localStorage
   usePreferences(dateRangeType, viewMode);
@@ -64,6 +65,7 @@ export const useDashboardMetrics = (
     kpiData,
     departmentPerformance,
     monthlyRevenue,
+    shouldShowCharts,
     handleMetricSelectionChange,
     // Add effective department to check if filtering was enforced
     isFiltered: !isAdmin && userDepartmentId !== null,

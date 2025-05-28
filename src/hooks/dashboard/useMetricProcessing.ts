@@ -6,7 +6,8 @@ export const useMetricProcessing = (
   metrics: MetricDefinition[], 
   viewMode: 'all' | 'favorites', 
   selectedMetrics: string[],
-  isAdmin: boolean
+  isAdmin: boolean,
+  selectedDepartment: string
 ) => {
   // Filter metrics based on view mode and selected metrics
   const filteredMetrics = useMemo(() => {
@@ -54,7 +55,7 @@ export const useMetricProcessing = (
     }));
   }, [filteredMetrics]);
   
-  // Calculate KPI metrics
+  // Calculate KPI metrics based on actual metrics in the selected department
   const kpiData = useMemo(() => {
     // Default values
     let salesTotal = 0;
@@ -62,16 +63,46 @@ export const useMetricProcessing = (
     let conversionRate = 0;
     let openProjects = 0;
     
-    // Find specific metrics by name or type
-    filteredMetrics.forEach((metric) => {
-      if (metric.name.toLowerCase().includes('venda') || metric.name.toLowerCase().includes('receita')) {
+    // Track which KPIs have actual data from metrics
+    let hasSalesData = false;
+    let hasCustomerData = false;
+    let hasConversionData = false;
+    let hasProjectData = false;
+    
+    // Only process metrics if we're viewing a specific department or all departments
+    const metricsToProcess = selectedDepartment === 'all' ? filteredMetrics : 
+      filteredMetrics.filter(metric => metric.department_id === selectedDepartment);
+    
+    // Map specific metrics by their actual names and departments
+    metricsToProcess.forEach((metric) => {
+      const metricName = metric.name.toLowerCase();
+      const deptName = metric.department_name?.toLowerCase() || '';
+      
+      // Sales/Revenue - only from Financial or Commercial departments
+      if ((metricName.includes('receita') || metricName.includes('faturamento')) && 
+          (deptName.includes('financeiro') || deptName.includes('comercial'))) {
         salesTotal += metric.current;
-      } else if (metric.name.toLowerCase().includes('cliente') || metric.name.toLowerCase().includes('usuário')) {
-        newCustomers += Math.round(metric.current);
-      } else if (metric.name.toLowerCase().includes('conversão') || metric.name.toLowerCase().includes('taxa')) {
+        hasSalesData = true;
+      }
+      
+      // Conversion Rate - only from Commercial department
+      if (metricName.includes('conversão') && deptName.includes('comercial')) {
         conversionRate = metric.current;
-      } else if (metric.name.toLowerCase().includes('projeto') || metric.name.toLowerCase().includes('tarefa')) {
+        hasConversionData = true;
+      }
+      
+      // Customer metrics - only from Commercial or Marketing departments
+      if ((metricName.includes('cliente') || metricName.includes('cac')) && 
+          (deptName.includes('comercial') || deptName.includes('marketing'))) {
+        newCustomers += Math.round(metric.current);
+        hasCustomerData = true;
+      }
+      
+      // Project metrics - only from specific departments that track projects
+      if ((metricName.includes('projeto') || metricName.includes('tarefa')) && 
+          !deptName.includes('financeiro')) {
         openProjects += Math.round(metric.current);
+        hasProjectData = true;
       }
     });
     
@@ -79,43 +110,35 @@ export const useMetricProcessing = (
       salesTotal,
       newCustomers,
       conversionRate,
-      openProjects
+      openProjects,
+      // Availability flags for each KPI
+      hasSalesData,
+      hasCustomerData,
+      hasConversionData,
+      hasProjectData
     };
-  }, [filteredMetrics]);
+  }, [filteredMetrics, selectedDepartment]);
   
-  // Create monthly revenue data
+  // Create monthly revenue data - only if there are actual revenue metrics in the selected department
   const monthlyRevenue = useMemo(() => {
-    if (!filteredMetrics.length) {
-      return [
-        { name: 'Jan', value: 120000 },
-        { name: 'Fev', value: 140000 },
-        { name: 'Mar', value: 160000 },
-        { name: 'Abr', value: 180000 },
-        { name: 'Mai', value: 190000 },
-        { name: 'Jun', value: 170000 },
-      ];
-    }
+    const metricsToProcess = selectedDepartment === 'all' ? filteredMetrics : 
+      filteredMetrics.filter(metric => metric.department_id === selectedDepartment);
     
-    // Find revenue metrics
-    const revenueMetrics = filteredMetrics.filter((metric) => 
-      metric.name.toLowerCase().includes('receita') && 
-      metric.unit === 'R$'
-    );
+    // Find actual revenue metrics
+    const revenueMetrics = metricsToProcess.filter((metric) => {
+      const metricName = metric.name.toLowerCase();
+      const deptName = metric.department_name?.toLowerCase() || '';
+      return (metricName.includes('receita') || metricName.includes('faturamento')) && 
+             (deptName.includes('financeiro') || deptName.includes('comercial')) &&
+             metric.unit.includes('R$');
+    });
     
     if (revenueMetrics.length === 0) {
-      // Use sample data if no revenue metrics available
-      return [
-        { name: 'Jan', value: 120000 },
-        { name: 'Fev', value: 140000 },
-        { name: 'Mar', value: 160000 },
-        { name: 'Abr', value: 180000 },
-        { name: 'Mai', value: 190000 },
-        { name: 'Jun', value: 170000 },
-      ];
+      return [];
     }
     
-    // Process actual revenue data if available
-    // This would need to be expanded with real historical data
+    // Create chart data based on actual revenue metrics
+    // For now, we'll use current values - this could be enhanced with historical data
     return revenueMetrics.slice(0, 6).map((metric, index) => {
       const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
       return {
@@ -123,12 +146,30 @@ export const useMetricProcessing = (
         value: Math.round(metric.current),
       };
     });
-  }, [filteredMetrics]);
+  }, [filteredMetrics, selectedDepartment]);
+
+  // Check if charts should be shown based on selected department and actual data
+  const shouldShowCharts = useMemo(() => {
+    const isAllDepartments = selectedDepartment === 'all';
+    const hasRevenueData = monthlyRevenue.length > 0;
+    const hasDepartmentData = departmentPerformance.length > 0;
+    
+    return {
+      // Department performance chart only in "all departments" view
+      departmentPerformance: isAllDepartments && hasDepartmentData,
+      // Monthly revenue chart only if there are actual revenue metrics in the department
+      monthlyRevenue: hasRevenueData,
+      // Show KPIs based on actual metric availability in the department
+      showKpis: kpiData.hasSalesData || kpiData.hasCustomerData || 
+                kpiData.hasConversionData || kpiData.hasProjectData
+    };
+  }, [selectedDepartment, monthlyRevenue.length, departmentPerformance.length, kpiData]);
 
   return {
     filteredMetrics,
     departmentPerformance,
     kpiData,
-    monthlyRevenue
+    monthlyRevenue,
+    shouldShowCharts
   };
 };
