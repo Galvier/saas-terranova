@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -21,6 +20,7 @@ import { Edit, MoreHorizontal, Trash2, RefreshCcw, AlertCircle, UserPlus, Loader
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { CreateAuthDialog } from './CreateAuthDialog';
+import { MobileManagerCard } from './MobileManagerCard';
 import { createAuthForManager } from '@/integrations/supabase/managers';
 import type { Manager } from '@/integrations/supabase';
 
@@ -125,14 +125,19 @@ export const ManagersTable = ({
     <>
       {hasRoleMismatch && (
         <div className="mb-4 p-4 border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 rounded-md">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+            <div className="flex-1">
               <h3 className="text-sm font-medium text-amber-800 dark:text-amber-300">Atualização de permissões detectada</h3>
-              <p className="text-sm text-amber-700 dark:text-amber-400">
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
                 Sua função no banco é "{currentUserManager.role}", mas seus metadados mostram "{userMetadataRole}".
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleSyncUserData} className="flex items-center gap-1 self-start sm:self-center">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSyncUserData} 
+              className="flex items-center gap-2 w-full sm:w-auto"
+            >
               <RefreshCcw className="h-3.5 w-3.5" />
               Sincronizar dados
             </Button>
@@ -149,7 +154,44 @@ export const ManagersTable = ({
         </div>
       )}
 
-      <div className="rounded-md border">
+      {/* Mobile Cards - visible only on small screens */}
+      <div className="md:hidden space-y-4">
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="flex items-center justify-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm text-muted-foreground">Carregando gestores...</span>
+            </div>
+          </div>
+        ) : managers.length > 0 ? (
+          managers.map((manager) => {
+            const hasAuthUser = !!manager.user_id;
+            const isCurrentUser = manager.email?.toLowerCase() === currentUserEmail;
+            
+            return (
+              <MobileManagerCard
+                key={manager.id}
+                manager={manager}
+                isAdmin={isAdmin}
+                isCurrentUser={isCurrentUser}
+                hasAuthUser={hasAuthUser}
+                isFixingInconsistencies={isFixingInconsistencies}
+                onEdit={handleEditManager}
+                onDelete={onDeleteManager}
+                onCreateAuth={handleCreateAuthClick}
+                onSyncData={handleSyncUserData}
+              />
+            );
+          })
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">Nenhum gestor encontrado</p>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table - hidden on small screens */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
