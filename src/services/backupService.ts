@@ -32,7 +32,7 @@ const TABLES_TO_BACKUP = [
   'user_settings',
   'logs',
   'admin_dashboard_config'
-];
+] as const;
 
 export const generateBackup = async (): Promise<{ 
   success: boolean; 
@@ -58,7 +58,7 @@ export const generateBackup = async (): Promise<{
     for (const tableName of TABLES_TO_BACKUP) {
       try {
         const { data, error } = await supabase
-          .from(tableName)
+          .from(tableName as any)
           .select('*');
 
         if (error) {
