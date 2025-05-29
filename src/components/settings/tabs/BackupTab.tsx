@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -113,7 +112,7 @@ const BackupTab = () => {
   
   // Navigate to specific pages
   const handleNavigateToDiagnostic = () => {
-    navigate('/diagnostico');
+    navigate('/admin/diagnostico');
   };
   
   // Handle save settings
