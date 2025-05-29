@@ -33,6 +33,39 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_history: {
+        Row: {
+          created_at: string
+          file_size: number
+          filename: string
+          id: string
+          status: string
+          tables_count: number
+          total_records: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_size: number
+          filename: string
+          id?: string
+          status?: string
+          tables_count: number
+          total_records: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          status?: string
+          tables_count?: number
+          total_records?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           created_at: string | null
