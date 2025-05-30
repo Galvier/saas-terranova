@@ -21,6 +21,17 @@ export interface BackupHistoryItem {
   total_records: number;
   status: string;
   created_at: string;
+  user_id?: string;
+}
+
+export interface BackupSettings {
+  id: string;
+  user_id: string;
+  auto_backup_enabled: boolean;
+  backup_frequency: string;
+  last_auto_backup?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // List of tables to backup (excluding system tables)
@@ -129,6 +140,14 @@ export const saveBackupHistory = async (
   totalRecords: number
 ): Promise<boolean> => {
   try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('User not authenticated');
+      return false;
+    }
+
     const { error } = await supabase
       .from('backup_history')
       .insert({
@@ -136,7 +155,8 @@ export const saveBackupHistory = async (
         file_size: fileSize,
         tables_count: tablesCount,
         total_records: totalRecords,
-        status: 'completed'
+        status: 'completed',
+        user_id: user.id
       });
 
     if (error) {
@@ -153,9 +173,18 @@ export const saveBackupHistory = async (
 
 export const getBackupHistory = async (): Promise<BackupHistoryItem[]> => {
   try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('User not authenticated');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('backup_history')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -168,5 +197,82 @@ export const getBackupHistory = async (): Promise<BackupHistoryItem[]> => {
   } catch (error) {
     console.error('Error fetching backup history:', error);
     return [];
+  }
+};
+
+export const getBackupSettings = async (): Promise<BackupSettings | null> => {
+  try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('User not authenticated');
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('backup_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) {
+      // If no settings exist, create default ones
+      if (error.code === 'PGRST116') {
+        const { data: newSettings, error: insertError } = await supabase
+          .from('backup_settings')
+          .insert({
+            user_id: user.id,
+            auto_backup_enabled: false
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error creating backup settings:', insertError);
+          return null;
+        }
+
+        return newSettings;
+      }
+      
+      console.error('Error fetching backup settings:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error fetching backup settings:', error);
+    return null;
+  }
+};
+
+export const updateBackupSettings = async (autoBackupEnabled: boolean): Promise<boolean> => {
+  try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('User not authenticated');
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('backup_settings')
+      .upsert({
+        user_id: user.id,
+        auto_backup_enabled: autoBackupEnabled,
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Error updating backup settings:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error updating backup settings:', error);
+    return false;
   }
 };

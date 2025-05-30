@@ -66,6 +66,36 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_settings: {
+        Row: {
+          auto_backup_enabled: boolean
+          backup_frequency: string
+          created_at: string
+          id: string
+          last_auto_backup: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_backup_enabled?: boolean
+          backup_frequency?: string
+          created_at?: string
+          id?: string
+          last_auto_backup?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_backup_enabled?: boolean
+          backup_frequency?: string
+          created_at?: string
+          id?: string
+          last_auto_backup?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           created_at: string | null
@@ -661,6 +691,10 @@ export type Database = {
       record_metric_value: {
         Args: { metric_id: string; metric_value: number; metric_date?: string }
         Returns: string
+      }
+      run_auto_backup: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       run_diagnostic_write_test: {
         Args: { test_id_param: string }

@@ -11,13 +11,14 @@ import { useNavigate } from 'react-router-dom';
 import { testConnection, testTables, testDatabaseWrite } from '@/utils/supabaseDiagnostic';
 import { generateBackup, downloadBackup, saveBackupHistory } from '@/services/backupService';
 import { useBackupHistory } from '@/hooks/useBackupHistory';
+import { useBackupSettings } from '@/hooks/useBackupSettings';
 
 const BackupTab = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [autoBackup, setAutoBackup] = useState(false);
   const navigate = useNavigate();
-  const { history, refreshHistory } = useBackupHistory();
+  const { history, refreshHistory, isLoading: isHistoryLoading } = useBackupHistory();
+  const { settings: backupSettings, updateSettings: updateBackupSettings, isLoading: isSettingsLoading } = useBackupSettings();
   
   // Handle backup data with real backup generation
   const handleBackupData = async () => {
@@ -38,20 +39,28 @@ const BackupTab = () => {
       const fileSize = downloadBackup(result.data, result.filename);
 
       // Save to history
-      await saveBackupHistory(
+      const saved = await saveBackupHistory(
         result.filename,
         fileSize,
         result.data.metadata.tables_count,
         result.data.metadata.total_records
       );
 
-      // Refresh history
-      refreshHistory();
+      if (saved) {
+        // Refresh history
+        refreshHistory();
 
-      toast({
-        title: "Backup concluído",
-        description: `Arquivo ${result.filename} baixado com sucesso. ${result.data.metadata.total_records} registros de ${result.data.metadata.tables_count} tabelas.`
-      });
+        toast({
+          title: "Backup concluído",
+          description: `Arquivo ${result.filename} baixado com sucesso. ${result.data.metadata.total_records} registros de ${result.data.metadata.tables_count} tabelas.`
+        });
+      } else {
+        toast({
+          title: "Backup criado",
+          description: `Arquivo ${result.filename} baixado. Não foi possível salvar no histórico (verifique se está logado).`,
+          variant: "destructive"
+        });
+      }
 
     } catch (error) {
       console.error('Backup error:', error);
@@ -153,16 +162,21 @@ const BackupTab = () => {
     navigate('/admin/diagnostico');
   };
   
-  // Handle save settings
-  const handleSaveSettings = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+  // Handle auto backup toggle
+  const handleAutoBackupToggle = async (enabled: boolean) => {
+    const success = await updateBackupSettings(enabled);
+    if (success) {
       toast({
-        title: "Configurações salvas",
-        description: "Suas configurações de backup foram atualizadas"
+        title: enabled ? "Backup automático ativado" : "Backup automático desativado",
+        description: enabled ? "Backups serão realizados automaticamente diariamente" : "Backups automáticos foram desativados"
       });
-    }, 1000);
+    } else {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar as configurações de backup",
+        variant: "destructive"
+      });
+    }
   };
 
   // Format file size for display
@@ -314,11 +328,15 @@ const BackupTab = () => {
           <div className="flex items-center justify-between">
             <Label htmlFor="auto-backup" className="text-sm text-muted-foreground">
               Realizar backups automáticos diários
+              {backupSettings?.auto_backup_enabled && (
+                <span className="ml-2 text-green-600 font-medium">• Ativo</span>
+              )}
             </Label>
             <Switch 
               id="auto-backup" 
-              checked={autoBackup} 
-              onCheckedChange={setAutoBackup}
+              checked={backupSettings?.auto_backup_enabled || false}
+              onCheckedChange={handleAutoBackupToggle}
+              disabled={isSettingsLoading}
             />
           </div>
         </div>
@@ -326,7 +344,12 @@ const BackupTab = () => {
         <div className="space-y-2">
           <Label>Histórico de Backups</Label>
           <div className="rounded-md border">
-            {history.length === 0 ? (
+            {isHistoryLoading ? (
+              <div className="p-4 text-center">
+                <Loader2 className="mx-auto h-6 w-6 animate-spin mb-2" />
+                <p className="text-muted-foreground">Carregando histórico...</p>
+              </div>
+            ) : history.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground">
                 <FileText className="mx-auto h-8 w-8 mb-2 opacity-50" />
                 <p>Nenhum backup encontrado</p>
@@ -360,21 +383,6 @@ const BackupTab = () => {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="border-t bg-muted/50 px-6 py-4">
-        <Button onClick={handleSaveSettings} disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Salvar Configurações
-            </>
-          )}
-        </Button>
-      </CardFooter>
     </Card>
   );
 };
