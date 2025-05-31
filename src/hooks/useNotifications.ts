@@ -41,7 +41,20 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      setNotifications(data || []);
+      // Converter dados do Supabase para nossa interface
+      const typedNotifications: Notification[] = (data || []).map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        title: item.title,
+        message: item.message,
+        type: item.type as 'info' | 'warning' | 'success' | 'error',
+        is_read: item.is_read,
+        metadata: item.metadata || {},
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
+
+      setNotifications(typedNotifications);
     } catch (err) {
       console.error('Error fetching notifications:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar notificações');
@@ -89,12 +102,34 @@ export const useNotifications = () => {
     
     switch (payload.eventType) {
       case 'INSERT':
-        setNotifications(prev => [payload.new, ...prev]);
+        const newNotification: Notification = {
+          id: payload.new.id,
+          user_id: payload.new.user_id,
+          title: payload.new.title,
+          message: payload.new.message,
+          type: payload.new.type as 'info' | 'warning' | 'success' | 'error',
+          is_read: payload.new.is_read,
+          metadata: payload.new.metadata || {},
+          created_at: payload.new.created_at,
+          updated_at: payload.new.updated_at
+        };
+        setNotifications(prev => [newNotification, ...prev]);
         break;
       case 'UPDATE':
+        const updatedNotification: Notification = {
+          id: payload.new.id,
+          user_id: payload.new.user_id,
+          title: payload.new.title,
+          message: payload.new.message,
+          type: payload.new.type as 'info' | 'warning' | 'success' | 'error',
+          is_read: payload.new.is_read,
+          metadata: payload.new.metadata || {},
+          created_at: payload.new.created_at,
+          updated_at: payload.new.updated_at
+        };
         setNotifications(prev =>
           prev.map(notification =>
-            notification.id === payload.new.id ? payload.new : notification
+            notification.id === updatedNotification.id ? updatedNotification : notification
           )
         );
         break;
