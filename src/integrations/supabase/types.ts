@@ -385,6 +385,42 @@ export type Database = {
           },
         ]
       }
+      notification_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          message: string
+          name: string
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          name: string
+          title: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          name?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -448,6 +484,89 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          is_active: boolean | null
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          is_active?: boolean | null
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          is_active?: boolean | null
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scheduled_notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_sent_at: string | null
+          schedule_day: number | null
+          schedule_time: string | null
+          schedule_type: string
+          scheduled_for: string | null
+          target_id: string | null
+          target_type: string
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sent_at?: string | null
+          schedule_day?: number | null
+          schedule_time?: string | null
+          schedule_type: string
+          scheduled_for?: string | null
+          target_id?: string | null
+          target_type: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sent_at?: string | null
+          schedule_day?: number | null
+          schedule_time?: string | null
+          schedule_type?: string
+          scheduled_for?: string | null
+          target_id?: string | null
+          target_type?: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_notifications_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settings: {
         Row: {
           created_at: string | null
@@ -510,6 +629,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      broadcast_notification_from_template: {
+        Args: {
+          template_id_param: string
+          target_type?: string
+          department_id_param?: string
+          variables?: Json
+        }
+        Returns: number
+      }
       check_function_exists: {
         Args: { function_name: string }
         Returns: Json
@@ -600,6 +728,14 @@ export type Database = {
           notification_message: string
           notification_type?: string
           notification_metadata?: Json
+        }
+        Returns: string
+      }
+      create_notification_from_template: {
+        Args: {
+          template_id_param: string
+          target_user_id: string
+          variables?: Json
         }
         Returns: string
       }
