@@ -385,6 +385,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          title: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -557,6 +593,16 @@ export type Database = {
             }
         Returns: string
       }
+      create_notification: {
+        Args: {
+          target_user_id: string
+          notification_title: string
+          notification_message: string
+          notification_type?: string
+          notification_metadata?: Json
+        }
+        Returns: string
+      }
       delete_manager: {
         Args: { manager_id: string }
         Returns: Json
@@ -683,6 +729,14 @@ export type Database = {
           updated_at: string
           user_id: string
         }[]
+      }
+      mark_all_notifications_as_read: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      mark_notification_as_read: {
+        Args: { notification_id: string }
+        Returns: boolean
       }
       postgres_version: {
         Args: Record<PropertyKey, never>
