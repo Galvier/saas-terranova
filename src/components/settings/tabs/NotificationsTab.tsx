@@ -4,34 +4,43 @@ import { Bell, Send, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { useUserSettings } from '@/hooks/useUserSettings';
 import { useAuth } from '@/hooks/useAuth';
 import BroadcastNotification from '@/components/notifications/BroadcastNotification';
 import PushNotificationSettings from '@/components/notifications/PushNotificationSettings';
 
-const NotificationsTab = () => {
-  const { userSettings, updatePreferences } = useUserSettings();
+interface NotificationsTabProps {
+  settings: {
+    notificationPreferences: {
+      email: boolean;
+      alerts: boolean;
+      system: boolean;
+    };
+  };
+  isLoading: boolean;
+  onUpdateSettings: (newSettings: any) => Promise<void>;
+}
+
+const NotificationsTab: React.FC<NotificationsTabProps> = ({ settings, isLoading, onUpdateSettings }) => {
   const { user } = useAuth();
 
   // Verificar se o usuário é admin (simplificado)
   const isAdmin = user?.user_metadata?.role === 'admin';
 
   const handlePreferenceChange = async (key: string, value: boolean) => {
-    if (!userSettings) return;
-    
-    const newPreferences = {
-      ...userSettings.notification_preferences,
-      [key]: value
+    const newSettings = {
+      notificationPreferences: {
+        ...settings.notificationPreferences,
+        [key]: value
+      }
     };
     
-    await updatePreferences(newPreferences);
+    await onUpdateSettings(newSettings);
   };
 
-  const preferences = userSettings?.notification_preferences || {
+  const preferences = settings?.notificationPreferences || {
     email: true,
     alerts: true,
-    system: true,
-    push: true
+    system: true
   };
 
   return (
@@ -73,6 +82,7 @@ const NotificationsTab = () => {
                 <Switch
                   checked={preferences.system}
                   onCheckedChange={(checked) => handlePreferenceChange('system', checked)}
+                  disabled={isLoading}
                 />
               </div>
 
@@ -86,6 +96,7 @@ const NotificationsTab = () => {
                 <Switch
                   checked={preferences.alerts}
                   onCheckedChange={(checked) => handlePreferenceChange('alerts', checked)}
+                  disabled={isLoading}
                 />
               </div>
 
@@ -99,19 +110,7 @@ const NotificationsTab = () => {
                 <Switch
                   checked={preferences.email}
                   onCheckedChange={(checked) => handlePreferenceChange('email', checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <h4 className="font-medium">Notificações Push</h4>
-                  <p className="text-sm text-gray-600">
-                    Receber notificações no navegador e dispositivo
-                  </p>
-                </div>
-                <Switch
-                  checked={preferences.push}
-                  onCheckedChange={(checked) => handlePreferenceChange('push', checked)}
+                  disabled={isLoading}
                 />
               </div>
             </CardContent>

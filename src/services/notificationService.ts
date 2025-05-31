@@ -103,7 +103,12 @@ export const notificationService = {
         .order('category', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      
+      // Garantir que os tipos sejam compatíveis
+      return (data || []).map(template => ({
+        ...template,
+        type: template.type as 'info' | 'warning' | 'success' | 'error'
+      }));
     } catch (error) {
       console.error('Error fetching templates:', error);
       return [];
@@ -150,7 +155,13 @@ export const notificationService = {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Garantir que os tipos sejam compatíveis
+      return (data || []).map(notification => ({
+        ...notification,
+        target_type: notification.target_type as 'user' | 'department' | 'all' | 'admins',
+        schedule_type: notification.schedule_type as 'daily' | 'weekly' | 'monthly' | 'once'
+      }));
     } catch (error) {
       console.error('Error fetching scheduled notifications:', error);
       return [];

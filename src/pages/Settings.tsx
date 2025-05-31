@@ -103,7 +103,6 @@ const Settings = () => {
               <NotificationsTab 
                 settings={settings} 
                 isLoading={isSaving}
-                onSave={handleSaveNotificationSettings}
                 onUpdateSettings={updateSettings}
               />
             </TabsContent>
