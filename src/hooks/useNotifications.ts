@@ -49,7 +49,9 @@ export const useNotifications = () => {
         message: item.message,
         type: item.type as 'info' | 'warning' | 'success' | 'error',
         is_read: item.is_read,
-        metadata: item.metadata || {},
+        metadata: (typeof item.metadata === 'object' && item.metadata !== null && !Array.isArray(item.metadata)) 
+          ? item.metadata as Record<string, any>
+          : {},
         created_at: item.created_at,
         updated_at: item.updated_at
       }));
@@ -109,7 +111,9 @@ export const useNotifications = () => {
           message: payload.new.message,
           type: payload.new.type as 'info' | 'warning' | 'success' | 'error',
           is_read: payload.new.is_read,
-          metadata: payload.new.metadata || {},
+          metadata: (typeof payload.new.metadata === 'object' && payload.new.metadata !== null && !Array.isArray(payload.new.metadata)) 
+            ? payload.new.metadata as Record<string, any>
+            : {},
           created_at: payload.new.created_at,
           updated_at: payload.new.updated_at
         };
@@ -123,7 +127,9 @@ export const useNotifications = () => {
           message: payload.new.message,
           type: payload.new.type as 'info' | 'warning' | 'success' | 'error',
           is_read: payload.new.is_read,
-          metadata: payload.new.metadata || {},
+          metadata: (typeof payload.new.metadata === 'object' && payload.new.metadata !== null && !Array.isArray(payload.new.metadata)) 
+            ? payload.new.metadata as Record<string, any>
+            : {},
           created_at: payload.new.created_at,
           updated_at: payload.new.updated_at
         };
