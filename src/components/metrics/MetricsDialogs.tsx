@@ -42,58 +42,52 @@ const MetricsDialogs: React.FC<MetricsDialogsProps> = ({
   return (
     <>
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Criar Métrica</DialogTitle>
             <DialogDescription>
               Adicione uma nova métrica de desempenho para monitoramento.
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[70vh] overflow-y-auto pr-2">
-            <MetricForm
-              departments={departments}
-              onSuccess={onCreateSuccess}
-            />
-          </div>
+          <MetricForm
+            departments={departments}
+            onSuccess={onCreateSuccess}
+          />
         </DialogContent>
       </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Métrica</DialogTitle>
             <DialogDescription>
               Atualize os detalhes da métrica.
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[70vh] overflow-y-auto pr-2">
-            {selectedMetric && (
-              <MetricForm
-                departments={departments}
-                onSuccess={onEditSuccess}
-                metric={selectedMetric}
-              />
-            )}
-          </div>
+          {selectedMetric && (
+            <MetricForm
+              departments={departments}
+              onSuccess={onEditSuccess}
+              metric={selectedMetric}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
       <Dialog open={isValueDialogOpen} onOpenChange={setIsValueDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-[500px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Valor</DialogTitle>
             <DialogDescription>
               Adicione um novo valor para a métrica {selectedMetric?.name}.
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[70vh] overflow-y-auto pr-2">
-            {selectedMetric && (
-              <MetricValueForm
-                metric={selectedMetric}
-                onSuccess={onValueSuccess}
-              />
-            )}
-          </div>
+          {selectedMetric && (
+            <MetricValueForm
+              metric={selectedMetric}
+              onSuccess={onValueSuccess}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

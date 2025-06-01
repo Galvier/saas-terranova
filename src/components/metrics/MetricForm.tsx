@@ -109,7 +109,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-4">
         <BasicMetricFields form={form} />
         <MetricValueFields form={form} />
         <MetricConfigFields 
@@ -120,7 +120,7 @@ const MetricForm: React.FC<MetricFormProps> = ({ departments, onSuccess, metric 
         />
         <VisualizationConfigFields form={form} />
         
-        <div className="sticky bottom-0 bg-background pt-4 border-t">
+        <div className="pt-4 border-t">
           <Button type="submit" className="w-full">
             {isEditing ? 'Atualizar Métrica' : 'Criar Métrica'}
           </Button>
