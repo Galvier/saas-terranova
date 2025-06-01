@@ -14,6 +14,7 @@ interface PasswordInputProps {
   placeholder?: string;
   isConfirmPassword?: boolean;
   confirmValue?: string;
+  hideLabel?: boolean;
 }
 
 const PasswordInput = ({
@@ -23,7 +24,8 @@ const PasswordInput = ({
   showStrengthIndicator = false,
   placeholder = "Digite uma senha segura",
   isConfirmPassword = false,
-  confirmValue
+  confirmValue,
+  hideLabel = false
 }: PasswordInputProps) => {
   const [showPassword, setShowPassword] = React.useState(false);
   const [passwordStrength, setPasswordStrength] = React.useState(0);
@@ -48,7 +50,7 @@ const PasswordInput = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={label}>{label}</Label>
+      {!hideLabel && <Label htmlFor={label}>{label}</Label>}
       <div className="relative">
         <Input
           id={label}
@@ -79,4 +81,3 @@ const PasswordInput = ({
 };
 
 export default PasswordInput;
-

@@ -33,6 +33,69 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_history: {
+        Row: {
+          created_at: string
+          file_size: number
+          filename: string
+          id: string
+          status: string
+          tables_count: number
+          total_records: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_size: number
+          filename: string
+          id?: string
+          status?: string
+          tables_count: number
+          total_records: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          status?: string
+          tables_count?: number
+          total_records?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      backup_settings: {
+        Row: {
+          auto_backup_enabled: boolean
+          backup_frequency: string
+          created_at: string
+          id: string
+          last_auto_backup: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_backup_enabled?: boolean
+          backup_frequency?: string
+          created_at?: string
+          id?: string
+          last_auto_backup?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_backup_enabled?: boolean
+          backup_frequency?: string
+          created_at?: string
+          id?: string
+          last_auto_backup?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           created_at: string | null
@@ -322,6 +385,78 @@ export type Database = {
           },
         ]
       }
+      notification_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          message: string
+          name: string
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          name: string
+          title: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          name?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          title: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -348,6 +483,89 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          is_active: boolean | null
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          is_active?: boolean | null
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          is_active?: boolean | null
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scheduled_notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_sent_at: string | null
+          schedule_day: number | null
+          schedule_time: string | null
+          schedule_type: string
+          scheduled_for: string | null
+          target_id: string | null
+          target_type: string
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sent_at?: string | null
+          schedule_day?: number | null
+          schedule_time?: string | null
+          schedule_type: string
+          scheduled_for?: string | null
+          target_id?: string | null
+          target_type: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sent_at?: string | null
+          schedule_day?: number | null
+          schedule_time?: string | null
+          schedule_type?: string
+          scheduled_for?: string | null
+          target_id?: string | null
+          target_type?: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_notifications_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       settings: {
         Row: {
@@ -411,6 +629,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      broadcast_notification_from_template: {
+        Args: {
+          template_id_param: string
+          target_type?: string
+          department_id_param?: string
+          variables?: Json
+        }
+        Returns: number
+      }
       check_function_exists: {
         Args: { function_name: string }
         Returns: Json
@@ -492,6 +719,24 @@ export type Database = {
               metric_priority?: string
               metric_default_period?: string
             }
+        Returns: string
+      }
+      create_notification: {
+        Args: {
+          target_user_id: string
+          notification_title: string
+          notification_message: string
+          notification_type?: string
+          notification_metadata?: Json
+        }
+        Returns: string
+      }
+      create_notification_from_template: {
+        Args: {
+          template_id_param: string
+          target_user_id: string
+          variables?: Json
+        }
         Returns: string
       }
       delete_manager: {
@@ -621,6 +866,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      mark_all_notifications_as_read: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      mark_notification_as_read: {
+        Args: { notification_id: string }
+        Returns: boolean
+      }
       postgres_version: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -628,6 +881,10 @@ export type Database = {
       record_metric_value: {
         Args: { metric_id: string; metric_value: number; metric_date?: string }
         Returns: string
+      }
+      run_auto_backup: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       run_diagnostic_write_test: {
         Args: { test_id_param: string }

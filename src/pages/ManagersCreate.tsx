@@ -18,15 +18,15 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import DepartmentsSelect from '@/components/DepartmentsSelect';
 import { createManager, getAllDepartments } from '@/integrations/supabase';
-import { Loader2 } from 'lucide-react';
-import PasswordInput from '@/components/managers/PasswordInput';
+import { Loader2, Info } from 'lucide-react';
 
-// Define form validation schema
+// Define form validation schema - removido campos de senha
 const formSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido'),
@@ -35,11 +35,6 @@ const formSchema = z.object({
   role: z.enum(['admin', 'manager', 'viewer'], {
     required_error: 'Selecione uma função',
   }).default('manager'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-  password_confirm: z.string().min(6, 'Confirme a senha'),
-}).refine(data => data.password === data.password_confirm, {
-  message: "As senhas não conferem",
-  path: ["password_confirm"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -67,12 +62,10 @@ const ManagersCreate = () => {
       email: '',
       is_active: true,
       role: 'manager',
-      password: '',
-      password_confirm: ''
     },
   });
 
-  // Handle form submission
+  // Handle form submission - removido senha dos parâmetros
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     try {
@@ -83,8 +76,8 @@ const ManagersCreate = () => {
         email: values.email,
         department_id: values.department_id,
         is_active: values.is_active,
-        role: values.role,
-        password: values.password
+        role: values.role
+        // Removido password do objeto
       });
 
       if (result.error) {
@@ -93,7 +86,7 @@ const ManagersCreate = () => {
 
       toast({
         title: 'Gestor criado com sucesso',
-        description: `${values.name} foi adicionado como gestor e usuário do sistema.`,
+        description: `${values.name} foi adicionado como gestor. Use o botão "Criar Conta de Autenticação" para criar o acesso ao sistema.`,
       });
 
       navigate('/managers');
@@ -125,10 +118,17 @@ const ManagersCreate = () => {
         <CardHeader>
           <CardTitle>Dados do Gestor</CardTitle>
           <CardDescription>
-            Preencha os dados abaixo para adicionar um novo gestor. Uma conta de usuário será criada automaticamente.
+            Preencha os dados abaixo para adicionar um novo gestor. Após a criação, você poderá criar uma conta de autenticação separadamente.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <Alert className="mb-6">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Processo em duas etapas:</strong> Primeiro criamos o registro do gestor, depois você pode criar a conta de autenticação usando o botão "Criar Conta de Autenticação" na lista de gestores.
+            </AlertDescription>
+          </Alert>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -158,7 +158,7 @@ const ManagersCreate = () => {
                       <Input type="email" placeholder="email@exemplo.com" {...field} />
                     </FormControl>
                     <FormDescription>
-                      O email será usado para login e comunicações.
+                      O email será usado para login quando a conta de autenticação for criada.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -215,53 +215,6 @@ const ManagersCreate = () => {
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Senha</FormLabel>
-                    <FormControl>
-                      <PasswordInput
-                        label="Senha"
-                        value={field.value}
-                        onChange={field.onChange}
-                        showStrengthIndicator={true}
-                        placeholder="Digite uma senha segura"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Senha para acesso ao sistema. Mínimo de 6 caracteres.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password_confirm"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirmar Senha</FormLabel>
-                    <FormControl>
-                      <PasswordInput
-                        label="Confirmar Senha"
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Confirme a senha"
-                        isConfirmPassword={true}
-                        confirmValue={form.getValues("password")}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Repita a senha para confirmação.
-                    </FormDescription>
-                    <FormMessage />
                   </FormItem>
                 )}
               />

@@ -10,23 +10,23 @@ interface VisualizationConfigFieldsProps {
 
 const VisualizationConfigFields: React.FC<VisualizationConfigFieldsProps> = ({ form }) => {
   return (
-    <div className="space-y-4">
-      <div className="text-sm font-medium pb-2 border-b">Configurações de visualização</div>
+    <div className="space-y-3">
+      <div className="text-sm font-medium pb-1 border-b">Configurações de visualização</div>
       
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <FormField
           control={form.control}
           name="visualization_type"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipo de visualização</FormLabel>
+            <FormItem className="space-y-1">
+              <FormLabel className="text-xs">Tipo de visualização</FormLabel>
               <FormControl>
                 <Select 
                   onValueChange={field.onChange} 
                   defaultValue={field.value}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um tipo" />
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="card">Cartão KPI</SelectItem>
@@ -38,8 +38,8 @@ const VisualizationConfigFields: React.FC<VisualizationConfigFieldsProps> = ({ f
                   </SelectContent>
                 </Select>
               </FormControl>
-              <FormDescription>
-                Como esta métrica será exibida no dashboard
+              <FormDescription className="text-xs">
+                Como será exibida no dashboard
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -50,15 +50,15 @@ const VisualizationConfigFields: React.FC<VisualizationConfigFieldsProps> = ({ f
           control={form.control}
           name="priority"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Prioridade</FormLabel>
+            <FormItem className="space-y-1">
+              <FormLabel className="text-xs">Prioridade</FormLabel>
               <FormControl>
                 <Select 
                   onValueChange={field.onChange} 
                   defaultValue={field.value}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a prioridade" />
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Prioridade" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="normal">Normal</SelectItem>
@@ -67,8 +67,8 @@ const VisualizationConfigFields: React.FC<VisualizationConfigFieldsProps> = ({ f
                   </SelectContent>
                 </Select>
               </FormControl>
-              <FormDescription>
-                Importância desta métrica no dashboard
+              <FormDescription className="text-xs">
+                Importância no dashboard
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -79,15 +79,15 @@ const VisualizationConfigFields: React.FC<VisualizationConfigFieldsProps> = ({ f
           control={form.control}
           name="default_period"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Período padrão</FormLabel>
+            <FormItem className="space-y-1">
+              <FormLabel className="text-xs">Período padrão</FormLabel>
               <FormControl>
                 <Select 
                   onValueChange={field.onChange} 
                   defaultValue={field.value}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o período" />
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Período" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="day">Diário</SelectItem>
@@ -98,7 +98,7 @@ const VisualizationConfigFields: React.FC<VisualizationConfigFieldsProps> = ({ f
                   </SelectContent>
                 </Select>
               </FormControl>
-              <FormDescription>
+              <FormDescription className="text-xs">
                 Período inicial para visualização
               </FormDescription>
               <FormMessage />

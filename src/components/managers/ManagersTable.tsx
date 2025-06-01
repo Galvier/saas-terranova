@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -22,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { CreateAuthDialog } from './CreateAuthDialog';
 import { MobileManagerCard } from './MobileManagerCard';
 import { createAuthForManager } from '@/integrations/supabase/managers';
+import { translateRole } from '@/utils/roleTranslations';
 import type { Manager } from '@/integrations/supabase';
 
 interface ManagersTableProps {
@@ -129,7 +131,7 @@ export const ManagersTable = ({
             <div className="flex-1">
               <h3 className="text-sm font-medium text-amber-800 dark:text-amber-300">Atualização de permissões detectada</h3>
               <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                Sua função no banco é "{currentUserManager.role}", mas seus metadados mostram "{userMetadataRole}".
+                Sua função no banco é "{translateRole(currentUserManager.role)}", mas seus metadados mostram "{translateRole(userMetadataRole)}".
               </p>
             </div>
             <Button 
@@ -226,7 +228,7 @@ export const ManagersTable = ({
                     <TableCell>{manager.department_name || 'Não definido'}</TableCell>
                     <TableCell>
                       <span className="flex items-center">
-                        {manager.role || 'Gestor'}
+                        {translateRole(manager.role)}
                       </span>
                     </TableCell>
                     <TableCell>

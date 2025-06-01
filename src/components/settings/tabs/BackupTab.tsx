@@ -6,26 +6,72 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Upload, Database, Settings2, Save, Loader2 } from 'lucide-react';
+import { Download, Upload, Database, Settings2, Save, Loader2, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { testConnection, testTables, testDatabaseWrite } from '@/utils/supabaseDiagnostic';
+import { generateBackup, downloadBackup, saveBackupHistory } from '@/services/backupService';
+import { useBackupHistory } from '@/hooks/useBackupHistory';
+import { useBackupSettings } from '@/hooks/useBackupSettings';
 
 const BackupTab = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [autoBackup, setAutoBackup] = useState(false);
   const navigate = useNavigate();
+  const { history, refreshHistory, isLoading: isHistoryLoading } = useBackupHistory();
+  const { settings: backupSettings, updateSettings: updateBackupSettings, isLoading: isSettingsLoading } = useBackupSettings();
   
-  // Handle backup data with visual feedback
-  const handleBackupData = () => {
+  // Handle backup data with real backup generation
+  const handleBackupData = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
       toast({
-        title: "Backup concluído",
-        description: "Seu backup foi gerado e está disponível para download",
+        title: "Iniciando backup",
+        description: "Exportando dados das tabelas..."
       });
-    }, 1000);
+
+      const result = await generateBackup();
+      
+      if (!result.success || !result.data || !result.filename) {
+        throw new Error(result.error || 'Erro ao gerar backup');
+      }
+
+      // Download the backup file
+      const fileSize = downloadBackup(result.data, result.filename);
+
+      // Save to history
+      const saved = await saveBackupHistory(
+        result.filename,
+        fileSize,
+        result.data.metadata.tables_count,
+        result.data.metadata.total_records
+      );
+
+      if (saved) {
+        // Refresh history
+        refreshHistory();
+
+        toast({
+          title: "Backup concluído",
+          description: `Arquivo ${result.filename} baixado com sucesso. ${result.data.metadata.total_records} registros de ${result.data.metadata.tables_count} tabelas.`
+        });
+      } else {
+        toast({
+          title: "Backup criado",
+          description: `Arquivo ${result.filename} baixado. Não foi possível salvar no histórico (verifique se está logado).`,
+          variant: "destructive"
+        });
+      }
+
+    } catch (error) {
+      console.error('Backup error:', error);
+      toast({
+        title: "Erro no backup",
+        description: error instanceof Error ? error.message : "Erro desconhecido ao gerar backup",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // Handle data restoration with visual feedback
@@ -38,7 +84,7 @@ const BackupTab = () => {
     // Simulate file selection dialog
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,.sql';
+    input.accept = '.json';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
@@ -46,8 +92,8 @@ const BackupTab = () => {
         setTimeout(() => {
           setIsLoading(false);
           toast({
-            title: "Restauração concluída",
-            description: `O arquivo ${file.name} foi restaurado com sucesso`
+            title: "Restauração simulada",
+            description: `O arquivo ${file.name} seria restaurado (funcionalidade em desenvolvimento)`
           });
         }, 1000);
       }
@@ -113,19 +159,38 @@ const BackupTab = () => {
   
   // Navigate to specific pages
   const handleNavigateToDiagnostic = () => {
-    navigate('/diagnostico');
+    navigate('/admin/diagnostico');
   };
   
-  // Handle save settings
-  const handleSaveSettings = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+  // Handle auto backup toggle
+  const handleAutoBackupToggle = async (enabled: boolean) => {
+    const success = await updateBackupSettings(enabled);
+    if (success) {
       toast({
-        title: "Configurações salvas",
-        description: "Suas configurações de backup foram atualizadas"
+        title: enabled ? "Backup automático ativado" : "Backup automático desativado",
+        description: enabled ? "Backups serão realizados automaticamente diariamente" : "Backups automáticos foram desativados"
       });
-    }, 1000);
+    } else {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar as configurações de backup",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Format file size for display
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleString('pt-BR');
   };
   
   return (
@@ -154,7 +219,7 @@ const BackupTab = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processando...
+                    Gerando backup...
                   </>
                 ) : (
                   <>
@@ -263,11 +328,15 @@ const BackupTab = () => {
           <div className="flex items-center justify-between">
             <Label htmlFor="auto-backup" className="text-sm text-muted-foreground">
               Realizar backups automáticos diários
+              {backupSettings?.auto_backup_enabled && (
+                <span className="ml-2 text-green-600 font-medium">• Ativo</span>
+              )}
             </Label>
             <Switch 
               id="auto-backup" 
-              checked={autoBackup} 
-              onCheckedChange={setAutoBackup}
+              checked={backupSettings?.auto_backup_enabled || false}
+              onCheckedChange={handleAutoBackupToggle}
+              disabled={isSettingsLoading}
             />
           </div>
         </div>
@@ -275,57 +344,45 @@ const BackupTab = () => {
         <div className="space-y-2">
           <Label>Histórico de Backups</Label>
           <div className="rounded-md border">
-            <div className="p-4 flex items-center justify-between">
-              <div>
-                <p className="font-medium">Backup Completo</p>
-                <p className="text-sm text-muted-foreground">20/04/2025, 15:30</p>
+            {isHistoryLoading ? (
+              <div className="p-4 text-center">
+                <Loader2 className="mx-auto h-6 w-6 animate-spin mb-2" />
+                <p className="text-muted-foreground">Carregando histórico...</p>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => toast({
-                  title: "Download iniciado",
-                  description: "O download do seu backup foi iniciado"
-                })}
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </div>
-            <Separator />
-            <div className="p-4 flex items-center justify-between">
-              <div>
-                <p className="font-medium">Backup Completo</p>
-                <p className="text-sm text-muted-foreground">19/04/2025, 15:30</p>
+            ) : history.length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground">
+                <FileText className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                <p>Nenhum backup encontrado</p>
+                <p className="text-sm">Gere seu primeiro backup para ver o histórico</p>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => toast({
-                  title: "Download iniciado",
-                  description: "O download do seu backup foi iniciado"
-                })}
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </div>
+            ) : (
+              history.map((backup, index) => (
+                <div key={backup.id}>
+                  <div className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{backup.filename}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(backup.created_at)} • {formatFileSize(backup.file_size)} • {backup.tables_count} tabelas • {backup.total_records} registros
+                      </p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => toast({
+                        title: "Backup histórico",
+                        description: "Download de backups históricos em desenvolvimento"
+                      })}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {index < history.length - 1 && <Separator />}
+                </div>
+              ))
+            )}
           </div>
         </div>
       </CardContent>
-      <CardFooter className="border-t bg-muted/50 px-6 py-4">
-        <Button onClick={handleSaveSettings} disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Salvar Configurações
-            </>
-          )}
-        </Button>
-      </CardFooter>
     </Card>
   );
 };

@@ -42,7 +42,7 @@ const MetricsDialogs: React.FC<MetricsDialogsProps> = ({
   return (
     <>
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[95vw] max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Criar Métrica</DialogTitle>
             <DialogDescription>
@@ -57,7 +57,7 @@ const MetricsDialogs: React.FC<MetricsDialogsProps> = ({
       </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[95vw] max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Métrica</DialogTitle>
             <DialogDescription>
@@ -75,7 +75,7 @@ const MetricsDialogs: React.FC<MetricsDialogsProps> = ({
       </Dialog>
 
       <Dialog open={isValueDialogOpen} onOpenChange={setIsValueDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[95vw] max-w-[500px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Valor</DialogTitle>
             <DialogDescription>
