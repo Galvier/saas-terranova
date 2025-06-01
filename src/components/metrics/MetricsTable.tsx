@@ -71,7 +71,9 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                     <div className="flex items-center gap-2">
                       {metric.name}
                       {needsJustif && (
-                        <AlertTriangle className="h-4 w-4 text-amber-500" title="Precisa de justificativa" />
+                        <div title="Precisa de justificativa">
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        </div>
                       )}
                     </div>
                   </TableCell>
