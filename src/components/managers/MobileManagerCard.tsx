@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { translateRole } from '@/utils/roleTranslations';
 import type { Manager } from '@/integrations/supabase';
 
 interface MobileManagerCardProps {
@@ -90,7 +91,7 @@ export const MobileManagerCard: React.FC<MobileManagerCardProps> = ({
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-muted-foreground">FUNÇÃO</span>
-          <span className="text-sm">{manager.role || 'Gestor'}</span>
+          <span className="text-sm">{translateRole(manager.role)}</span>
         </div>
       </div>
 

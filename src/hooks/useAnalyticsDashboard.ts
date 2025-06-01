@@ -135,15 +135,15 @@ const useAnalyticsDashboard = (metrics: MetricDefinition[]): AnalyticsDashboardD
       }))
       .sort((a, b) => b.value - a.value);
     
-    // Calculate status distribution
+    // Calculate status distribution - TRADUZIDO PARA PORTUGUÊS
     const successCount = metrics.filter(m => m.status === 'success').length;
     const warningCount = metrics.filter(m => m.status === 'warning').length;
     const dangerCount = metrics.filter(m => m.status === 'danger').length;
     
     const statusDist = [
-      { name: 'Success', value: successCount, color: '#10b981' },
-      { name: 'Warning', value: warningCount, color: '#f59e0b' },
-      { name: 'Critical', value: dangerCount, color: '#ef4444' }
+      { name: 'Sucesso', value: successCount, color: '#10b981' },
+      { name: 'Aviso', value: warningCount, color: '#f59e0b' },
+      { name: 'Crítico', value: dangerCount, color: '#ef4444' }
     ];
     
     // Calculate metrics by department

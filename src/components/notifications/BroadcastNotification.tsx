@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { notificationService, NotificationTemplate } from '@/services/notificationService';
 import { useDepartmentsData } from '@/hooks/useDepartmentsData';
+import { translateTemplateName } from '@/utils/roleTranslations';
 
 interface BroadcastNotificationProps {
   onSent?: () => void;
@@ -145,6 +146,16 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
     }
   };
 
+  const translateNotificationType = (type: string) => {
+    const typeTranslations: Record<string, string> = {
+      'info': 'Informação',
+      'success': 'Sucesso',
+      'warning': 'Aviso',
+      'error': 'Erro'
+    };
+    return typeTranslations[type] || type;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -169,9 +180,9 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
                 <SelectItem key={template.id} value={template.id}>
                   <div className="flex items-center gap-2">
                     <Badge className={getTypeColor(template.type)}>
-                      {template.type}
+                      {translateNotificationType(template.type)}
                     </Badge>
-                    {template.name}
+                    {translateTemplateName(template.name)}
                   </div>
                 </SelectItem>
               ))}
