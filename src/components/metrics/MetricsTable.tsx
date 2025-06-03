@@ -21,7 +21,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const { isAdmin, userDepartmentId } = useAuth();
+  const { isAdmin } = useAuth();
   const [selectedMetricForJustification, setSelectedMetricForJustification] = useState<MetricDefinition | null>(null);
   const [justificationDate, setJustificationDate] = useState<Date>(new Date());
 
@@ -34,11 +34,6 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     } else {
       return metric.current < metric.target * 0.8; // Meta não atingida (menos de 80%)
     }
-  };
-
-  // Verificar se o usuário pode excluir uma métrica específica
-  const canDeleteMetric = (metric: MetricDefinition): boolean => {
-    return isAdmin || metric.department_id === userDepartmentId;
   };
 
   const handleJustifyClick = (metric: MetricDefinition) => {
@@ -75,7 +70,6 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
           <TableBody>
             {metrics.map((metric) => {
               const needsJustif = needsJustification(metric);
-              const canDelete = canDeleteMetric(metric);
               
               return (
                 <TableRow key={metric.id}>
@@ -145,7 +139,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                         <Edit className="h-4 w-4" />
                       </Button>
                       
-                      {canDelete && (
+                      {isAdmin && (
                         <Button
                           variant="ghost"
                           size="icon"

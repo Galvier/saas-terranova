@@ -14,7 +14,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
 
 const NotificationItem: React.FC<{
   notification: Notification;
@@ -88,15 +87,9 @@ const NotificationItem: React.FC<{
 const NotificationsDropdown: React.FC = () => {
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
-  const navigate = useNavigate();
 
   const handleMarkAllAsRead = async () => {
     await markAllAsRead();
-  };
-
-  const handleViewAllNotifications = () => {
-    setIsOpen(false);
-    navigate('/notifications');
   };
 
   return (
@@ -161,7 +154,7 @@ const NotificationsDropdown: React.FC = () => {
             </div>
           ) : (
             <div>
-              {notifications.slice(0, 5).map((notification) => (
+              {notifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
@@ -180,7 +173,7 @@ const NotificationsDropdown: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 className="w-full text-xs hover:bg-muted"
-                onClick={handleViewAllNotifications}
+                onClick={() => setIsOpen(false)}
               >
                 Ver todas as notificações
               </Button>
