@@ -86,15 +86,15 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     
     switch (type) {
       case 'chart':
-        return <BarChart3 className={iconClass} title="Gráfico" />;
+        return <div title="Gráfico"><BarChart3 className={iconClass} /></div>;
       case 'card':
-        return <CreditCard className={iconClass} title="Cartão" />;
+        return <div title="Cartão"><CreditCard className={iconClass} /></div>;
       case 'table':
-        return <TableIcon className={iconClass} title="Tabela" />;
+        return <div title="Tabela"><TableIcon className={iconClass} /></div>;
       case 'gauge':
-        return <Gauge className={iconClass} title="Medidor" />;
+        return <div title="Medidor"><Gauge className={iconClass} /></div>;
       default:
-        return <CreditCard className={iconClass} title="Cartão" />;
+        return <div title="Cartão"><CreditCard className={iconClass} /></div>;
     }
   };
 
