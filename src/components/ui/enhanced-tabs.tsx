@@ -12,7 +12,7 @@ const EnhancedTabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-12 items-center justify-center rounded-lg bg-gradient-to-r from-slate-100 to-slate-50 p-1.5 text-muted-foreground shadow-sm border border-slate-200",
+      "inline-flex h-12 items-center justify-center rounded-lg bg-muted p-1.5 text-muted-foreground border border-border shadow-sm",
       className
     )}
     {...props}
@@ -29,7 +29,7 @@ const EnhancedTabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-terranova-blue data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-slate-200 hover:bg-white/60 hover:text-slate-700 relative gap-2",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border hover:bg-background/60 hover:text-foreground relative gap-2",
       className
     )}
     {...props}
