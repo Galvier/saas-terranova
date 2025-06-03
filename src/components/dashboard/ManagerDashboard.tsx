@@ -2,7 +2,6 @@
 import React from 'react';
 import { MetricDefinition } from '@/integrations/supabase';
 import KpiCard from '@/components/KpiCard';
-import PerformanceChart from '@/components/PerformanceChart';
 
 interface ManagerDashboardProps {
   metrics: MetricDefinition[];
@@ -34,29 +33,12 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({ metrics, department
            (statusOrder[b.status as keyof typeof statusOrder] || 2);
   });
 
-  // Separate metrics by visualization type
-  const cardMetrics = sortedMetrics.filter(metric => 
-    !metric.visualization_type || metric.visualization_type === 'card'
-  );
-  
-  const chartMetrics = sortedMetrics.filter(metric => 
-    metric.visualization_type && metric.visualization_type !== 'card'
-  );
-
-  // Generate mock historical data for charts
-  const generateChartData = (metric: MetricDefinition) => {
-    const baseValue = metric.current;
-    const target = metric.target;
+  // Calculate actual trend based on comparison with target
+  const calculateTrend = (metric: MetricDefinition): number => {
+    if (!metric.current || !metric.target) return 0;
     
-    // Generate 6 data points including current and target
-    return [
-      { name: 'Jan', value: Math.max(0, baseValue * 0.8 + (Math.random() - 0.5) * baseValue * 0.2) },
-      { name: 'Fev', value: Math.max(0, baseValue * 0.85 + (Math.random() - 0.5) * baseValue * 0.2) },
-      { name: 'Mar', value: Math.max(0, baseValue * 0.9 + (Math.random() - 0.5) * baseValue * 0.2) },
-      { name: 'Abr', value: Math.max(0, baseValue * 0.95 + (Math.random() - 0.5) * baseValue * 0.2) },
-      { name: 'Atual', value: baseValue },
-      { name: 'Meta', value: target }
-    ];
+    const percentage = ((metric.current - metric.target) / metric.target) * 100;
+    return metric.lower_is_better ? -percentage : percentage;
   };
 
   return (
@@ -68,48 +50,20 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({ metrics, department
         </p>
       </div>
       
-      {/* KPI Cards Section */}
-      {cardMetrics.length > 0 && (
-        <div className="space-y-4">
-          {cardMetrics.length > 0 && chartMetrics.length > 0 && (
-            <h3 className="text-lg font-semibold">Indicadores principais</h3>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {cardMetrics.map(metric => (
-              <KpiCard
-                key={metric.id}
-                title={metric.name}
-                value={`${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`}
-                status={metric.status as 'success' | 'warning' | 'danger'}
-                change={Math.random() * 10 * (Math.random() > 0.5 ? 1 : -1)} // Mock change data
-                changeLabel="vs. período anterior"
-              />
-            ))}
-          </div>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {sortedMetrics.map(metric => (
+            <KpiCard
+              key={metric.id}
+              title={metric.name}
+              value={`${metric.current || 0}${metric.unit ? ` ${metric.unit}` : ''}`}
+              status={metric.status as 'success' | 'warning' | 'danger'}
+              change={calculateTrend(metric)}
+              changeLabel="vs. meta estabelecida"
+            />
+          ))}
         </div>
-      )}
-      
-      {/* Charts Section */}
-      {chartMetrics.length > 0 && (
-        <div className="space-y-4">
-          {cardMetrics.length > 0 && chartMetrics.length > 0 && (
-            <h3 className="text-lg font-semibold">Análises de desempenho</h3>
-          )}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {chartMetrics.map(metric => (
-              <PerformanceChart
-                key={metric.id}
-                title={metric.name}
-                data={generateChartData(metric)}
-                type={metric.visualization_type as 'bar' | 'line' | 'pie'}
-                status={metric.status as 'success' | 'warning' | 'danger'}
-                trend={Math.random() * 10 * (Math.random() > 0.5 ? 1 : -1)} // Mock trend data
-                percentage={metric.unit === '%'}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

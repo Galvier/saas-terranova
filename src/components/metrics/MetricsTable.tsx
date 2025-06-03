@@ -21,7 +21,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, userDepartmentId } = useAuth();
   const [selectedMetricForJustification, setSelectedMetricForJustification] = useState<MetricDefinition | null>(null);
   const [justificationDate, setJustificationDate] = useState<Date>(new Date());
 
@@ -34,6 +34,14 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     } else {
       return metric.current < metric.target * 0.8; // Meta não atingida (menos de 80%)
     }
+  };
+
+  // Verificar se o usuário pode modificar uma métrica específica
+  const canModifyMetric = (metric: MetricDefinition): boolean => {
+    // Admins podem modificar qualquer métrica
+    if (isAdmin) return true;
+    // Gestores podem modificar apenas métricas do seu departamento
+    return metric.department_id === userDepartmentId;
   };
 
   const handleJustifyClick = (metric: MetricDefinition) => {
@@ -70,6 +78,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
           <TableBody>
             {metrics.map((metric) => {
               const needsJustif = needsJustification(metric);
+              const canModify = canModifyMetric(metric);
               
               return (
                 <TableRow key={metric.id}>
@@ -109,16 +118,18 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onAddValue(metric)}
-                        title="Adicionar valor"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                      {canModify && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onAddValue(metric)}
+                          title="Adicionar valor"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      )}
                       
-                      {needsJustif && (
+                      {needsJustif && canModify && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -130,16 +141,18 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                         </Button>
                       )}
                       
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit(metric)}
-                        title="Editar"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      {canModify && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onEdit(metric)}
+                          title="Editar"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                       
-                      {isAdmin && (
+                      {canModify && (
                         <Button
                           variant="ghost"
                           size="icon"
