@@ -21,11 +21,11 @@ const PushNotificationSettings: React.FC = () => {
   const getPermissionStatus = () => {
     switch (permission) {
       case 'granted':
-        return { text: 'Permitido', color: 'bg-green-100 text-green-800' };
+        return { text: 'Permitido', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' };
       case 'denied':
-        return { text: 'Negado', color: 'bg-red-100 text-red-800' };
+        return { text: 'Negado', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' };
       default:
-        return { text: 'Pendente', color: 'bg-yellow-100 text-yellow-800' };
+        return { text: 'Pendente', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' };
     }
   };
 
@@ -43,8 +43,8 @@ const PushNotificationSettings: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="text-center py-6">
-            <BellOff className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-600">
+            <BellOff className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">
               Seu navegador não suporta notificações push
             </p>
           </div>
@@ -68,10 +68,10 @@ const PushNotificationSettings: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Status da permissão */}
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
           <div>
             <h4 className="font-medium">Status da Permissão</h4>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Permissão para enviar notificações
             </p>
           </div>
@@ -81,10 +81,10 @@ const PushNotificationSettings: React.FC = () => {
         </div>
 
         {/* Status da inscrição */}
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
           <div>
             <h4 className="font-medium">Notificações Push</h4>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               {isSubscribed 
                 ? 'Você receberá notificações push' 
                 : 'Ative para receber notificações push'
@@ -104,9 +104,9 @@ const PushNotificationSettings: React.FC = () => {
               disabled={permission === 'denied'}
             />
             {isSubscribed ? (
-              <Bell className="h-4 w-4 text-green-600" />
+              <Bell className="h-4 w-4 text-green-600 dark:text-green-400" />
             ) : (
-              <BellOff className="h-4 w-4 text-gray-400" />
+              <BellOff className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
         </div>
@@ -125,8 +125,8 @@ const PushNotificationSettings: React.FC = () => {
           )}
 
           {permission === 'denied' && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-800">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800">
+              <p className="text-sm text-red-800 dark:text-red-300">
                 <strong>Permissão negada:</strong> Para habilitar notificações push, 
                 você precisa alterar as configurações do seu navegador manualmente.
               </p>
@@ -146,9 +146,9 @@ const PushNotificationSettings: React.FC = () => {
         </div>
 
         {/* Informações adicionais */}
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">Como funcionam?</h4>
-          <ul className="text-sm text-blue-800 space-y-1">
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-900/20 dark:border-blue-800">
+          <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">Como funcionam?</h4>
+          <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
             <li>• Receba alertas de métricas importantes</li>
             <li>• Notificações de backup e sistema</li>
             <li>• Mensagens de administradores</li>

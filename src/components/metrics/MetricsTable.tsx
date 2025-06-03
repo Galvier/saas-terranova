@@ -46,6 +46,12 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     // ou mostrar algum indicador de que a justificativa foi criada
   };
 
+  // Função para formatar valores com unidade na frente
+  const formatValueWithUnit = (value: number | null, unit: string): string => {
+    if (value === null || value === undefined) return `${unit} 0`;
+    return `${unit} ${value}`;
+  };
+
   return (
     <>
       <div className="rounded-md border overflow-hidden">
@@ -79,10 +85,10 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                   </TableCell>
                   <TableCell>{metric.department_name}</TableCell>
                   <TableCell>
-                    {metric.target} {metric.unit}
+                    {formatValueWithUnit(metric.target, metric.unit)}
                   </TableCell>
                   <TableCell>
-                    {metric.current || 0} {metric.unit}
+                    {formatValueWithUnit(metric.current, metric.unit)}
                   </TableCell>
                   <TableCell>
                     <CustomBadge 
