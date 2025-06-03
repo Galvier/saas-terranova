@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CustomBadge } from '@/components/ui/custom-badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, XCircle, MessageSquare, Calendar, User, Building } from 'lucide-react';
+import { CheckCircle, XCircle, MessageSquare, Calendar, User, Building, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   getPendingJustifications, 
@@ -54,7 +54,16 @@ const JustificationsAdminPanel: React.FC = () => {
     }
   };
 
-  const handleReview = async (justificationId: string, status: 'reviewed' | 'approved') => {
+  const handleReview = async (justificationId: string, status: 'reviewed' | 'approved' | 'needs_revision') => {
+    if ((status === 'needs_revision') && !feedback.trim()) {
+      toast({
+        title: "Erro",
+        description: "Feedback é obrigatório ao solicitar revisão",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const result = await reviewMetricJustification(
         justificationId, 
@@ -71,9 +80,21 @@ const JustificationsAdminPanel: React.FC = () => {
         return;
       }
 
+      let message = '';
+      switch (status) {
+        case 'approved':
+          message = 'Justificativa aprovada com sucesso';
+          break;
+        case 'needs_revision':
+          message = 'Justificativa devolvida para revisão. O usuário será notificado.';
+          break;
+        default:
+          message = 'Justificativa revisada com sucesso';
+      }
+
       toast({
         title: "Sucesso",
-        description: `Justificativa ${status === 'approved' ? 'aprovada' : 'revisada'} com sucesso`,
+        description: message,
         variant: "default",
       });
 
@@ -180,15 +201,18 @@ const JustificationsAdminPanel: React.FC = () => {
                       <div className="space-y-4 border-t pt-4">
                         <div>
                           <Label htmlFor={`feedback-${justification.id}`}>
-                            Feedback (opcional)
+                            Feedback para o usuário
                           </Label>
                           <Textarea
                             id={`feedback-${justification.id}`}
                             value={feedback}
                             onChange={(e) => setFeedback(e.target.value)}
-                            placeholder="Adicione um feedback sobre a justificativa..."
+                            placeholder="Adicione comentários sobre a justificativa..."
                             rows={3}
                           />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            * Feedback é obrigatório ao solicitar revisão
+                          </p>
                         </div>
                         
                         <div className="flex gap-2">
@@ -203,10 +227,19 @@ const JustificationsAdminPanel: React.FC = () => {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => handleReview(justification.id, 'needs_revision')}
+                            className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-1" />
+                            Solicitar Revisão
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => handleReview(justification.id, 'reviewed')}
                           >
                             <MessageSquare className="h-4 w-4 mr-1" />
-                            Revisar
+                            Marcar como Revisado
                           </Button>
                           <Button
                             size="sm"

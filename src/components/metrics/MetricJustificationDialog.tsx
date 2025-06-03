@@ -130,8 +130,23 @@ const MetricJustificationDialog: React.FC<MetricJustificationDialogProps> = ({
 
   if (!metric) return null;
 
-  const canEdit = !existingJustification || existingJustification.status === 'pending';
+  const canEdit = !existingJustification || 
+    existingJustification.status === 'pending' || 
+    existingJustification.status === 'needs_revision';
   const formattedDate = format(periodDate, "MMMM 'de' yyyy", { locale: ptBR });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <CustomBadge variant="success">Aprovado</CustomBadge>;
+      case 'reviewed':
+        return <CustomBadge variant="secondary">Revisado</CustomBadge>;
+      case 'needs_revision':
+        return <CustomBadge variant="warning">Precisa Revisão</CustomBadge>;
+      default:
+        return <CustomBadge variant="warning">Pendente</CustomBadge>;
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -149,23 +164,20 @@ const MetricJustificationDialog: React.FC<MetricJustificationDialogProps> = ({
           <div className="mb-4 p-3 bg-muted rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Status:</span>
-              <CustomBadge 
-                variant={
-                  existingJustification.status === 'approved' ? 'success' :
-                  existingJustification.status === 'reviewed' ? 'secondary' : 'warning'
-                }
-              >
-                {existingJustification.status === 'pending' ? 'Pendente' :
-                 existingJustification.status === 'reviewed' ? 'Revisado' : 'Aprovado'}
-              </CustomBadge>
+              {getStatusBadge(existingJustification.status)}
             </div>
             {existingJustification.admin_feedback && (
               <div className="mt-2">
-                <span className="text-sm font-medium">Feedback do Admin:</span>
-                <p className="text-sm text-muted-foreground mt-1">
+                <span className="text-sm font-medium">Feedback do Administrador:</span>
+                <p className="text-sm text-muted-foreground mt-1 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded">
                   {existingJustification.admin_feedback}
                 </p>
               </div>
+            )}
+            {existingJustification.status === 'needs_revision' && (
+              <p className="text-sm text-orange-600 mt-2 font-medium">
+                Esta justificativa precisa ser revisada conforme o feedback acima.
+              </p>
             )}
           </div>
         )}
@@ -215,7 +227,8 @@ const MetricJustificationDialog: React.FC<MetricJustificationDialogProps> = ({
                 type="submit"
                 disabled={isLoading}
               >
-                {isLoading ? 'Salvando...' : 'Salvar Justificativa'}
+                {isLoading ? 'Salvando...' : 
+                 existingJustification?.status === 'needs_revision' ? 'Reenviar Justificativa' : 'Salvar Justificativa'}
               </Button>
             </div>
           )}

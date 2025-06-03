@@ -36,7 +36,7 @@ const EnhancedTabsTrigger = React.forwardRef<
   >
     {children}
     {badge !== undefined && badge > 0 && (
-      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] text-xs font-semibold text-white bg-red-500 rounded-full px-1 animate-pulse">
+      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] text-xs font-semibold text-white bg-red-500 rounded-full px-1 animate-pulse">
         {badge > 99 ? '99+' : badge}
       </span>
     )}

@@ -9,7 +9,7 @@ export interface MetricJustification {
   period_date: string;
   justification: string;
   action_plan: string;
-  status: 'pending' | 'reviewed' | 'approved';
+  status: 'pending' | 'reviewed' | 'approved' | 'needs_revision';
   admin_feedback?: string;
   reviewed_by?: string;
   reviewed_at?: string;
@@ -74,7 +74,7 @@ export const getMetricJustification = async (
 // Revisar justificativa (admin)
 export const reviewMetricJustification = async (
   justificationId: string,
-  newStatus: 'reviewed' | 'approved',
+  newStatus: 'reviewed' | 'approved' | 'needs_revision',
   feedback?: string
 ): Promise<CrudResult<string>> => {
   try {
