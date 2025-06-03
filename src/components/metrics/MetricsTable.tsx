@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Plus, Edit, Trash2, FileText, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { MetricDefinition } from '@/integrations/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import MetricJustificationDialog from './MetricJustificationDialog';
@@ -60,6 +59,49 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     return `${unit} ${value}`;
   };
 
+  // Function to render trend icon
+  const renderTrendIcon = (metric: MetricDefinition) => {
+    if (!metric.current || !metric.target) return <Minus className="h-4 w-4 text-muted-foreground" />;
+    
+    if (metric.lower_is_better) {
+      if (metric.current < metric.target) {
+        return <TrendingUp className="h-4 w-4 text-green-500" />;
+      } else if (metric.current > metric.target) {
+        return <TrendingDown className="h-4 w-4 text-red-500" />;
+      }
+    } else {
+      if (metric.current > metric.target) {
+        return <TrendingUp className="h-4 w-4 text-green-500" />;
+      } else if (metric.current < metric.target) {
+        return <TrendingDown className="h-4 w-4 text-red-500" />;
+      }
+    }
+    return <Minus className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  // Function to translate frequency
+  const translateFrequency = (frequency: string): string => {
+    const translations: Record<string, string> = {
+      'daily': 'Diário',
+      'weekly': 'Semanal',
+      'monthly': 'Mensal',
+      'quarterly': 'Trimestral',
+      'yearly': 'Anual'
+    };
+    return translations[frequency] || frequency;
+  };
+
+  // Function to translate visualization type
+  const translateVisualization = (type: string): string => {
+    const translations: Record<string, string> = {
+      'card': 'Cartão',
+      'chart': 'Gráfico',
+      'table': 'Tabela',
+      'gauge': 'Medidor'
+    };
+    return translations[type] || type;
+  };
+
   return (
     <>
       <div className="rounded-md border overflow-hidden">
@@ -70,8 +112,11 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
               <TableHead>Setor</TableHead>
               <TableHead>Meta</TableHead>
               <TableHead>Atual</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Tendência</TableHead>
+              <TableHead>Frequência</TableHead>
+              <TableHead>Visualização</TableHead>
               <TableHead>Última Atualização</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -100,21 +145,32 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                     {formatValueWithUnit(metric.current, metric.unit)}
                   </TableCell>
                   <TableCell>
+                    <div className="flex items-center justify-center">
+                      {renderTrendIcon(metric)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {translateFrequency(metric.frequency || 'monthly')}
+                  </TableCell>
+                  <TableCell>
+                    {translateVisualization(metric.visualization_type || 'card')}
+                  </TableCell>
+                  <TableCell>
+                    {metric.last_value_date ? 
+                      new Date(metric.last_value_date).toLocaleDateString('pt-BR') : 
+                      'Nenhum registro'
+                    }
+                  </TableCell>
+                  <TableCell>
                     <CustomBadge 
                       variant={
                         metric.status === 'success' ? 'success' : 
                         metric.status === 'warning' ? 'warning' : 'destructive'
                       }
                     >
-                      {metric.status === 'success' ? 'Sucesso' : 
-                       metric.status === 'warning' ? 'Aviso' : 'Crítico'}
+                      {metric.status === 'success' ? 'Ótimo' : 
+                       metric.status === 'warning' ? 'Atenção' : 'Crítico'}
                     </CustomBadge>
-                  </TableCell>
-                  <TableCell>
-                    {metric.last_value_date ? 
-                      new Date(metric.last_value_date).toLocaleDateString('pt-BR') : 
-                      'Nunca'
-                    }
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
