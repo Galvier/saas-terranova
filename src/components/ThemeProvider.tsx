@@ -15,18 +15,17 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   useEffect(() => {
     if (isLoading) return;
 
-    // Remove all theme classes first
-    document.documentElement.classList.remove('dark', 'light');
-    
     // Apply theme
     if (settings.theme === 'system') {
       const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.remove('dark', 'light');
       if (systemPrefersDark) {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.add('light');
       }
     } else {
+      document.documentElement.classList.remove('dark', 'light');
       document.documentElement.classList.add(settings.theme);
     }
     
@@ -39,28 +38,6 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     
     console.log(`[ThemeProvider] Applied theme: ${settings.theme}, animations: ${settings.animationsEnabled ? 'enabled' : 'disabled'}`);
   }, [settings, isLoading, isAuthenticated]);
-
-  // Listen for system theme changes when theme is set to 'system'
-  useEffect(() => {
-    if (isLoading || settings.theme !== 'system') return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      document.documentElement.classList.remove('dark', 'light');
-      if (e.matches) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.add('light');
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
-  }, [settings.theme, isLoading]);
 
   return <>{children}</>;
 };
