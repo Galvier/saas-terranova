@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Plus, Edit, Trash2, FileText, AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, AlertTriangle, ArrowUp, ArrowDown, Minus, BarChart3, CreditCard, Table as TableIcon, Gauge } from 'lucide-react';
 import { MetricDefinition } from '@/integrations/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import MetricJustificationDialog from './MetricJustificationDialog';
@@ -65,18 +66,36 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     
     if (metric.lower_is_better) {
       if (metric.current < metric.target) {
-        return <TrendingUp className="h-4 w-4 text-green-500" />;
+        return <ArrowUp className="h-4 w-4 text-green-500" />;
       } else if (metric.current > metric.target) {
-        return <TrendingDown className="h-4 w-4 text-red-500" />;
+        return <ArrowDown className="h-4 w-4 text-red-500" />;
       }
     } else {
       if (metric.current > metric.target) {
-        return <TrendingUp className="h-4 w-4 text-green-500" />;
+        return <ArrowUp className="h-4 w-4 text-green-500" />;
       } else if (metric.current < metric.target) {
-        return <TrendingDown className="h-4 w-4 text-red-500" />;
+        return <ArrowDown className="h-4 w-4 text-red-500" />;
       }
     }
     return <Minus className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  // Function to render visualization icon
+  const renderVisualizationIcon = (type: string) => {
+    const iconClass = "h-4 w-4 text-muted-foreground";
+    
+    switch (type) {
+      case 'chart':
+        return <BarChart3 className={iconClass} />;
+      case 'card':
+        return <CreditCard className={iconClass} />;
+      case 'table':
+        return <TableIcon className={iconClass} />;
+      case 'gauge':
+        return <Gauge className={iconClass} />;
+      default:
+        return <CreditCard className={iconClass} />;
+    }
   };
 
   // Function to translate frequency
@@ -153,7 +172,10 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                     {translateFrequency(metric.frequency || 'monthly')}
                   </TableCell>
                   <TableCell>
-                    {translateVisualization(metric.visualization_type || 'card')}
+                    <div className="flex items-center gap-2">
+                      {renderVisualizationIcon(metric.visualization_type || 'card')}
+                      <span>{translateVisualization(metric.visualization_type || 'card')}</span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {metric.last_value_date ? 
