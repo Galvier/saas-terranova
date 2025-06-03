@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -17,12 +16,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Edit, MoreHorizontal, Trash2, RefreshCcw, AlertCircle, UserPlus, Loader2 } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2, RefreshCcw, AlertCircle, UserPlus, Loader2, Mail, Key } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { CreateAuthDialog } from './CreateAuthDialog';
+import { PasswordChangeDialog } from './PasswordChangeDialog';
 import { MobileManagerCard } from './MobileManagerCard';
 import { createAuthForManager } from '@/integrations/supabase/managers';
+import { resendConfirmationEmail } from '@/services/auth/recovery';
 import { translateRole } from '@/utils/roleTranslations';
 import type { Manager } from '@/integrations/supabase';
 
@@ -50,6 +51,11 @@ export const ManagersTable = ({
     isOpen: boolean;
     manager: Manager | null;
   }>({ isOpen: false, manager: null });
+  const [passwordChangeDialog, setPasswordChangeDialog] = useState<{
+    isOpen: boolean;
+    manager: Manager | null;
+  }>({ isOpen: false, manager: null });
+  const [resendingEmail, setResendingEmail] = useState<string | null>(null);
 
   const handleEditManager = (id: string) => {
     // Apenas admins podem editar gestores
@@ -111,7 +117,60 @@ export const ManagersTable = ({
     });
   };
 
+  const handlePasswordChangeClick = (manager: Manager) => {
+    if (!isAdmin) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para alterar senhas",
+        variant: "destructive"
+      });
+      return;
+    }
+    setPasswordChangeDialog({
+      isOpen: true,
+      manager
+    });
+  };
+
+  const handleResendConfirmationEmail = async (manager: Manager) => {
+    if (!isAdmin) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para reenviar emails",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setResendingEmail(manager.id);
+    
+    try {
+      const result = await resendConfirmationEmail(manager.email);
+      
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      
+      toast({
+        title: "Email reenviado",
+        description: `Email de confirmação reenviado para ${manager.name}`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: `Erro ao reenviar email: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setResendingEmail(null);
+    }
+  };
+
   const handleCreateAuthSuccess = () => {
+    onRefreshData();
+  };
+
+  const handlePasswordChangeSuccess = () => {
     onRefreshData();
   };
 
@@ -272,6 +331,27 @@ export const ManagersTable = ({
                                     Criar conta de acesso
                                   </DropdownMenuItem>
                                 )}
+                                {hasAuthUser && (
+                                  <>
+                                    <DropdownMenuItem 
+                                      onClick={() => handlePasswordChangeClick(manager)}
+                                    >
+                                      <Key className="mr-2 h-4 w-4" />
+                                      Alterar senha
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleResendConfirmationEmail(manager)}
+                                      disabled={resendingEmail === manager.id}
+                                    >
+                                      {resendingEmail === manager.id ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Mail className="mr-2 h-4 w-4" />
+                                      )}
+                                      Reenviar email de confirmação
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
                                 <DropdownMenuItem 
                                   onClick={() => onDeleteManager(manager)}
                                   className="text-destructive focus:text-destructive"
@@ -306,13 +386,22 @@ export const ManagersTable = ({
       </div>
 
       {isAdmin && (
-        <CreateAuthDialog
-          isOpen={createAuthDialog.isOpen}
-          onOpenChange={(open) => setCreateAuthDialog({ isOpen: open, manager: null })}
-          manager={createAuthDialog.manager}
-          onSuccess={handleCreateAuthSuccess}
-          onCreateAuth={handleCreateAuth}
-        />
+        <>
+          <CreateAuthDialog
+            isOpen={createAuthDialog.isOpen}
+            onOpenChange={(open) => setCreateAuthDialog({ isOpen: open, manager: null })}
+            manager={createAuthDialog.manager}
+            onSuccess={handleCreateAuthSuccess}
+            onCreateAuth={handleCreateAuth}
+          />
+          
+          <PasswordChangeDialog
+            isOpen={passwordChangeDialog.isOpen}
+            onOpenChange={(open) => setPasswordChangeDialog({ isOpen: open, manager: null })}
+            manager={passwordChangeDialog.manager}
+            onSuccess={handlePasswordChangeSuccess}
+          />
+        </>
       )}
     </>
   );

@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { CrudResult, formatCrudResult } from '@/integrations/supabase';
-import { useToast } from '@/hooks/use-toast';
 
 export interface UserRecoveryOptions {
   email: string;
@@ -43,7 +42,29 @@ export const updateUserPassword = async (newPassword: string): Promise<CrudResul
   }
 };
 
+// Resend confirmation email
+export const resendConfirmationEmail = async (email: string): Promise<CrudResult<null>> => {
+  try {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: window.location.origin
+      }
+    });
+    
+    if (error) {
+      return formatCrudResult(null, error);
+    }
+    
+    return formatCrudResult(null, null);
+  } catch (error: any) {
+    return formatCrudResult(null, error);
+  }
+};
+
 export const authRecovery = {
   requestPasswordReset,
-  updateUserPassword
+  updateUserPassword,
+  resendConfirmationEmail
 };
