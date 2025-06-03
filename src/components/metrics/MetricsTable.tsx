@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Plus, Edit, Trash2, FileText, AlertTriangle, ArrowUp, ArrowDown, Minus, BarChart3, CreditCard, Table as TableIcon, Gauge } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, AlertTriangle, ArrowUp, ArrowDown, Minus, BarChart3, CreditCard, Table as TableIcon, Gauge, LineChart, PieChart, Activity } from 'lucide-react';
 import { MetricDefinition } from '@/integrations/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import MetricJustificationDialog from './MetricJustificationDialog';
@@ -80,13 +80,20 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     return <Minus className="h-4 w-4 text-muted-foreground" />;
   };
 
-  // Function to render visualization icon
+  // Function to render visualization icon with more specific chart types
   const renderVisualizationIcon = (type: string) => {
     const iconClass = "h-5 w-5 text-muted-foreground";
     
     switch (type) {
       case 'chart':
-        return <div title="Gráfico"><BarChart3 className={iconClass} /></div>;
+      case 'bar_chart':
+        return <div title="Gráfico de Barras"><BarChart3 className={iconClass} /></div>;
+      case 'line_chart':
+        return <div title="Gráfico de Linha"><LineChart className={iconClass} /></div>;
+      case 'pie_chart':
+        return <div title="Gráfico de Pizza"><PieChart className={iconClass} /></div>;
+      case 'area_chart':
+        return <div title="Gráfico de Área"><Activity className={iconClass} /></div>;
       case 'card':
         return <div title="Cartão"><CreditCard className={iconClass} /></div>;
       case 'table':
@@ -114,7 +121,11 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   const translateVisualization = (type: string): string => {
     const translations: Record<string, string> = {
       'card': 'Cartão',
-      'chart': 'Gráfico',
+      'chart': 'Gráfico de Barras',
+      'bar_chart': 'Gráfico de Barras',
+      'line_chart': 'Gráfico de Linha',
+      'pie_chart': 'Gráfico de Pizza',
+      'area_chart': 'Gráfico de Área',
       'table': 'Tabela',
       'gauge': 'Medidor'
     };
