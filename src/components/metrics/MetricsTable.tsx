@@ -82,19 +82,19 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
 
   // Function to render visualization icon
   const renderVisualizationIcon = (type: string) => {
-    const iconClass = "h-4 w-4 text-muted-foreground";
+    const iconClass = "h-5 w-5 text-muted-foreground";
     
     switch (type) {
       case 'chart':
-        return <BarChart3 className={iconClass} />;
+        return <BarChart3 className={iconClass} title="Gráfico" />;
       case 'card':
-        return <CreditCard className={iconClass} />;
+        return <CreditCard className={iconClass} title="Cartão" />;
       case 'table':
-        return <TableIcon className={iconClass} />;
+        return <TableIcon className={iconClass} title="Tabela" />;
       case 'gauge':
-        return <Gauge className={iconClass} />;
+        return <Gauge className={iconClass} title="Medidor" />;
       default:
-        return <CreditCard className={iconClass} />;
+        return <CreditCard className={iconClass} title="Cartão" />;
     }
   };
 
@@ -172,9 +172,8 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                     {translateFrequency(metric.frequency || 'monthly')}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center">
                       {renderVisualizationIcon(metric.visualization_type || 'card')}
-                      <span>{translateVisualization(metric.visualization_type || 'card')}</span>
                     </div>
                   </TableCell>
                   <TableCell>
