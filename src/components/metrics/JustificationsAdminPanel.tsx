@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CustomBadge } from '@/components/ui/custom-badge';
@@ -21,6 +22,7 @@ const JustificationsAdminPanel: React.FC = () => {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     loadPendingJustifications();
@@ -79,6 +81,9 @@ const JustificationsAdminPanel: React.FC = () => {
       setJustifications(prev => prev.filter(j => j.id !== justificationId));
       setReviewingId(null);
       setFeedback('');
+      
+      // Invalidate pending justifications query to update the counter
+      queryClient.invalidateQueries({ queryKey: ['pending-justifications'] });
     } catch (error) {
       toast({
         title: "Erro",

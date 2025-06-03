@@ -1,17 +1,19 @@
 
 import React from 'react';
 import { useMetricsData } from '@/hooks/useMetricsData';
+import { usePendingJustifications } from '@/hooks/usePendingJustifications';
 import MetricsHeader from '@/components/metrics/MetricsHeader';
 import MetricsTable from '@/components/metrics/MetricsTable';
 import MetricsDialogs from '@/components/metrics/MetricsDialogs';
 import JustificationsAdminPanel from '@/components/metrics/JustificationsAdminPanel';
 import DateFilter from '@/components/filters/DateFilter';
 import UserProfileIndicator from '@/components/UserProfileIndicator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EnhancedTabs, EnhancedTabsList, EnhancedTabsTrigger, EnhancedTabsContent } from '@/components/ui/enhanced-tabs';
 import { useAuth } from '@/hooks/useAuth';
 
 const MetricsPage = () => {
   const { isAdmin } = useAuth();
+  const { count: pendingJustificationsCount } = usePendingJustifications();
   
   const {
     departments,
@@ -41,13 +43,15 @@ const MetricsPage = () => {
           isAdmin={isAdmin}
         />
         
-        <Tabs defaultValue="metrics" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="metrics">Métricas</TabsTrigger>
-            <TabsTrigger value="justifications">Justificativas</TabsTrigger>
-          </TabsList>
+        <EnhancedTabs defaultValue="metrics" className="w-full">
+          <EnhancedTabsList className="grid w-full grid-cols-2 mb-6">
+            <EnhancedTabsTrigger value="metrics">Métricas</EnhancedTabsTrigger>
+            <EnhancedTabsTrigger value="justifications" badge={pendingJustificationsCount}>
+              Justificativas
+            </EnhancedTabsTrigger>
+          </EnhancedTabsList>
           
-          <TabsContent value="metrics">
+          <EnhancedTabsContent value="metrics">
             <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
               <UserProfileIndicator 
                 selectedDepartment={selectedDepartment}
@@ -77,12 +81,12 @@ const MetricsPage = () => {
                 onDelete={handleMetricActions.handleDeleteClick}
               />
             )}
-          </TabsContent>
+          </EnhancedTabsContent>
           
-          <TabsContent value="justifications">
+          <EnhancedTabsContent value="justifications">
             <JustificationsAdminPanel />
-          </TabsContent>
-        </Tabs>
+          </EnhancedTabsContent>
+        </EnhancedTabs>
 
         <MetricsDialogs 
           departments={departments}
