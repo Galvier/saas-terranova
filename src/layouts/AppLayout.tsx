@@ -15,14 +15,14 @@ const AppLayout = () => {
     setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 400);
+    }, 300);
     
     return () => clearTimeout(timer);
   }, [location.pathname]);
   
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <SidebarInset className="flex-1">
           <header className="flex h-14 md:h-16 shrink-0 items-center justify-between gap-2 px-4 md:px-6 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -33,7 +33,7 @@ const AppLayout = () => {
               <NotificationsDropdown />
             </div>
           </header>
-          <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 relative">
+          <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 relative bg-background">
             {isLoading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 transition-opacity duration-300">
                 <div className="flex flex-col items-center gap-3">

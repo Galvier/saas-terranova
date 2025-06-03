@@ -25,7 +25,7 @@ type SidebarItem = {
 
 const navItems: SidebarItem[] = [
   { title: 'Dashboard', path: '/dashboard', icon: Home },
-  { title: 'Setores', path: '/setores', icon: ClipboardList },
+  { title: 'Setores', path: '/departments', icon: ClipboardList },
   { title: 'Gestores', path: '/managers', icon: Users },
   { title: 'Métricas', path: '/metrics', icon: BarChart3 },
   { title: 'Configurações', path: '/settings', icon: Settings },
