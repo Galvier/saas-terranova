@@ -256,6 +256,59 @@ export type Database = {
         }
         Relationships: []
       }
+      metric_justifications: {
+        Row: {
+          action_plan: string
+          admin_feedback: string | null
+          created_at: string
+          id: string
+          justification: string
+          metric_definition_id: string
+          period_date: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_plan: string
+          admin_feedback?: string | null
+          created_at?: string
+          id?: string
+          justification: string
+          metric_definition_id: string
+          period_date: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_plan?: string
+          admin_feedback?: string | null
+          created_at?: string
+          id?: string
+          justification?: string
+          metric_definition_id?: string
+          period_date?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metric_justifications_metric_definition_id_fkey"
+            columns: ["metric_definition_id"]
+            isOneToOne: false
+            referencedRelation: "metrics_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       metrics: {
         Row: {
           created_at: string | null
@@ -739,6 +792,15 @@ export type Database = {
         }
         Returns: string
       }
+      create_or_update_metric_justification: {
+        Args: {
+          metric_id: string
+          period_date_param: string
+          justification_text: string
+          action_plan_text: string
+        }
+        Returns: string
+      }
       delete_manager: {
         Args: { manager_id: string }
         Returns: Json
@@ -828,6 +890,24 @@ export type Database = {
           value: number
         }[]
       }
+      get_metric_justification: {
+        Args: { metric_id: string; period_date_param: string }
+        Returns: {
+          id: string
+          metric_definition_id: string
+          user_id: string
+          period_date: string
+          justification: string
+          action_plan: string
+          status: string
+          admin_feedback: string
+          reviewed_by: string
+          reviewed_at: string
+          created_at: string
+          updated_at: string
+          user_name: string
+        }[]
+      }
       get_metrics_by_department: {
         Args:
           | { department_id_param?: string }
@@ -851,6 +931,21 @@ export type Database = {
           priority: string
           default_period: string
           last_value_date: string
+        }[]
+      }
+      get_pending_justifications: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          metric_definition_id: string
+          metric_name: string
+          department_name: string
+          user_id: string
+          user_name: string
+          period_date: string
+          justification: string
+          action_plan: string
+          created_at: string
         }[]
       }
       get_user_settings: {
@@ -880,6 +975,14 @@ export type Database = {
       }
       record_metric_value: {
         Args: { metric_id: string; metric_value: number; metric_date?: string }
+        Returns: string
+      }
+      review_metric_justification: {
+        Args: {
+          justification_id: string
+          new_status: string
+          feedback_text?: string
+        }
         Returns: string
       }
       run_auto_backup: {

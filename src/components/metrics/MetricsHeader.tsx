@@ -38,7 +38,7 @@ const MetricsHeader: React.FC<MetricsHeaderProps> = ({
 
         {/* Show "Nova Métrica" button for admins and managers */}
         <Button 
-          className="flex items-center gap-2 w-full sm:w-auto bg-terranova-blue hover:bg-terranova-blue-light"
+          className="flex items-center gap-2 w-full sm:w-auto"
           onClick={() => setIsCreateDialogOpen(true)}
         >
           <Plus className="h-4 w-4" />

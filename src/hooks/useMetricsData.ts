@@ -95,6 +95,16 @@ export const useMetricsData = () => {
     setIsValueDialogOpen(true);
   };
 
+  const handleEditClick = (metric: MetricDefinition) => {
+    setSelectedMetric(metric);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (metric: MetricDefinition) => {
+    setSelectedMetric(metric);
+    setIsDeleteDialogOpen(true);
+  };
+
   // Set initial department based on user role
   useEffect(() => {
     try {
@@ -126,41 +136,6 @@ export const useMetricsData = () => {
       console.error("Error saving department preference:", error);
     }
   }, [selectedDepartment, isAdmin]);
-
-  // Check if user can modify a specific metric
-  const canModifyMetric = (metric: MetricDefinition) => {
-    return isAdmin || metric.department_id === userDepartmentId;
-  };
-
-  // Modify handleDeleteClick to check permissions
-  const handleDeleteClick = (metric: MetricDefinition) => {
-    if (!canModifyMetric(metric)) {
-      toast({
-        title: "Acesso negado",
-        description: "Você não tem permissão para excluir métricas de outros setores",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setSelectedMetric(metric);
-    setIsDeleteDialogOpen(true);
-  };
-
-  // Modify handleEditClick to check permissions
-  const handleEditClick = (metric: MetricDefinition) => {
-    if (!canModifyMetric(metric)) {
-      toast({
-        title: "Acesso negado",
-        description: "Você não tem permissão para editar métricas de outros setores",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setSelectedMetric(metric);
-    setIsEditDialogOpen(true);
-  };
 
   // Load saved date filter preference
   useEffect(() => {
