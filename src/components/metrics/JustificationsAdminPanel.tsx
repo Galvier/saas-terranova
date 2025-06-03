@@ -219,7 +219,7 @@ const JustificationsAdminPanel: React.FC = () => {
                           <Button
                             size="sm"
                             onClick={() => handleReview(justification.id, 'approved')}
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-green-600 hover:bg-green-700 text-white dark:bg-green-700 dark:hover:bg-green-800"
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Aprovar
@@ -228,7 +228,7 @@ const JustificationsAdminPanel: React.FC = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => handleReview(justification.id, 'needs_revision')}
-                            className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                            className="border-orange-500 text-orange-700 hover:bg-orange-50 dark:border-orange-400 dark:text-orange-300 dark:hover:bg-orange-950/50"
                           >
                             <RefreshCw className="h-4 w-4 mr-1" />
                             Solicitar Revisão
