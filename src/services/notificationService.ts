@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CreateNotificationParams {
@@ -283,6 +282,34 @@ export const notificationService = {
       metadata: {
         new_user_name: newUserName,
         alert_type: 'new_user'
+      }
+    });
+  },
+
+  // Nova função específica para notificação de revisão de justificativa
+  async notifyJustificationNeedsRevision(userId: string, metricName: string, periodDate: string, adminFeedback: string) {
+    const templates = await this.getTemplates();
+    const template = templates.find(t => t.name === 'justification_needs_revision' && t.is_active);
+    
+    if (template) {
+      return this.createFromTemplate(template.id, userId, {
+        metric_name: metricName,
+        period_date: periodDate,
+        admin_feedback: adminFeedback
+      });
+    }
+    
+    // Fallback para notificação direta
+    return this.createNotification({
+      targetUserId: userId,
+      title: 'Justificativa Devolvida para Revisão',
+      message: `Sua justificativa para a métrica "${metricName}" do período ${periodDate} foi devolvida para revisão. Feedback: ${adminFeedback}`,
+      type: 'warning',
+      metadata: {
+        metric_name: metricName,
+        period_date: periodDate,
+        admin_feedback: adminFeedback,
+        alert_type: 'justification_revision'
       }
     });
   }
