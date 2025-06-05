@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Check, X, MoreHorizontal, Eye } from 'lucide-react';
+import { Check, X, MoreHorizontal, Eye, Star } from 'lucide-react';
 
 import {
   Table,
@@ -35,6 +35,25 @@ const DepartmentsTable: React.FC<DepartmentsTableProps> = ({
 }) => {
   console.log('[DepartmentsTable] Rendering with isAdmin:', isAdmin);
 
+  const renderManagers = (department: Department) => {
+    if (!department.managers || department.managers.length === 0) {
+      return <span className="text-muted-foreground">-</span>;
+    }
+
+    return (
+      <div className="space-y-1">
+        {department.managers.map((manager) => (
+          <div key={manager.id} className="flex items-center gap-1">
+            <span className="text-sm">{manager.name}</span>
+            {manager.is_primary && (
+              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" title="Gestor Primário" />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full">
       <div className="rounded-md border bg-card">
@@ -43,7 +62,7 @@ const DepartmentsTable: React.FC<DepartmentsTableProps> = ({
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>Descrição</TableHead>
-              <TableHead>Gestor</TableHead>
+              <TableHead>Gestores</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -61,11 +80,7 @@ const DepartmentsTable: React.FC<DepartmentsTableProps> = ({
                   <TableCell className="font-medium">{department.name}</TableCell>
                   <TableCell>{department.description}</TableCell>
                   <TableCell>
-                    {department.manager_name ? (
-                      <span>{department.manager_name}</span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
+                    {renderManagers(department)}
                   </TableCell>
                   <TableCell>
                     {department.is_active ? (

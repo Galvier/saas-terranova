@@ -96,6 +96,48 @@ export type Database = {
         }
         Relationships: []
       }
+      department_managers: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          is_primary: boolean
+          manager_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          is_primary?: boolean
+          manager_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          is_primary?: boolean
+          manager_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_managers_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "department_managers_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string | null
@@ -682,6 +724,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_manager_to_department: {
+        Args: {
+          department_id_param: string
+          manager_id_param: string
+          is_primary_param?: boolean
+        }
+        Returns: string
+      }
       broadcast_notification_from_template: {
         Args: {
           template_id_param: string
@@ -704,12 +754,20 @@ export type Database = {
         Returns: Json
       }
       create_department: {
-        Args: {
-          department_name: string
-          department_description: string
-          department_is_active: boolean
-          department_manager_id?: string
-        }
+        Args:
+          | {
+              department_name: string
+              department_description: string
+              department_is_active: boolean
+              department_manager_id?: string
+            }
+          | {
+              department_name: string
+              department_description: string
+              department_is_active: boolean
+              department_manager_id?: string
+              manager_ids?: string[]
+            }
         Returns: Json
       }
       create_diagnostic_table_if_not_exists: {
@@ -838,6 +896,7 @@ export type Database = {
           created_at: string
           updated_at: string
           manager_name: string
+          managers: Json
         }[]
       }
       get_all_managers: {
@@ -976,6 +1035,10 @@ export type Database = {
       record_metric_value: {
         Args: { metric_id: string; metric_value: number; metric_date?: string }
         Returns: string
+      }
+      remove_manager_from_department: {
+        Args: { department_id_param: string; manager_id_param: string }
+        Returns: boolean
       }
       review_metric_justification: {
         Args: {
