@@ -1,7 +1,7 @@
 
 import { supabase } from './client';
 import { formatCrudResult } from './core';
-import type { Department } from './types/department';
+import type { Department, DepartmentManager } from './types/department';
 
 export type GetDepartmentsResult = {
   data: Department[] | null;
@@ -23,7 +23,7 @@ export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
       };
     }
     
-    // Transform the results to ensure all fields are present
+    // Transform the results to ensure all fields are present and properly typed
     const transformedData = data?.map(dept => ({
       id: dept.id,
       name: dept.name,
@@ -33,7 +33,12 @@ export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
       created_at: dept.created_at,
       updated_at: dept.updated_at,
       manager_name: dept.manager_name || null,
-      managers: Array.isArray(dept.managers) ? dept.managers : []
+      managers: Array.isArray(dept.managers) ? dept.managers.map((manager: any) => ({
+        id: manager.id,
+        name: manager.name,
+        email: manager.email,
+        is_primary: manager.is_primary
+      } as DepartmentManager)) : []
     }));
     
     console.log("Fetched departments with multiple managers data:", transformedData);

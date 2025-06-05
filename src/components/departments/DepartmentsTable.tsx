@@ -46,7 +46,7 @@ const DepartmentsTable: React.FC<DepartmentsTableProps> = ({
           <div key={manager.id} className="flex items-center gap-1">
             <span className="text-sm">{manager.name}</span>
             {manager.is_primary && (
-              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" title="Gestor Primário" />
+              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
             )}
           </div>
         ))}
