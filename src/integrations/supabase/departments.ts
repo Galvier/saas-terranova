@@ -1,7 +1,7 @@
 
 import { supabase } from './client';
 import { formatCrudResult } from './core';
-import type { Department } from './types/department';
+import type { Department, DepartmentManager } from './types/department';
 
 export type GetDepartmentsResult = {
   data: Department[] | null;
@@ -23,7 +23,7 @@ export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
       };
     }
     
-    // Transform the results to ensure all fields are present
+    // Transform the results to ensure all fields are present and properly typed
     const transformedData = data?.map(dept => ({
       id: dept.id,
       name: dept.name,
@@ -32,10 +32,16 @@ export const getAllDepartments = async (): Promise<GetDepartmentsResult> => {
       manager_id: dept.manager_id || null,
       created_at: dept.created_at,
       updated_at: dept.updated_at,
-      manager_name: dept.manager_name || null
+      manager_name: dept.manager_name || null,
+      managers: Array.isArray(dept.managers) ? dept.managers.map((manager: any) => ({
+        id: manager.id,
+        name: manager.name,
+        email: manager.email,
+        is_primary: manager.is_primary
+      } as DepartmentManager)) : []
     }));
     
-    console.log("Fetched departments with manager data:", transformedData);
+    console.log("Fetched departments with multiple managers data:", transformedData);
     
     return {
       data: transformedData as Department[],
@@ -56,17 +62,19 @@ export const createDepartment = async (
   name: string,
   description: string,
   is_active: boolean = true,
-  manager_id: string | null = null
+  manager_ids: string[] = [],
+  primary_manager_id: string | null = null
 ) => {
   try {
-    console.log(`Creating department with manager_id: ${manager_id}`);
+    console.log(`Creating department with managers:`, manager_ids);
     
-    // Use the SQL function create_department with SECURITY DEFINER
+    // Use the SQL function create_department with multiple managers support
     const { data, error } = await supabase.rpc('create_department', {
       department_name: name,
       department_description: description,
       department_is_active: is_active,
-      department_manager_id: manager_id
+      department_manager_id: primary_manager_id,
+      manager_ids: manager_ids.length > 0 ? manager_ids : null
     });
     
     if (error) {
@@ -87,31 +95,96 @@ export const updateDepartment = async (
   name: string,
   description: string,
   is_active: boolean = true,
-  manager_id: string | null = null
+  manager_ids: string[] = [],
+  primary_manager_id: string | null = null
 ) => {
   try {
-    console.log(`Updating department ${id} with manager_id: ${manager_id}`);
+    console.log(`Updating department ${id} with managers:`, manager_ids);
     
-    const { data, error } = await supabase
+    // First update basic department info
+    const { error: updateError } = await supabase
       .from('departments')
       .update({
         name,
         description,
         is_active,
-        manager_id,
+        manager_id: primary_manager_id,
         updated_at: new Date().toISOString()
       })
       .eq('id', id);
     
-    if (error) {
-      console.error("Error updating department:", error);
-    } else {
-      console.log("Department updated successfully");
+    if (updateError) {
+      console.error("Error updating department basic info:", updateError);
+      return formatCrudResult(null, updateError);
     }
+    
+    // Remove all existing managers
+    const { error: deleteError } = await supabase
+      .from('department_managers')
+      .delete()
+      .eq('department_id', id);
+    
+    if (deleteError) {
+      console.error("Error removing existing managers:", deleteError);
+      return formatCrudResult(null, deleteError);
+    }
+    
+    // Add new managers if any
+    if (manager_ids.length > 0) {
+      const managersToInsert = manager_ids.map(managerId => ({
+        department_id: id,
+        manager_id: managerId,
+        is_primary: managerId === primary_manager_id
+      }));
+      
+      const { error: insertError } = await supabase
+        .from('department_managers')
+        .insert(managersToInsert);
+      
+      if (insertError) {
+        console.error("Error adding new managers:", insertError);
+        return formatCrudResult(null, insertError);
+      }
+    }
+    
+    console.log("Department updated successfully");
+    return formatCrudResult({ id }, null);
+  } catch (error: any) {
+    console.error("Exception in updateDepartment:", error);
+    return formatCrudResult(null, error);
+  }
+};
+
+export const addManagerToDepartment = async (
+  departmentId: string,
+  managerId: string,
+  isPrimary: boolean = false
+) => {
+  try {
+    const { data, error } = await supabase.rpc('add_manager_to_department', {
+      department_id_param: departmentId,
+      manager_id_param: managerId,
+      is_primary_param: isPrimary
+    });
     
     return formatCrudResult(data, error);
   } catch (error: any) {
-    console.error("Exception in updateDepartment:", error);
+    return formatCrudResult(null, error);
+  }
+};
+
+export const removeManagerFromDepartment = async (
+  departmentId: string,
+  managerId: string
+) => {
+  try {
+    const { data, error } = await supabase.rpc('remove_manager_from_department', {
+      department_id_param: departmentId,
+      manager_id_param: managerId
+    });
+    
+    return formatCrudResult(data, error);
+  } catch (error: any) {
     return formatCrudResult(null, error);
   }
 };

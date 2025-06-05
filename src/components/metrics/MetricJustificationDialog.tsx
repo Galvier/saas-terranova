@@ -1,17 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CustomBadge } from '@/components/ui/custom-badge';
+import { AlertTriangle, Clock, CheckCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { MetricDefinition } from '@/integrations/supabase';
 import { 
   createOrUpdateMetricJustification, 
-  getMetricJustification, 
-  MetricJustification 
+  getMetricJustification,
+  MetricJustification
 } from '@/integrations/supabase/metrics/metricJustifications';
+import { MetricDefinition } from '@/integrations/supabase';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -36,7 +37,6 @@ const MetricJustificationDialog: React.FC<MetricJustificationDialogProps> = ({
   const [existingJustification, setExistingJustification] = useState<MetricJustification | null>(null);
   const { toast } = useToast();
 
-  // Carregar justificativa existente quando o modal abrir
   useEffect(() => {
     if (isOpen && metric) {
       loadExistingJustification();
@@ -45,13 +45,13 @@ const MetricJustificationDialog: React.FC<MetricJustificationDialogProps> = ({
 
   const loadExistingJustification = async () => {
     if (!metric) return;
-
+    
     try {
       const result = await getMetricJustification(
         metric.id, 
         format(periodDate, 'yyyy-MM-dd')
       );
-
+      
       if (result.data && result.data.length > 0) {
         const existing = result.data[0];
         setExistingJustification(existing);
@@ -63,26 +63,24 @@ const MetricJustificationDialog: React.FC<MetricJustificationDialogProps> = ({
         setActionPlan('');
       }
     } catch (error) {
-      console.error('Erro ao carregar justificativa:', error);
+      console.error('Error loading existing justification:', error);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!metric) return;
-    
-    if (!justification.trim() || !actionPlan.trim()) {
+    if (!metric || !justification.trim() || !actionPlan.trim()) {
       toast({
         title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
+        description: "Justificativa e plano de ação são obrigatórios",
         variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
-
+    
     try {
       const result = await createOrUpdateMetricJustification(
         metric.id,
@@ -102,15 +100,19 @@ const MetricJustificationDialog: React.FC<MetricJustificationDialogProps> = ({
 
       toast({
         title: "Sucesso",
-        description: existingJustification 
-          ? "Justificativa atualizada com sucesso" 
-          : "Justificativa criada com sucesso",
-        variant: "default",
+        description: existingJustification ? 
+          "Justificativa atualizada com sucesso" : 
+          "Justificativa criada com sucesso",
       });
 
       onSuccess();
       onClose();
-    } catch (error) {
+      
+      // Reset form
+      setJustification('');
+      setActionPlan('');
+      setExistingJustification(null);
+    } catch (error: any) {
       toast({
         title: "Erro",
         description: "Erro inesperado ao salvar justificativa",
@@ -128,111 +130,157 @@ const MetricJustificationDialog: React.FC<MetricJustificationDialogProps> = ({
     onClose();
   };
 
-  if (!metric) return null;
-
-  const canEdit = !existingJustification || 
-    existingJustification.status === 'pending' || 
-    existingJustification.status === 'needs_revision';
-  const formattedDate = format(periodDate, "MMMM 'de' yyyy", { locale: ptBR });
-
-  const getStatusBadge = (status: string) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
+      case 'pending':
+        return <Clock className="h-4 w-4" />;
       case 'approved':
-        return <CustomBadge variant="success">Aprovado</CustomBadge>;
-      case 'reviewed':
-        return <CustomBadge variant="secondary">Revisado</CustomBadge>;
+        return <CheckCircle className="h-4 w-4" />;
       case 'needs_revision':
-        return <CustomBadge variant="warning">Precisa Revisão</CustomBadge>;
+        return <RefreshCw className="h-4 w-4" />;
       default:
-        return <CustomBadge variant="warning">Pendente</CustomBadge>;
+        return <AlertTriangle className="h-4 w-4" />;
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'Pendente';
+      case 'approved':
+        return 'Aprovada';
+      case 'needs_revision':
+        return 'Requer Revisão';
+      case 'reviewed':
+        return 'Revisada';
+      default:
+        return 'Desconhecido';
+    }
+  };
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'success';
+      case 'needs_revision':
+        return 'warning';
+      case 'pending':
+        return 'secondary';
+      default:
+        return 'secondary';
+    }
+  };
+
+  if (!metric) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-[600px] max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            {existingJustification ? 'Atualizar Justificativa' : 'Justificar Métrica'}
-          </DialogTitle>
-          <DialogDescription>
-            Justifique o não batimento de meta da métrica "{metric.name}" para {formattedDate}
-          </DialogDescription>
+          <DialogTitle>Justificar Métrica</DialogTitle>
         </DialogHeader>
-
-        {existingJustification && (
-          <div className="mb-4 p-3 bg-muted rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Status:</span>
-              {getStatusBadge(existingJustification.status)}
+        
+        <div className="space-y-4">
+          <div className="bg-muted p-4 rounded-lg space-y-2">
+            <div>
+              <span className="font-medium">Métrica:</span> {metric.name}
             </div>
-            {existingJustification.admin_feedback && (
-              <div className="mt-2">
-                <span className="text-sm font-medium">Feedback do Administrador:</span>
-                <p className="text-sm text-muted-foreground mt-1 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-                  {existingJustification.admin_feedback}
-                </p>
+            <div>
+              <span className="font-medium">Período:</span> {format(periodDate, "MMMM 'de' yyyy", { locale: ptBR })}
+            </div>
+            <div>
+              <span className="font-medium">Valor Atual:</span> {metric.unit} {metric.current}
+            </div>
+            <div>
+              <span className="font-medium">Meta:</span> {metric.unit} {metric.target}
+            </div>
+          </div>
+
+          {existingJustification && (
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Status da Justificativa</h4>
+                <CustomBadge 
+                  variant={getStatusVariant(existingJustification.status)}
+                  className="flex items-center gap-1"
+                >
+                  {getStatusIcon(existingJustification.status)}
+                  {getStatusLabel(existingJustification.status)}
+                </CustomBadge>
               </div>
-            )}
-            {existingJustification.status === 'needs_revision' && (
-              <p className="text-sm text-orange-600 mt-2 font-medium">
-                Esta justificativa precisa ser revisada conforme o feedback acima.
-              </p>
-            )}
-          </div>
-        )}
+              
+              {existingJustification.status === 'needs_revision' && existingJustification.admin_feedback && (
+                <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h5 className="font-medium text-amber-800 dark:text-amber-300 mb-1">
+                        Feedback do Administrador:
+                      </h5>
+                      <p className="text-sm text-amber-700 dark:text-amber-200">
+                        {existingJustification.admin_feedback}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {existingJustification.reviewed_at && (
+                <div className="text-xs text-muted-foreground">
+                  Revisada em: {format(new Date(existingJustification.reviewed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                </div>
+              )}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="justification">
-              Justificativa do não batimento de meta *
-            </Label>
-            <Textarea
-              id="justification"
-              value={justification}
-              onChange={(e) => setJustification(e.target.value)}
-              placeholder="Explique os motivos pelos quais a meta não foi atingida..."
-              rows={4}
-              disabled={!canEdit}
-              required
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="justification">
+                Justificativa *
+              </Label>
+              <Textarea
+                id="justification"
+                value={justification}
+                onChange={(e) => setJustification(e.target.value)}
+                placeholder="Explique os motivos pelos quais a meta não foi atingida..."
+                rows={4}
+                required
+              />
+            </div>
 
-          <div>
-            <Label htmlFor="actionPlan">
-              Plano de ação para o próximo período *
-            </Label>
-            <Textarea
-              id="actionPlan"
-              value={actionPlan}
-              onChange={(e) => setActionPlan(e.target.value)}
-              placeholder="Descreva as ações que serão tomadas para melhorar o desempenho..."
-              rows={4}
-              disabled={!canEdit}
-              required
-            />
-          </div>
+            <div>
+              <Label htmlFor="actionPlan">
+                Plano de Ação *
+              </Label>
+              <Textarea
+                id="actionPlan"
+                value={actionPlan}
+                onChange={(e) => setActionPlan(e.target.value)}
+                placeholder="Descreva as ações que serão tomadas para melhorar o resultado..."
+                rows={4}
+                required
+              />
+            </div>
 
-          {canEdit && (
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
                 onClick={handleClose}
                 disabled={isLoading}
               >
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                disabled={isLoading}
+              <Button 
+                type="submit" 
+                disabled={isLoading || !justification.trim() || !actionPlan.trim()}
               >
                 {isLoading ? 'Salvando...' : 
-                 existingJustification?.status === 'needs_revision' ? 'Reenviar Justificativa' : 'Salvar Justificativa'}
+                 existingJustification ? 'Atualizar Justificativa' : 'Salvar Justificativa'}
               </Button>
             </div>
-          )}
-        </form>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CustomBadge } from '@/components/ui/custom-badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, XCircle, MessageSquare, Calendar, User, Building, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, MessageSquare, Calendar, User, Building, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   getPendingJustifications, 
@@ -86,7 +86,7 @@ const JustificationsAdminPanel: React.FC = () => {
           message = 'Justificativa aprovada com sucesso';
           break;
         case 'needs_revision':
-          message = 'Justificativa devolvida para revisão. O usuário será notificado.';
+          message = 'Justificativa devolvida para revisão. O usuário foi notificado automaticamente.';
           break;
         default:
           message = 'Justificativa revisada com sucesso';

@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Department, createDepartment, updateDepartment, getAllManagers } from '@/integrations/supabase';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
+import { ManagerMultiSelect } from './ManagerMultiSelect';
 
 interface DepartmentEditDialogProps {
   isOpen: boolean;
@@ -28,7 +28,8 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [isActive, setIsActive] = React.useState(true);
-  const [managerId, setManagerId] = React.useState<string>('');
+  const [selectedManagerIds, setSelectedManagerIds] = React.useState<string[]>([]);
+  const [primaryManagerId, setPrimaryManagerId] = React.useState<string | null>(null);
   const [isEditing, setIsEditing] = React.useState(false);
   const { toast } = useToast();
 
@@ -51,13 +52,21 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
       setName(department.name);
       setDescription(department.description || '');
       setIsActive(department.is_active);
-      setManagerId(department.manager_id || 'none');
+      
+      // Set selected managers from the new managers array
+      const managerIds = department.managers?.map(m => m.id) || [];
+      setSelectedManagerIds(managerIds);
+      
+      // Set primary manager
+      const primaryManager = department.managers?.find(m => m.is_primary);
+      setPrimaryManagerId(primaryManager?.id || department.manager_id || null);
     } else {
       // Default values for new department
       setName('');
       setDescription('');
       setIsActive(true);
-      setManagerId('none');
+      setSelectedManagerIds([]);
+      setPrimaryManagerId(null);
     }
   }, [department]);
 
@@ -66,9 +75,6 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
     setIsEditing(true);
 
     try {
-      // Convert 'none' back to null for the database
-      const managerIdValue = managerId === 'none' ? null : managerId;
-      
       if (department) {
         // Update existing department
         const result = await updateDepartment(
@@ -76,7 +82,8 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
           name,
           description,
           isActive,
-          managerIdValue
+          selectedManagerIds,
+          primaryManagerId
         );
         
         if (result.error) {
@@ -93,7 +100,8 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
           name,
           description,
           isActive,
-          managerIdValue
+          selectedManagerIds,
+          primaryManagerId
         );
         
         if (result.error) {
@@ -151,22 +159,13 @@ export const DepartmentEditDialog: React.FC<DepartmentEditDialogProps> = ({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="manager">Gestor Responsável</Label>
-            <Select value={managerId} onValueChange={setManagerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um gestor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum gestor</SelectItem>
-                {activeManagers.map((manager) => (
-                  <SelectItem key={manager.id} value={manager.id}>
-                    {manager.name} ({manager.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <ManagerMultiSelect
+            managers={activeManagers}
+            selectedManagerIds={selectedManagerIds}
+            primaryManagerId={primaryManagerId}
+            onSelectionChange={setSelectedManagerIds}
+            onPrimaryChange={setPrimaryManagerId}
+          />
 
           <div className="flex items-center space-x-2">
             <Switch checked={isActive} onCheckedChange={setIsActive} id="is-active" />
