@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { updateUserPassword } from '@/services/auth/recovery';
 import { supabase } from '@/integrations/supabase/client';
 import PasswordInput from '@/components/managers/PasswordInput';
 
@@ -24,6 +23,27 @@ export const SelfPasswordChangeDialog: React.FC<SelfPasswordChangeDialogProps> =
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  const validateCurrentPassword = async (password: string): Promise<boolean> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      // Create a temporary client session to test the password
+      const { error } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: password
+      });
+
+      // If no error, password is correct
+      return !error;
+    } catch (error) {
+      console.error('Password validation error:', error);
+      return false;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,19 +78,10 @@ export const SelfPasswordChangeDialog: React.FC<SelfPasswordChangeDialogProps> =
     setIsLoading(true);
     
     try {
-      // Primeiro, verificar se a senha atual está correta tentando um re-auth
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
-        throw new Error('Usuário não encontrado');
-      }
-
-      // Tentar fazer login com a senha atual para validar
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword
-      });
-
-      if (authError) {
+      // Validate current password
+      const isValidPassword = await validateCurrentPassword(currentPassword);
+      
+      if (!isValidPassword) {
         toast({
           title: "Erro",
           description: "Senha atual incorreta",
@@ -79,11 +90,13 @@ export const SelfPasswordChangeDialog: React.FC<SelfPasswordChangeDialogProps> =
         return;
       }
 
-      // Se chegou aqui, a senha atual está correta, então atualizar
-      const result = await updateUserPassword(newPassword);
+      // Update password using Supabase auth
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
       
-      if (result.error) {
-        throw new Error(result.error.message);
+      if (error) {
+        throw error;
       }
       
       toast({
@@ -97,9 +110,10 @@ export const SelfPasswordChangeDialog: React.FC<SelfPasswordChangeDialogProps> =
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
+      console.error('Password change error:', error);
       toast({
         title: "Erro",
-        description: `Erro ao alterar senha: ${error.message}`,
+        description: error.message || "Erro ao alterar senha",
         variant: "destructive"
       });
     } finally {

@@ -1131,6 +1131,10 @@ export type Database = {
             }
         Returns: string
       }
+      validate_current_password: {
+        Args: { current_password: string }
+        Returns: boolean
+      }
       validate_metric_value_date: {
         Args: { metric_id: string; value_date: string }
         Returns: boolean

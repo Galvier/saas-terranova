@@ -1,22 +1,27 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Save, Loader2, Upload, Key } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useAvatarUpload } from '@/hooks/useAvatarUpload';
+import { useProfileSettings } from '@/hooks/useProfileSettings';
 import { SelfPasswordChangeDialog } from '../SelfPasswordChangeDialog';
 
 const ProfileTab = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const { uploadAvatar, isUploading } = useAvatarUpload();
+  const { saveProfile, isSaving } = useProfileSettings();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [fullName, setFullName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   
   useEffect(() => {
@@ -28,19 +33,43 @@ const ProfileTab = () => {
       if (metadata) {
         setFullName(metadata.full_name || metadata.name || '');
         setDisplayName(metadata.display_name || metadata.name || '');
+        setAvatarUrl(metadata.avatar_url || '');
       }
     }
   }, [user]);
   
-  const handleSaveProfile = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Perfil atualizado",
-        description: "Suas informações de perfil foram atualizadas com sucesso"
-      });
-    }, 1000);
+  const handleSaveProfile = async () => {
+    const success = await saveProfile({
+      fullName,
+      displayName,
+      email
+    });
+    
+    if (success) {
+      // Update local avatar URL if it was changed
+      if (user?.user_metadata?.avatar_url) {
+        setAvatarUrl(user.user_metadata.avatar_url);
+      }
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    const newAvatarUrl = await uploadAvatar(file, user.id);
+    if (newAvatarUrl) {
+      setAvatarUrl(newAvatarUrl);
+    }
+    
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handlePasswordChangeSuccess = () => {
@@ -48,6 +77,24 @@ const ProfileTab = () => {
       title: "Senha alterada",
       description: "Sua senha foi alterada com sucesso"
     });
+  };
+
+  const getAvatarDisplay = () => {
+    if (avatarUrl) {
+      return (
+        <img 
+          src={avatarUrl} 
+          alt="Avatar" 
+          className="h-32 w-32 rounded-full object-cover"
+        />
+      );
+    }
+    
+    return (
+      <div className="h-32 w-32 rounded-full bg-muted flex items-center justify-center text-2xl font-bold">
+        {displayName?.substring(0, 2).toUpperCase() || 'U'}
+      </div>
+    );
   };
   
   return (
@@ -64,12 +111,27 @@ const ProfileTab = () => {
           <div className="flex flex-col md:flex-row gap-6">
             <div className="md:w-1/3 flex flex-col items-center space-y-4">
               <div className="relative">
-                <div className="h-32 w-32 rounded-full bg-muted flex items-center justify-center text-2xl font-bold">
-                  {displayName?.substring(0, 2).toUpperCase() || 'U'}
-                </div>
-                <Button size="sm" variant="secondary" className="absolute -bottom-2 -right-2 rounded-full p-2">
-                  <Upload className="h-4 w-4" />
+                {getAvatarDisplay()}
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  className="absolute -bottom-2 -right-2 rounded-full p-2"
+                  onClick={handleUploadClick}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
                 </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
               </div>
               <p className="text-sm text-muted-foreground text-center">
                 Clique para alterar sua foto de perfil
@@ -125,8 +187,8 @@ const ProfileTab = () => {
           </div>
         </CardContent>
         <CardFooter className="border-t bg-muted/50 px-6 py-4">
-          <Button onClick={handleSaveProfile} disabled={isLoading}>
-            {isLoading ? (
+          <Button onClick={handleSaveProfile} disabled={isSaving || isUploading}>
+            {isSaving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Salvando...
