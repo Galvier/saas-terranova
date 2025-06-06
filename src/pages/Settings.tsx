@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // Import refactored components
 import SettingsSidebar from '@/components/settings/SettingsSidebar';
+import ProfileTab from '@/components/settings/tabs/ProfileTab';
 import InterfaceTab from '@/components/settings/tabs/InterfaceTab';
 import NotificationsTab from '@/components/settings/tabs/NotificationsTab';
 import BackupTab from '@/components/settings/tabs/BackupTab';
@@ -17,7 +18,7 @@ const Settings = () => {
   const { toast } = useToast();
   const { settings, isLoading: isSettingsLoading, isSaving, updateSettings } = useUserSettings();
   const { isLoading: isAuthLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('interface');
+  const [activeTab, setActiveTab] = useState('profile');
   
   // Handle tab changes from sidebar
   const handleTabChange = (tabId: string) => {
@@ -83,10 +84,16 @@ const Settings = () => {
         <div className="flex-1">
           <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="mb-6 w-full overflow-x-auto justify-start">
+              <TabsTrigger value="profile" id="profile-tab">Perfil</TabsTrigger>
               <TabsTrigger value="interface" id="interface-tab">Interface</TabsTrigger>
               <TabsTrigger value="notifications" id="notifications-tab">Notificações</TabsTrigger>
               <TabsTrigger value="system" id="system-tab">Sistema</TabsTrigger>
             </TabsList>
+            
+            {/* Profile Settings */}
+            <TabsContent value="profile">
+              <ProfileTab />
+            </TabsContent>
             
             {/* Interface Settings */}
             <TabsContent value="interface">
