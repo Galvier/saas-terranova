@@ -30,11 +30,12 @@ const VisualizationConfigFields: React.FC<VisualizationConfigFieldsProps> = ({ f
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="card">Cartão KPI</SelectItem>
-                    <SelectItem value="bar">Gráfico de barras</SelectItem>
-                    <SelectItem value="line">Gráfico de linha</SelectItem>
-                    <SelectItem value="pie">Gráfico de pizza</SelectItem>
-                    <SelectItem value="area">Gráfico de área</SelectItem>
+                    <SelectItem value="bar_chart">Gráfico de barras</SelectItem>
+                    <SelectItem value="line_chart">Gráfico de linha</SelectItem>
+                    <SelectItem value="pie_chart">Gráfico de pizza</SelectItem>
+                    <SelectItem value="area_chart">Gráfico de área</SelectItem>
                     <SelectItem value="table">Tabela</SelectItem>
+                    <SelectItem value="gauge">Medidor</SelectItem>
                   </SelectContent>
                 </Select>
               </FormControl>
