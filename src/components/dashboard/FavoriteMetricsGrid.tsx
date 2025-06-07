@@ -77,9 +77,7 @@ const FavoriteMetricsGrid: React.FC<FavoriteMetricsGridProps> = ({
                 { name: 'Atual', value: metric.current },
                 { name: 'Meta', value: metric.target }
               ]}
-              type={metric.visualization_type === 'bar' ? 'bar' : 
-                    metric.visualization_type === 'line' ? 'line' : 
-                    metric.visualization_type === 'pie' ? 'pie' : 'bar'}
+              type={metric.visualization_type as 'bar_chart' | 'line_chart' | 'pie_chart' | 'area_chart' | 'gauge' | 'table'}
               status={metric.status as 'success' | 'warning' | 'danger'}
               percentage={metric.unit === '%'}
               trend={metric.trend === 'up' ? 5 : metric.trend === 'down' ? -5 : 0}

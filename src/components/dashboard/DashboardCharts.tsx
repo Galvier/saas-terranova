@@ -35,7 +35,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
         <PerformanceChart
           title="Desempenho por departamento"
           data={departmentPerformance.length > 0 ? departmentPerformance : [{ name: 'Carregando...', value: 0 }]}
-          type="bar"
+          type="bar_chart"
           percentage={true}
           status="success"
           trend={5.2}
@@ -48,7 +48,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
           title="Receita mensal (R$)"
           data={monthlyRevenue}
           color="#10b981"
-          type="line"
+          type="line_chart"
           status="success"
           trend={3.8}
         />
