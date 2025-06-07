@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { Download, ArrowDown, ArrowUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  CartesianGrid, LineChart, Line, PieChart, Pie, Cell 
+  CartesianGrid, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 
 interface DataPoint {
@@ -17,10 +19,13 @@ interface PerformanceChartProps {
   title: string;
   data: DataPoint[];
   color?: string;
-  type?: 'bar' | 'line' | 'pie';
+  type?: 'bar_chart' | 'line_chart' | 'pie_chart' | 'area_chart' | 'gauge' | 'table';
   percentage?: boolean;
   status?: 'success' | 'warning' | 'danger';
   trend?: number;
+  target?: number;
+  current?: number;
+  unit?: string;
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f97316', '#6366f1', '#ec4899', '#8b5cf6'];
@@ -29,10 +34,13 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
   title, 
   data,
   color = "#3b82f6",
-  type = 'bar',
+  type = 'bar_chart',
   percentage = false,
   status,
-  trend
+  trend,
+  target,
+  current,
+  unit
 }) => {
   const [isExporting, setIsExporting] = useState(false);
 
@@ -91,6 +99,82 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
     }
   };
 
+  const renderGauge = () => {
+    if (!current || !target) return null;
+    
+    const percentage = Math.min((current / target) * 100, 100);
+    
+    return (
+      <div className="flex flex-col items-center justify-center h-full space-y-4">
+        <div className="relative w-32 h-32">
+          <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              stroke="currentColor"
+              strokeWidth="8"
+              fill="none"
+              className="text-muted-foreground/20"
+            />
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              stroke={getChartColor()}
+              strokeWidth="8"
+              fill="none"
+              strokeDasharray={`${2 * Math.PI * 40}`}
+              strokeDashoffset={`${2 * Math.PI * 40 * (1 - percentage / 100)}`}
+              className="transition-all duration-1000 ease-out"
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-lg font-bold">{percentage.toFixed(1)}%</span>
+          </div>
+        </div>
+        <div className="text-center">
+          <div className="text-sm text-muted-foreground">
+            {unit ? `${unit} ${current}` : current} / {unit ? `${unit} ${target}` : target}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTable = () => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="h-full flex items-center justify-center">
+          <p className="text-muted-foreground">Sem dados disponíveis</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="h-full overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Item</TableHead>
+              <TableHead className="text-right">Valor</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((item, index) => (
+              <TableRow key={index}>
+                <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell className="text-right">
+                  {percentage ? `${item.value}%` : item.value}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
   const renderChart = () => {
     if (!data || data.length === 0) {
       return (
@@ -101,7 +185,7 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
     }
 
     switch (type) {
-      case 'line':
+      case 'line_chart':
         return (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -137,7 +221,7 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
           </ResponsiveContainer>
         );
       
-      case 'pie':
+      case 'pie_chart':
         return (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -161,8 +245,50 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
             </PieChart>
           </ResponsiveContainer>
         );
+
+      case 'area_chart':
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12 }}
+                height={60}
+                angle={-45}
+                textAnchor="end"
+              />
+              <YAxis 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12 }}
+                tickFormatter={value => percentage ? `${value}%` : value}
+              />
+              <Tooltip 
+                formatter={(value: number) => [percentage ? `${value}%` : value, '']}
+                labelFormatter={(name) => `${name}`}
+              />
+              <Area 
+                type="monotone"
+                dataKey="value" 
+                stroke={getChartColor()} 
+                fill={getChartColor()}
+                fillOpacity={0.3}
+                animationDuration={1000}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        );
+
+      case 'gauge':
+        return renderGauge();
+
+      case 'table':
+        return renderTable();
       
-      default: // bar
+      default: // bar_chart
         return (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
