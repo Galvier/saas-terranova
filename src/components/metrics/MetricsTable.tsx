@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Plus, Edit, Trash2, FileText, AlertTriangle, ArrowUp, ArrowDown, Minus, ChartBar, CreditCard, Table as TableIcon, Gauge, ChartLine, ChartPie, Activity, ChartArea } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, AlertTriangle, ArrowUp, ArrowDown, Minus, ChartBar, Table as TableIcon, Gauge, ChartLine, ChartPie, Activity, ChartArea } from 'lucide-react';
 import { MetricDefinition } from '@/integrations/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import MetricJustificationDialog from './MetricJustificationDialog';
@@ -85,7 +85,6 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     const iconClass = "h-5 w-5 text-muted-foreground";
     
     switch (type) {
-      case 'chart':
       case 'bar_chart':
         return <div title="Gráfico de Barras"><ChartBar className={iconClass} /></div>;
       case 'line_chart':
@@ -94,14 +93,13 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
         return <div title="Gráfico de Pizza"><ChartPie className={iconClass} /></div>;
       case 'area_chart':
         return <div title="Gráfico de Área"><ChartArea className={iconClass} /></div>;
-      case 'card':
-        return <div title="Cartão"><CreditCard className={iconClass} /></div>;
       case 'table':
         return <div title="Tabela"><TableIcon className={iconClass} /></div>;
       case 'gauge':
         return <div title="Medidor"><Gauge className={iconClass} /></div>;
+      case 'card':
       default:
-        return <div title="Cartão"><CreditCard className={iconClass} /></div>;
+        return <div title="Cartão KPI"><Activity className={iconClass} /></div>;
     }
   };
 
@@ -120,8 +118,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   // Function to translate visualization type
   const translateVisualization = (type: string): string => {
     const translations: Record<string, string> = {
-      'card': 'Cartão',
-      'chart': 'Gráfico de Barras',
+      'card': 'Cartão KPI',
       'bar_chart': 'Gráfico de Barras',
       'line_chart': 'Gráfico de Linha',
       'pie_chart': 'Gráfico de Pizza',
