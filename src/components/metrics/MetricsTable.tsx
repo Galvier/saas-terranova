@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -54,10 +53,23 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     // ou mostrar algum indicador de que a justificativa foi criada
   };
 
-  // Função para formatar valores com unidade na frente
+  // Função para formatar valores com unidade na posição correta
   const formatValueWithUnit = (value: number | null, unit: string): string => {
-    if (value === null || value === undefined) return `${unit} 0`;
-    return `${unit} ${value}`;
+    if (value === null || value === undefined) {
+      // Para moedas, mostra a unidade na frente mesmo quando valor é 0
+      if (unit === 'R$' || unit === 'USD') {
+        return `${unit} 0`;
+      }
+      return `0 ${unit}`;
+    }
+    
+    // Moedas ficam na frente
+    if (unit === 'R$' || unit === 'USD') {
+      return `${unit} ${value}`;
+    }
+    
+    // Demais unidades ficam depois
+    return `${value} ${unit}`;
   };
 
   // Function to render trend icon
