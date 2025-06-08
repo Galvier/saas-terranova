@@ -50,9 +50,9 @@ const FavoriteMetricsGrid: React.FC<FavoriteMetricsGridProps> = ({
   
   return (
     <div className="space-y-6">
-      {/* Render card metrics in a grid */}
+      {/* Render card metrics in a consistent grid */}
       {cardMetrics.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {cardMetrics.map(metric => (
             <KpiCard
               key={metric.id}

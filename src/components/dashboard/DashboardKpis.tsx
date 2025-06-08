@@ -32,7 +32,7 @@ const DashboardKpis: React.FC<DashboardKpisProps> = ({
       change: 12.5,
       changeLabel: "vs. período anterior",
       status: "success" as const,
-      icon: <ShoppingCart className="h-4 w-4 md:h-5 md:w-5 text-primary" />,
+      icon: <ShoppingCart className="h-4 w-4 text-primary" />,
       hasData: kpiData.hasSalesData
     },
     {
@@ -41,7 +41,7 @@ const DashboardKpis: React.FC<DashboardKpisProps> = ({
       change: -3.2,
       changeLabel: "vs. período anterior",
       status: "warning" as const,
-      icon: <Users className="h-4 w-4 md:h-5 md:w-5 text-primary" />,
+      icon: <Users className="h-4 w-4 text-primary" />,
       hasData: kpiData.hasCustomerData
     },
     {
@@ -50,7 +50,7 @@ const DashboardKpis: React.FC<DashboardKpisProps> = ({
       change: 0.5,
       changeLabel: "vs. período anterior",
       status: "success" as const,
-      icon: <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-primary" />,
+      icon: <BarChart3 className="h-4 w-4 text-primary" />,
       hasData: kpiData.hasConversionData
     },
     {
@@ -59,7 +59,7 @@ const DashboardKpis: React.FC<DashboardKpisProps> = ({
       change: -1,
       changeLabel: "vs. período anterior",
       status: "danger" as const,
-      icon: <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />,
+      icon: <FileText className="h-4 w-4 text-primary" />,
       hasData: kpiData.hasProjectData
     }
   ];
@@ -81,7 +81,7 @@ const DashboardKpis: React.FC<DashboardKpisProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {visibleKpis.map((kpi, index) => (
         <KpiCard
           key={index}

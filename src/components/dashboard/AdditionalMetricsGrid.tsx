@@ -65,54 +65,62 @@ const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({
     }
   };
   
-  // Render metric based on its visualization type
-  const renderMetric = (metric: MetricDefinition) => {
-    const change = calculateChange(metric);
-    
-    if (!metric.visualization_type || metric.visualization_type === 'card') {
-      // Render as KPI Card
-      return (
-        <KpiCard
-          key={metric.id}
-          title={metric.name}
-          value={`${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`}
-          status={metric.status as 'success' | 'warning' | 'danger'}
-          change={change}
-          changeLabel={change !== undefined ? "vs. período anterior" : undefined}
-        />
-      );
-    } else {
-      // Render as chart/visualization
-      return (
-        <PerformanceChart
-          key={metric.id}
-          title={metric.name}
-          data={[
-            { name: 'Atual', value: metric.current },
-            { name: 'Meta', value: metric.target }
-          ]}
-          type={metric.visualization_type as 'bar_chart' | 'line_chart' | 'pie_chart' | 'area_chart' | 'gauge' | 'table'}
-          status={metric.status as 'success' | 'warning' | 'danger'}
-          trend={change}
-          target={metric.target}
-          current={metric.current}
-          unit={metric.unit}
-        />
-      );
-    }
-  };
+  // Separate metrics by visualization type
+  const cardMetrics = sortedMetrics.filter(m => !m.visualization_type || m.visualization_type === 'card');
+  const chartMetrics = sortedMetrics.filter(m => m.visualization_type && m.visualization_type !== 'card');
   
   // Determine the appropriate title based on department selection
   const isSpecificDepartment = selectedDepartment !== 'all';
   const sectionTitle = isSpecificDepartment ? 'Indicadores' : 'Métricas';
   
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-6">
       <section>
-        <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">{sectionTitle}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-          {sortedMetrics.map(renderMetric)}
-        </div>
+        <h2 className="text-xl font-semibold mb-4">{sectionTitle}</h2>
+        
+        {/* Render card metrics in a consistent grid */}
+        {cardMetrics.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {cardMetrics.map(metric => {
+              const change = calculateChange(metric);
+              return (
+                <KpiCard
+                  key={metric.id}
+                  title={metric.name}
+                  value={`${metric.current}${metric.unit ? ` ${metric.unit}` : ''}`}
+                  status={metric.status as 'success' | 'warning' | 'danger'}
+                  change={change}
+                  changeLabel={change !== undefined ? "vs. período anterior" : undefined}
+                />
+              );
+            })}
+          </div>
+        )}
+        
+        {/* Render chart metrics in a different layout */}
+        {chartMetrics.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {chartMetrics.map(metric => {
+              const change = calculateChange(metric);
+              return (
+                <PerformanceChart
+                  key={metric.id}
+                  title={metric.name}
+                  data={[
+                    { name: 'Atual', value: metric.current },
+                    { name: 'Meta', value: metric.target }
+                  ]}
+                  type={metric.visualization_type as 'bar_chart' | 'line_chart' | 'pie_chart' | 'area_chart' | 'gauge' | 'table'}
+                  status={metric.status as 'success' | 'warning' | 'danger'}
+                  trend={change}
+                  target={metric.target}
+                  current={metric.current}
+                  unit={metric.unit}
+                />
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );
