@@ -54,7 +54,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
       <Tooltip>
         <TooltipTrigger asChild>
           <Card 
-            className="relative overflow-hidden transition-all hover:shadow-md border-l-4 aspect-[3/2] touch-manipulation" 
+            className="relative overflow-hidden transition-all hover:shadow-md border-l-4 touch-manipulation h-32 min-h-32 max-h-32" 
             style={{ borderLeftColor: getBorderColor() }}
           >
             <CardContent className="p-4 h-full flex flex-col justify-between">
