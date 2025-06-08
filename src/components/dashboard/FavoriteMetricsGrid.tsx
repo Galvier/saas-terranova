@@ -50,9 +50,9 @@ const FavoriteMetricsGrid: React.FC<FavoriteMetricsGridProps> = ({
   
   return (
     <div className="space-y-6">
-      {/* Render card metrics in a grid */}
+      {/* Render card metrics in a consistent grid */}
       {cardMetrics.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {cardMetrics.map(metric => (
             <KpiCard
               key={metric.id}
@@ -77,9 +77,7 @@ const FavoriteMetricsGrid: React.FC<FavoriteMetricsGridProps> = ({
                 { name: 'Atual', value: metric.current },
                 { name: 'Meta', value: metric.target }
               ]}
-              type={metric.visualization_type === 'bar' ? 'bar' : 
-                    metric.visualization_type === 'line' ? 'line' : 
-                    metric.visualization_type === 'pie' ? 'pie' : 'bar'}
+              type={metric.visualization_type as 'bar_chart' | 'line_chart' | 'pie_chart' | 'area_chart' | 'gauge' | 'table'}
               status={metric.status as 'success' | 'warning' | 'danger'}
               percentage={metric.unit === '%'}
               trend={metric.trend === 'up' ? 5 : metric.trend === 'down' ? -5 : 0}

@@ -5,7 +5,7 @@ import { z } from 'zod';
 export const FrequencyEnum = z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly']);
 export type Frequency = z.infer<typeof FrequencyEnum>;
 
-export const VisualizationTypeEnum = z.enum(['card', 'bar', 'line', 'pie', 'area', 'table']);
+export const VisualizationTypeEnum = z.enum(['card', 'bar_chart', 'line_chart', 'pie_chart', 'area_chart', 'table', 'gauge']);
 export type VisualizationType = z.infer<typeof VisualizationTypeEnum>;
 
 export const PriorityEnum = z.enum(['normal', 'high', 'critical']);

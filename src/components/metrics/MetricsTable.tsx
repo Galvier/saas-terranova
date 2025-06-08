@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Plus, Edit, Trash2, FileText, AlertTriangle, ArrowUp, ArrowDown, Minus, BarChart3, CreditCard, Table as TableIcon, Gauge, LineChart, PieChart, Activity } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, AlertTriangle, ArrowUp, ArrowDown, Minus, ChartBar, Table as TableIcon, Gauge, ChartLine, ChartPie, BarChart3, ChartArea } from 'lucide-react';
 import { MetricDefinition } from '@/integrations/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import MetricJustificationDialog from './MetricJustificationDialog';
@@ -54,10 +53,23 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     // ou mostrar algum indicador de que a justificativa foi criada
   };
 
-  // Função para formatar valores com unidade na frente
+  // Função para formatar valores com unidade na posição correta
   const formatValueWithUnit = (value: number | null, unit: string): string => {
-    if (value === null || value === undefined) return `${unit} 0`;
-    return `${unit} ${value}`;
+    if (value === null || value === undefined) {
+      // Para moedas, mostra a unidade na frente mesmo quando valor é 0
+      if (unit === 'R$' || unit === 'USD') {
+        return `${unit} 0`;
+      }
+      return `0 ${unit}`;
+    }
+    
+    // Moedas ficam na frente
+    if (unit === 'R$' || unit === 'USD') {
+      return `${unit} ${value}`;
+    }
+    
+    // Demais unidades ficam depois
+    return `${value} ${unit}`;
   };
 
   // Function to render trend icon
@@ -80,28 +92,26 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     return <Minus className="h-4 w-4 text-muted-foreground" />;
   };
 
-  // Function to render visualization icon with more specific chart types
+  // Function to render visualization icon with appropriate chart icons
   const renderVisualizationIcon = (type: string) => {
     const iconClass = "h-5 w-5 text-muted-foreground";
     
     switch (type) {
-      case 'chart':
       case 'bar_chart':
-        return <div title="Gráfico de Barras"><BarChart3 className={iconClass} /></div>;
+        return <div title="Gráfico de Barras"><ChartBar className={iconClass} /></div>;
       case 'line_chart':
-        return <div title="Gráfico de Linha"><LineChart className={iconClass} /></div>;
+        return <div title="Gráfico de Linha"><ChartLine className={iconClass} /></div>;
       case 'pie_chart':
-        return <div title="Gráfico de Pizza"><PieChart className={iconClass} /></div>;
+        return <div title="Gráfico de Pizza"><ChartPie className={iconClass} /></div>;
       case 'area_chart':
-        return <div title="Gráfico de Área"><Activity className={iconClass} /></div>;
-      case 'card':
-        return <div title="Cartão"><CreditCard className={iconClass} /></div>;
+        return <div title="Gráfico de Área"><ChartArea className={iconClass} /></div>;
       case 'table':
         return <div title="Tabela"><TableIcon className={iconClass} /></div>;
       case 'gauge':
         return <div title="Medidor"><Gauge className={iconClass} /></div>;
+      case 'card':
       default:
-        return <div title="Cartão"><CreditCard className={iconClass} /></div>;
+        return <div title="Cartão KPI"><BarChart3 className={iconClass} /></div>;
     }
   };
 
@@ -120,8 +130,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   // Function to translate visualization type
   const translateVisualization = (type: string): string => {
     const translations: Record<string, string> = {
-      'card': 'Cartão',
-      'chart': 'Gráfico de Barras',
+      'card': 'Cartão KPI',
       'bar_chart': 'Gráfico de Barras',
       'line_chart': 'Gráfico de Linha',
       'pie_chart': 'Gráfico de Pizza',
@@ -206,17 +215,6 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
-                      {canModify && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onAddValue(metric)}
-                          title="Adicionar valor"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      )}
-                      
                       {needsJustif && canModify && (
                         <Button
                           variant="ghost"
@@ -226,6 +224,17 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
                           className="text-amber-600 hover:text-amber-700"
                         >
                           <FileText className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      {canModify && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onAddValue(metric)}
+                          title="Adicionar valor"
+                        >
+                          <Plus className="h-4 w-4" />
                         </Button>
                       )}
                       

@@ -32,10 +32,10 @@ const KpiCard: React.FC<KpiCardProps> = ({
     const changeColor = isPositive ? 'text-success' : 'text-destructive';
     
     return (
-      <div className={`flex items-center ${changeColor} mt-2 md:mt-1`}>
-        <Icon className="w-4 h-4 md:w-3 md:h-3 mr-1" />
-        <span className="text-sm md:text-xs font-medium">{Math.abs(change).toFixed(1)}%</span>
-        {changeLabel && <span className="ml-1 text-muted-foreground text-xs hidden lg:inline">{changeLabel}</span>}
+      <div className={`flex items-center ${changeColor} mt-2`}>
+        <Icon className="w-3 h-3 mr-1" />
+        <span className="text-xs font-medium">{Math.abs(change).toFixed(1)}%</span>
+        {changeLabel && <span className="ml-1 text-muted-foreground text-xs hidden sm:inline">{changeLabel}</span>}
       </div>
     );
   };
@@ -54,27 +54,28 @@ const KpiCard: React.FC<KpiCardProps> = ({
       <Tooltip>
         <TooltipTrigger asChild>
           <Card 
-            className="relative overflow-hidden transition-all hover:shadow-lg md:hover:shadow-md border-l-4 h-full min-h-[120px] md:min-h-[100px] touch-manipulation" 
+            className="relative overflow-hidden transition-all hover:shadow-md border-l-4 touch-manipulation h-32 min-h-32 max-h-32" 
             style={{ borderLeftColor: getBorderColor() }}
           >
-            <CardContent className="p-4 md:p-3 lg:p-4">
-              <div className="flex justify-between items-start">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm md:text-xs lg:text-sm font-medium text-muted-foreground line-clamp-2 mb-2 md:mb-1">
-                    {title}
-                  </h3>
-                  <div className="text-2xl md:text-xl lg:text-2xl font-bold mb-1 break-words">
-                    {value}
-                  </div>
-                  {renderChange()}
-                </div>
+            <CardContent className="p-4 h-full flex flex-col justify-between">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-sm font-medium text-muted-foreground line-clamp-2 flex-1 mr-2">
+                  {title}
+                </h3>
                 {icon && (
-                  <div className="bg-primary/10 p-2 md:p-1.5 lg:p-2 rounded-full ml-2 flex-shrink-0">
-                    <div className="w-5 h-5 md:w-4 md:h-4 lg:w-5 lg:h-5">
+                  <div className="bg-primary/10 p-1.5 rounded-full flex-shrink-0">
+                    <div className="w-4 h-4">
                       {icon}
                     </div>
                   </div>
                 )}
+              </div>
+              
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="text-xl font-bold mb-1 break-words">
+                  {value}
+                </div>
+                {renderChange()}
               </div>
             </CardContent>
           </Card>

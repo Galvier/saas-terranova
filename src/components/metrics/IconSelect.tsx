@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,12 +7,14 @@ import {
   CircleArrowUp, CircleArrowDown, DollarSign, Euro, Receipt, 
   PiggyBank, CreditCard, ShoppingCart, Users, Tag, 
   Percent, Target, Megaphone, Briefcase, Settings, Timer,
-  FileBarChart, CalendarCheck
+  FileBarChart, CalendarCheck, ChartArea, ChartBar, ChartPie,
+  ChartColumn, ChartSpline, ChartScatter, ChartNoAxesColumn,
+  ChartBarStacked, ChartColumnStacked
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-type IconCategory = 'general' | 'financial' | 'commercial' | 'operations' | 'hr' | 'marketing';
+type IconCategory = 'general' | 'financial' | 'commercial' | 'operations' | 'hr' | 'marketing' | 'charts';
 
 interface IconDefinition {
   name: string;
@@ -20,8 +23,19 @@ interface IconDefinition {
 }
 
 const icons: IconDefinition[] = [
+  // Charts
+  { name: 'chart-line', component: ChartLine, category: 'charts' },
+  { name: 'chart-bar', component: ChartBar, category: 'charts' },
+  { name: 'chart-area', component: ChartArea, category: 'charts' },
+  { name: 'chart-pie', component: ChartPie, category: 'charts' },
+  { name: 'chart-column', component: ChartColumn, category: 'charts' },
+  { name: 'chart-spline', component: ChartSpline, category: 'charts' },
+  { name: 'chart-scatter', component: ChartScatter, category: 'charts' },
+  { name: 'chart-no-axes-column', component: ChartNoAxesColumn, category: 'charts' },
+  { name: 'chart-bar-stacked', component: ChartBarStacked, category: 'charts' },
+  { name: 'chart-column-stacked', component: ChartColumnStacked, category: 'charts' },
+  
   // General
-  { name: 'chart-line', component: ChartLine, category: 'general' },
   { name: 'gauge', component: Gauge, category: 'general' },
   { name: 'thermometer', component: Thermometer, category: 'general' },
   { name: 'activity', component: Activity, category: 'general' },
@@ -96,7 +110,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({ value, onChange }) => {
           {value ? formatName(value) : 'Selecionar um ícone'}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[360px] p-0">
+      <PopoverContent className="w-[400px] p-0">
         <div className="p-2">
           <Input 
             placeholder="Pesquisar ícones..." 
@@ -107,15 +121,17 @@ export const IconSelect: React.FC<IconSelectProps> = ({ value, onChange }) => {
         </div>
         
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="w-full justify-start px-2 pt-2">
-            <TabsTrigger value="all" className="flex-1">Todos</TabsTrigger>
-            <TabsTrigger value="general" className="flex-1">Geral</TabsTrigger>
-            <TabsTrigger value="financial" className="flex-1">Financeiro</TabsTrigger>
-            <TabsTrigger value="commercial" className="flex-1">Comercial</TabsTrigger>
+          <TabsList className="w-full justify-start px-2 pt-2 flex-wrap h-auto gap-1">
+            <TabsTrigger value="all" className="text-xs">Todos</TabsTrigger>
+            <TabsTrigger value="charts" className="text-xs">Gráficos</TabsTrigger>
+            <TabsTrigger value="general" className="text-xs">Geral</TabsTrigger>
+            <TabsTrigger value="financial" className="text-xs">Financeiro</TabsTrigger>
+            <TabsTrigger value="commercial" className="text-xs">Comercial</TabsTrigger>
+            <TabsTrigger value="operations" className="text-xs">Operações</TabsTrigger>
           </TabsList>
           
           <TabsContent value="all">
-            <div className="grid grid-cols-6 gap-2 p-2">
+            <div className="grid grid-cols-6 gap-2 p-2 max-h-64 overflow-y-auto">
               {filteredIcons.map((icon) => {
                 const Icon = icon.component;
                 return (
@@ -134,9 +150,9 @@ export const IconSelect: React.FC<IconSelectProps> = ({ value, onChange }) => {
             </div>
           </TabsContent>
           
-          {['general', 'financial', 'commercial', 'marketing', 'hr', 'operations'].map((category) => (
+          {['charts', 'general', 'financial', 'commercial', 'marketing', 'hr', 'operations'].map((category) => (
             <TabsContent key={category} value={category}>
-              <div className="grid grid-cols-6 gap-2 p-2">
+              <div className="grid grid-cols-6 gap-2 p-2 max-h-64 overflow-y-auto">
                 {getIconsByCategory(category as IconCategory).map((icon) => {
                   const Icon = icon.component;
                   return (

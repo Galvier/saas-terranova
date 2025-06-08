@@ -24,7 +24,6 @@ const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({
   if (viewMode === 'favorites') return null;
   
   // Show ALL metrics - don't filter out any based on values
-  // Users should see all created metrics, even if they have no data
   const allMetrics = metrics;
   
   if (allMetrics.length === 0) return null;
@@ -44,47 +43,44 @@ const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({
            (statusOrder[b.status as keyof typeof statusOrder] || 2);
   });
   
-  // Group metrics by visualization type
-  const cardMetrics = sortedMetrics.filter(m => !m.visualization_type || m.visualization_type === 'card');
-  const chartMetrics = sortedMetrics.filter(m => m.visualization_type && m.visualization_type !== 'card');
-  
   // Calculate realistic change for metrics with valid data only
   const calculateChange = (metric: MetricDefinition): number | undefined => {
     // Only show trend for metrics that have valid data:
-    // - Must have target AND current value > 0 AND last_value_date exists
     if (!metric.target || metric.current === 0 || !metric.last_value_date) {
       return undefined;
     }
     
     // Calculate a realistic change based on performance against target
     const performance = metric.lower_is_better 
-      ? (metric.target / metric.current) // For lower is better metrics
-      : (metric.current / metric.target); // For higher is better metrics
+      ? (metric.target / metric.current) 
+      : (metric.current / metric.target);
     
     // Generate a change percentage based on how close to target the metric is
     if (performance >= 1) {
-      // Performing well - positive change
       return Math.random() * 15 + 2; // 2% to 17% positive
     } else if (performance >= 0.8) {
-      // Decent performance - small positive or negative change
       return (Math.random() - 0.5) * 10; // -5% to +5%
     } else {
-      // Poor performance - negative change
       return -(Math.random() * 12 + 3); // -3% to -15% negative
     }
   };
+  
+  // Separate metrics by visualization type
+  const cardMetrics = sortedMetrics.filter(m => !m.visualization_type || m.visualization_type === 'card');
+  const chartMetrics = sortedMetrics.filter(m => m.visualization_type && m.visualization_type !== 'card');
   
   // Determine the appropriate title based on department selection
   const isSpecificDepartment = selectedDepartment !== 'all';
   const sectionTitle = isSpecificDepartment ? 'Indicadores' : 'Métricas';
   
   return (
-    <div className="space-y-6 md:space-y-8">
-      {/* Render card metrics in a responsive grid */}
-      {cardMetrics.length > 0 && (
-        <section>
-          <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">{sectionTitle}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+    <div className="space-y-6">
+      <section>
+        <h2 className="text-xl font-semibold mb-4">{sectionTitle}</h2>
+        
+        {/* Render card metrics in a consistent grid */}
+        {cardMetrics.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {cardMetrics.map(metric => {
               const change = calculateChange(metric);
               return (
@@ -99,14 +95,11 @@ const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({
               );
             })}
           </div>
-        </section>
-      )}
-      
-      {/* Render chart metrics in a responsive layout */}
-      {chartMetrics.length > 0 && (
-        <section>
-          <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">Análises de desempenho</h2>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
+        )}
+        
+        {/* Render chart metrics in a different layout */}
+        {chartMetrics.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {chartMetrics.map(metric => {
               const change = calculateChange(metric);
               return (
@@ -117,15 +110,18 @@ const AdditionalMetricsGrid: React.FC<AdditionalMetricsGridProps> = ({
                     { name: 'Atual', value: metric.current },
                     { name: 'Meta', value: metric.target }
                   ]}
-                  type={metric.visualization_type === 'bar' ? 'bar' : 'line'}
+                  type={metric.visualization_type as 'bar_chart' | 'line_chart' | 'pie_chart' | 'area_chart' | 'gauge' | 'table'}
                   status={metric.status as 'success' | 'warning' | 'danger'}
                   trend={change}
+                  target={metric.target}
+                  current={metric.current}
+                  unit={metric.unit}
                 />
               );
             })}
           </div>
-        </section>
-      )}
+        )}
+      </section>
     </div>
   );
 };
