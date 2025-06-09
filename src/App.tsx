@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from "@/components/ui/theme-provider"
+import { QueryClient } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster"
-import { ThemeProvider } from '@/components/ThemeProvider';
 
-import AppLayout from '@/layouts/AppLayout';
+import AppLayout from '@/components/AppLayout';
 import Dashboard from '@/pages/Dashboard';
 import Metrics from '@/pages/Metrics';
 import Departments from '@/pages/Departments';
@@ -16,15 +15,13 @@ import Settings from '@/pages/Settings';
 import Login from '@/pages/Login';
 import NotFound from '@/pages/NotFound';
 import FirstAccess from '@/pages/FirstAccess';
-import Notifications from '@/pages/Notifications';
-import Diagnostic from '@/pages/Diagnostic';
 
-const queryClient = new QueryClient();
+import Notifications from '@/pages/Notifications';
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
+    <QueryClient>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
         <Toaster />
         <Router>
           <Routes>
@@ -45,7 +42,7 @@ function App() {
           </Routes>
         </Router>
       </ThemeProvider>
-    </QueryClientProvider>
+    </QueryClient>
   );
 }
 

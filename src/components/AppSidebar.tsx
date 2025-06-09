@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Sheet,
@@ -15,7 +14,6 @@ import {
   Building2,
   Users,
   Settings,
-  Bell,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,10 +21,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useNavigate } from 'react-router-dom';
+import { Bell } from 'lucide-react';
 
 export function AppSidebar() {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const navigation = [
@@ -63,7 +62,7 @@ export function AppSidebar() {
   ];
 
   const handleSignOut = async () => {
-    await logout();
+    await signOut();
     navigate('/login');
   };
 
