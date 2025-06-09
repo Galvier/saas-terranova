@@ -10,7 +10,6 @@ const AppLayout = () => {
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
   
-  // Simulate loading when changing routes
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
@@ -28,7 +27,6 @@ const AppLayout = () => {
           <header className="flex h-14 md:h-16 shrink-0 items-center justify-between gap-2 px-4 md:px-6 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <SidebarTrigger className="-ml-1 h-10 w-10 md:h-8 md:w-8" />
             
-            {/* Área das notificações */}
             <div className="flex items-center gap-2">
               <NotificationsDropdown />
             </div>

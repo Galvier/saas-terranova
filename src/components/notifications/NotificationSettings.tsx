@@ -43,7 +43,6 @@ const NotificationSettings: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Buscar todas as configurações
       const configKeys = Object.keys(config) as (keyof NotificationConfig)[];
       const promises = configKeys.map(key => 
         supabase.rpc('get_notification_setting', { setting_key_param: key })
@@ -58,13 +57,13 @@ const NotificationSettings: React.FC = () => {
           const value = result.data;
           
           if (key === 'reminder_days_before') {
-            newConfig[key] = Array.isArray(value) ? value.map(v => Number(v)).filter(v => !isNaN(v)) : [3, 5, 7];
+            (newConfig as any)[key] = Array.isArray(value) ? value.map(v => Number(v)).filter(v => !isNaN(v)) : [3, 5, 7];
           } else if (typeof config[key] === 'boolean') {
-            newConfig[key] = value === true || value === 'true';
+            (newConfig as any)[key] = value === true || value === 'true';
           } else if (typeof config[key] === 'number') {
-            newConfig[key] = parseInt(String(value)) || config[key];
+            (newConfig as any)[key] = parseInt(String(value)) || config[key];
           } else {
-            newConfig[key] = String(value) || config[key];
+            (newConfig as any)[key] = String(value) || config[key];
           }
         }
       });
@@ -100,7 +99,6 @@ const NotificationSettings: React.FC = () => {
     try {
       setIsSaving(true);
       
-      // Salvar cada configuração
       await Promise.all([
         saveSetting('monthly_deadline_day', config.monthly_deadline_day),
         saveSetting('reminder_days_before', config.reminder_days_before),
@@ -170,7 +168,6 @@ const NotificationSettings: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Configurações de Prazo */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Configurações de Prazo</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -187,9 +184,6 @@ const NotificationSettings: React.FC = () => {
                     monthly_deadline_day: parseInt(e.target.value) || 25
                   }))}
                 />
-                <p className="text-sm text-muted-foreground">
-                  Dia do mês limite para preenchimento das métricas mensais
-                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="frequency">Frequência de resumos</Label>
@@ -213,41 +207,6 @@ const NotificationSettings: React.FC = () => {
             </div>
           </div>
 
-          {/* Horário Comercial */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Horário Comercial</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start-time">Início</Label>
-                <Input
-                  id="start-time"
-                  type="time"
-                  value={config.business_hours_start}
-                  onChange={(e) => setConfig(prev => ({
-                    ...prev,
-                    business_hours_start: e.target.value
-                  }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="end-time">Fim</Label>
-                <Input
-                  id="end-time"
-                  type="time"
-                  value={config.business_hours_end}
-                  onChange={(e) => setConfig(prev => ({
-                    ...prev,
-                    business_hours_end: e.target.value
-                  }))}
-                />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Notificações só serão enviadas dentro do horário comercial
-            </p>
-          </div>
-
-          {/* Tipos de Notificação */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Tipos de Notificação</h3>
             <div className="space-y-4">
@@ -286,7 +245,6 @@ const NotificationSettings: React.FC = () => {
             </div>
           </div>
 
-          {/* Ações */}
           <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
             <Button 
               onClick={handleSave} 

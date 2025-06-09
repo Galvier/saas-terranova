@@ -16,12 +16,14 @@ import NotificationSettings from '@/components/notifications/NotificationSetting
 
 const Notifications: React.FC = () => {
   const { notifications, isLoading, markAsRead, markAllAsRead } = useNotifications();
-  const { isAdmin } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  // Filtrar notificações baseado nos filtros selecionados
+  // Verificar se o usuário é admin
+  const isAdmin = user?.user_metadata?.role === 'admin';
+
   const filteredNotifications = notifications.filter(notification => {
     const typeMatch = filterType === 'all' || notification.type === filterType;
     const statusMatch = filterStatus === 'all' || 
@@ -106,7 +108,6 @@ const Notifications: React.FC = () => {
         </TabsList>
 
         <TabsContent value="notifications" className="space-y-4">
-          {/* Filtros e Ações */}
           <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -161,7 +162,6 @@ const Notifications: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Lista de Notificações */}
           <div className="space-y-3">
             {isLoading ? (
               <Card>
@@ -202,7 +202,7 @@ const Notifications: React.FC = () => {
                           <h3 className={`font-medium ${!notification.is_read ? 'font-semibold' : ''}`}>
                             {notification.title}
                           </h3>
-                          <Badge variant={getNotificationBadgeVariant(notification.type)}>
+                          <Badge variant={getNotificationBadgeVariant(notification.type) as any}>
                             {notification.type}
                           </Badge>
                           {!notification.is_read && (
