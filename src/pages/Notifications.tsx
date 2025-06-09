@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import PageHeader from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ import { useToast } from '@/hooks/use-toast';
 import NotificationSettings from '@/components/notifications/NotificationSettings';
 
 const Notifications: React.FC = () => {
-  const navigate = useNavigate();
   const { notifications, isLoading, markAsRead, markAllAsRead } = useNotifications();
   const { isAdmin } = useAuth();
   const { toast } = useToast();
@@ -67,7 +65,6 @@ const Notifications: React.FC = () => {
   };
 
   const getNotificationIcon = (type: string) => {
-    const iconClass = "h-4 w-4";
     switch (type) {
       case 'success': return '✅';
       case 'warning': return '⚠️';
@@ -87,14 +84,7 @@ const Notifications: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <PageHeader 
-        title="Notificações" 
-        description="Visualize e gerencie suas notificações do sistema"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/' },
-          { label: 'Notificações' }
-        ]}
-      />
+      <PageHeader title="Notificações" />
 
       <Tabs defaultValue="notifications" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">

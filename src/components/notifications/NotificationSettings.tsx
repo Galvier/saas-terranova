@@ -44,7 +44,7 @@ const NotificationSettings: React.FC = () => {
       setIsLoading(true);
       
       // Buscar todas as configurações
-      const configKeys = Object.keys(config);
+      const configKeys = Object.keys(config) as (keyof NotificationConfig)[];
       const promises = configKeys.map(key => 
         supabase.rpc('get_notification_setting', { setting_key_param: key })
       );
@@ -53,18 +53,18 @@ const NotificationSettings: React.FC = () => {
       const newConfig = { ...config };
       
       results.forEach((result, index) => {
-        const key = configKeys[index] as keyof NotificationConfig;
+        const key = configKeys[index];
         if (result.data && result.data !== null) {
           const value = result.data;
           
           if (key === 'reminder_days_before') {
-            newConfig[key] = Array.isArray(value) ? value : [3, 5, 7];
+            newConfig[key] = Array.isArray(value) ? value.map(v => Number(v)).filter(v => !isNaN(v)) : [3, 5, 7];
           } else if (typeof config[key] === 'boolean') {
             newConfig[key] = value === true || value === 'true';
           } else if (typeof config[key] === 'number') {
-            newConfig[key] = parseInt(value) || config[key];
+            newConfig[key] = parseInt(String(value)) || config[key];
           } else {
-            newConfig[key] = value || config[key];
+            newConfig[key] = String(value) || config[key];
           }
         }
       });
@@ -136,7 +136,7 @@ const NotificationSettings: React.FC = () => {
       
       toast({
         title: "Processamento concluído",
-        description: `${data.result.notifications_sent} notificações foram enviadas.`,
+        description: `${data?.result?.notifications_sent || 0} notificações foram enviadas.`,
       });
     } catch (error) {
       console.error('Erro ao processar notificações:', error);
