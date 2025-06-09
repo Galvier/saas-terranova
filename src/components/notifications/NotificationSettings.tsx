@@ -58,13 +58,18 @@ const NotificationSettings: React.FC = () => {
           const value = result.data;
           
           if (key === 'reminder_days_before') {
-            newConfig[key] = Array.isArray(value) ? value : [3, 5, 7];
+            // Garantir que é um array de números
+            if (Array.isArray(value)) {
+              newConfig[key] = value.map(v => typeof v === 'number' ? v : parseInt(String(v), 10)).filter(v => !isNaN(v));
+            } else {
+              newConfig[key] = [3, 5, 7];
+            }
           } else if (typeof config[key] === 'boolean') {
-            newConfig[key] = value === true || value === 'true';
+            newConfig[key] = value === true || value === 'true' || value === '1';
           } else if (typeof config[key] === 'number') {
-            newConfig[key] = parseInt(value) || config[key];
+            newConfig[key] = typeof value === 'number' ? value : parseInt(String(value), 10) || config[key];
           } else {
-            newConfig[key] = value || config[key];
+            newConfig[key] = String(value) || config[key];
           }
         }
       });

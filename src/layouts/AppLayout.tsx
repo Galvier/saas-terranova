@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import AppSidebar from '@/components/AppSidebar';
+import { AppSidebar } from '@/components/AppSidebar';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 
 const AppLayout = () => {

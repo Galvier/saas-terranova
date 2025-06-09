@@ -18,10 +18,13 @@ import NotificationSettings from '@/components/notifications/NotificationSetting
 const Notifications: React.FC = () => {
   const navigate = useNavigate();
   const { notifications, isLoading, markAsRead, markAllAsRead } = useNotifications();
-  const { isAdmin } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  // Verificar se o usuário é admin
+  const isAdmin = user?.user_metadata?.role === 'admin';
 
   // Filtrar notificações baseado nos filtros selecionados
   const filteredNotifications = notifications.filter(notification => {
@@ -67,7 +70,6 @@ const Notifications: React.FC = () => {
   };
 
   const getNotificationIcon = (type: string) => {
-    const iconClass = "h-4 w-4";
     switch (type) {
       case 'success': return '✅';
       case 'warning': return '⚠️';
@@ -89,7 +91,6 @@ const Notifications: React.FC = () => {
     <div className="container mx-auto p-6 space-y-6">
       <PageHeader 
         title="Notificações" 
-        description="Visualize e gerencie suas notificações do sistema"
         breadcrumbs={[
           { label: 'Dashboard', href: '/' },
           { label: 'Notificações' }
