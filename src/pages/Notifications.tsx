@@ -90,11 +90,7 @@ const Notifications: React.FC = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <PageHeader 
-        title="Notificações" 
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/' },
-          { label: 'Notificações' }
-        ]}
+        title="Notificações"
       />
 
       <Tabs defaultValue="notifications" className="space-y-6">

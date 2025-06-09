@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,16 +59,16 @@ const NotificationSettings: React.FC = () => {
           if (key === 'reminder_days_before') {
             // Garantir que é um array de números
             if (Array.isArray(value)) {
-              newConfig[key] = value.map(v => typeof v === 'number' ? v : parseInt(String(v), 10)).filter(v => !isNaN(v));
+              (newConfig as any)[key] = value.map(v => typeof v === 'number' ? v : parseInt(String(v), 10)).filter(v => !isNaN(v));
             } else {
-              newConfig[key] = [3, 5, 7];
+              (newConfig as any)[key] = [3, 5, 7];
             }
           } else if (typeof config[key] === 'boolean') {
-            newConfig[key] = value === true || value === 'true' || value === '1';
+            (newConfig as any)[key] = value === true || value === 'true' || value === '1';
           } else if (typeof config[key] === 'number') {
-            newConfig[key] = typeof value === 'number' ? value : parseInt(String(value), 10) || config[key];
+            (newConfig as any)[key] = typeof value === 'number' ? value : parseInt(String(value), 10) || config[key];
           } else {
-            newConfig[key] = String(value) || config[key];
+            (newConfig as any)[key] = String(value) || config[key];
           }
         }
       });
