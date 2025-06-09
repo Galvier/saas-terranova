@@ -76,7 +76,21 @@ export const notificationService = {
         .order('name');
 
       if (error) throw error;
-      return data || [];
+      
+      // Map the Supabase response to our typed interface
+      const typedTemplates: NotificationTemplate[] = (data || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        title: item.title,
+        message: item.message,
+        type: item.type as 'info' | 'warning' | 'success' | 'error',
+        category: item.category,
+        is_active: item.is_active,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
+      
+      return typedTemplates;
     } catch (error) {
       console.error('Error fetching templates:', error);
       return [];
