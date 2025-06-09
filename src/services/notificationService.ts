@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CreateNotificationParams {
@@ -211,6 +212,19 @@ export const notificationService = {
 
     const permission = await Notification.requestPermission();
     return permission === 'granted';
+  },
+
+  // Processar notificações automáticas manualmente
+  async processAutomaticNotifications(): Promise<any> {
+    try {
+      const { data, error } = await supabase.functions.invoke('automatic-notifications');
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error processing automatic notifications:', error);
+      throw error;
+    }
   },
 
   // Notificações específicas usando templates

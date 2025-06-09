@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import BroadcastNotification from '@/components/notifications/BroadcastNotification';
 import PushNotificationSettings from '@/components/notifications/PushNotificationSettings';
+import NotificationSettings from '@/components/notifications/NotificationSettings';
 
 interface NotificationsTabProps {
   settings: {
@@ -46,7 +47,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ settings, isLoading
   return (
     <div className="space-y-6">
       <Tabs defaultValue="preferences" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="preferences" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Preferências
@@ -59,6 +60,12 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ settings, isLoading
             <TabsTrigger value="broadcast" className="flex items-center gap-2">
               <Send className="h-4 w-4" />
               Broadcast
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="system" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Sistema
             </TabsTrigger>
           )}
         </TabsList>
@@ -124,6 +131,12 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ settings, isLoading
         {isAdmin && (
           <TabsContent value="broadcast">
             <BroadcastNotification />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="system">
+            <NotificationSettings />
           </TabsContent>
         )}
       </Tabs>

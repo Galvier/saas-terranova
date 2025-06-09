@@ -480,6 +480,33 @@ export type Database = {
           },
         ]
       }
+      notification_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notification_templates: {
         Row: {
           category: string
@@ -992,6 +1019,10 @@ export type Database = {
           last_value_date: string
         }[]
       }
+      get_notification_setting: {
+        Args: { setting_key_param: string }
+        Returns: Json
+      }
       get_pending_justifications: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1031,6 +1062,10 @@ export type Database = {
       postgres_version: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      process_automatic_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       record_metric_value: {
         Args: { metric_id: string; metric_value: number; metric_date?: string }
@@ -1130,6 +1165,10 @@ export type Database = {
               metric_default_period?: string
             }
         Returns: string
+      }
+      update_notification_setting: {
+        Args: { setting_key_param: string; new_value: Json }
+        Returns: boolean
       }
       validate_current_password: {
         Args: { current_password: string }
