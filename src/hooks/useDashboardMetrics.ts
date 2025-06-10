@@ -82,10 +82,22 @@ export const useDashboardMetrics = (
       hasError: false,
       errorMessage: null,
       isError: false,
-      kpiData: [],
+      kpiData: {
+        salesTotal: 0,
+        newCustomers: 0,
+        conversionRate: 0,
+        openProjects: 0,
+        hasSalesData: false,
+        hasCustomerData: false,
+        hasConversionData: false,
+        hasProjectData: false
+      },
       departmentPerformance: [],
       monthlyRevenue: [],
-      shouldShowCharts: false,
+      shouldShowCharts: {
+        departmentPerformance: false,
+        monthlyRevenue: false
+      },
       handleMetricSelectionChange,
       isFiltered: false,
       effectiveDepartment
