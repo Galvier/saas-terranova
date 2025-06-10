@@ -13,12 +13,29 @@ export const useDashboardMetrics = (
   dateRangeType: DateRangeType,
   viewMode: 'all' | 'favorites'
 ) => {
-  const { isAdmin, userDepartmentId } = useAuth();
+  const { isAdmin, userDepartmentId, isAuthenticated, user } = useAuth();
+  
+  console.log('[useDashboardMetrics] Hook initialized with:', {
+    selectedDepartment,
+    selectedDate: selectedDate.toISOString(),
+    dateRangeType,
+    viewMode,
+    isAdmin,
+    userDepartmentId,
+    isAuthenticated,
+    userId: user?.id
+  });
   
   // Force department selection to user's department if not admin
   const effectiveDepartment = !isAdmin && userDepartmentId 
     ? userDepartmentId 
     : selectedDepartment;
+    
+  console.log('[useDashboardMetrics] Effective department:', {
+    original: selectedDepartment,
+    effective: effectiveDepartment,
+    reason: !isAdmin && userDepartmentId ? 'manager department override' : 'original selection'
+  });
   
   // Use the extracted hooks with the effective department
   const {
@@ -53,6 +70,15 @@ export const useDashboardMetrics = (
   const hasError = selectionHasError || fetchingHasError;
   const errorMessage = selectionErrorMessage || fetchingErrorMessage;
   const isError = isConfigError || fetchingIsError;
+
+  // Enhanced logging for debugging
+  console.log('[useDashboardMetrics] Final state:', {
+    metricsCount: metrics?.length || 0,
+    isLoading,
+    hasError,
+    errorMessage,
+    isAuthenticated
+  });
 
   return {
     metrics, // This now contains all unfiltered metrics for the selection dialog

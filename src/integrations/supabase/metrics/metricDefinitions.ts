@@ -6,7 +6,29 @@ import type { MetricDefinition } from '../types/metric';
 // Function to get metrics by department
 export const getMetricsByDepartment = async (departmentId?: string, date?: string): Promise<CrudResult<MetricDefinition[]>> => {
   try {
-    console.log("Fetching metrics with params - departmentId:", departmentId, "date:", date);
+    console.log("[getMetricsByDepartment] Starting request with params:", { 
+      departmentId, 
+      date,
+      effectiveDepartmentId: departmentId === 'all' ? null : departmentId,
+      effectiveDate: date || new Date().toISOString().split('T')[0]
+    });
+    
+    // Check current user session
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log("[getMetricsByDepartment] Current user:", {
+      user: user ? { id: user.id, email: user.email } : null,
+      userError
+    });
+    
+    if (userError) {
+      console.error("[getMetricsByDepartment] User authentication error:", userError);
+      return formatCrudResult([], userError);
+    }
+    
+    if (!user) {
+      console.error("[getMetricsByDepartment] No authenticated user found");
+      return formatCrudResult([], new Error("No authenticated user"));
+    }
     
     // Call the RPC function instead of a direct query
     const { data, error } = await supabase.rpc('get_metrics_by_department', {
@@ -15,14 +37,18 @@ export const getMetricsByDepartment = async (departmentId?: string, date?: strin
     });
     
     if (error) {
-      console.error("Error fetching metrics:", error);
+      console.error("[getMetricsByDepartment] RPC error:", error);
       return formatCrudResult([], error);
     }
     
-    console.log("Successfully fetched metrics:", data?.length || 0);
+    console.log("[getMetricsByDepartment] Successfully fetched metrics:", {
+      count: data?.length || 0,
+      sample: data?.length > 0 ? data[0] : null
+    });
+    
     return formatCrudResult(data as MetricDefinition[], null);
   } catch (error) {
-    console.error('Error in getMetricsByDepartment:', error);
+    console.error('[getMetricsByDepartment] Unexpected error:', error);
     return formatCrudResult([], error);
   }
 };

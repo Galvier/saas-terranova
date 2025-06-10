@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import AppLogo from "@/components/AppLogo";
 
 export function AppSidebar() {
   const { user, logout } = useAuth();
@@ -70,6 +71,11 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
+            {/* Logo da Terranova */}
+            <div className="p-4 border-b">
+              <AppLogo />
+            </div>
+            
             <div className="py-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

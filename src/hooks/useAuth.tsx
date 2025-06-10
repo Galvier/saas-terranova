@@ -65,7 +65,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       userEmail: user.email,
       userMetadataRole,
       managerRole,
-      finalRole: userMetadataRole || managerRole
+      finalRole: userMetadataRole || managerRole,
+      userDepartmentId,
+      manager: manager ? { id: manager.id, name: manager.name, role: manager.role } : null
+    });
+  }
+
+  // Enhanced logging for dashboard metrics issues
+  if (sessionError) {
+    console.error('[AuthProvider] Session error:', sessionError);
+  }
+
+  if (!user && !isLoading) {
+    console.warn('[AuthProvider] No user found after loading completed');
+  }
+
+  if (user && !manager && !isManagerLoading) {
+    console.warn('[AuthProvider] User found but no manager data:', {
+      userId: user.id,
+      userEmail: user.email,
+      userMetadata: user.user_metadata
     });
   }
   
@@ -88,13 +107,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isManager,
       isViewer,
       effectiveRole: userRole,
-      isAuthenticated
+      isAuthenticated,
+      userDepartmentId
     });
-  }
-
-  // Log debug info to facilitate problem identification
-  if (sessionError) {
-    console.error('[AuthProvider] Session error:', sessionError);
   }
 
   return (
