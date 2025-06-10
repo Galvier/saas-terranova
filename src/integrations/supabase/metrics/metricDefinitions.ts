@@ -1,3 +1,4 @@
+
 import { supabase } from '../client';
 import { callRPC, formatCrudResult, type CrudResult } from '../core';
 import type { MetricDefinition } from '../types/metric';
@@ -70,7 +71,7 @@ export const getMetricsByDepartment = async (departmentId?: string, date?: strin
       department_name: metric.department?.name || 'Sem departamento',
       current: 0, // Placeholder - seria necessário buscar valores separadamente
       trend: 'neutral' as const,
-      status: 'neutral' as const,
+      status: 'warning' as const, // Fixed: use valid status value
       last_value_date: null
     }));
     

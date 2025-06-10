@@ -57,17 +57,17 @@ export const useMetricProcessing = (
   
   // Calculate KPI metrics based on actual metrics in the selected department
   const kpiData = useMemo(() => {
-    // Default values
-    let salesTotal = 0;
-    let newCustomers = 0;
-    let conversionRate = 0;
-    let openProjects = 0;
-    
-    // Track which KPIs have actual data from metrics
-    let hasSalesData = false;
-    let hasCustomerData = false;
-    let hasConversionData = false;
-    let hasProjectData = false;
+    // Default values - ensure this always returns the correct KpiData type
+    const defaultKpiData = {
+      salesTotal: 0,
+      newCustomers: 0,
+      conversionRate: 0,
+      openProjects: 0,
+      hasSalesData: false,
+      hasCustomerData: false,
+      hasConversionData: false,
+      hasProjectData: false
+    };
     
     // Only process metrics if we're viewing a specific department or all departments
     const metricsToProcess = selectedDepartment === 'all' ? filteredMetrics : 
@@ -81,42 +81,32 @@ export const useMetricProcessing = (
       // Sales/Revenue - only from Financial or Commercial departments
       if ((metricName.includes('receita') || metricName.includes('faturamento')) && 
           (deptName.includes('financeiro') || deptName.includes('comercial'))) {
-        salesTotal += metric.current;
-        hasSalesData = true;
+        defaultKpiData.salesTotal += metric.current;
+        defaultKpiData.hasSalesData = true;
       }
       
       // Conversion Rate - only from Commercial department
       if (metricName.includes('conversão') && deptName.includes('comercial')) {
-        conversionRate = metric.current;
-        hasConversionData = true;
+        defaultKpiData.conversionRate = metric.current;
+        defaultKpiData.hasConversionData = true;
       }
       
       // Customer metrics - only from Commercial or Marketing departments
       if ((metricName.includes('cliente') || metricName.includes('cac')) && 
           (deptName.includes('comercial') || deptName.includes('marketing'))) {
-        newCustomers += Math.round(metric.current);
-        hasCustomerData = true;
+        defaultKpiData.newCustomers += Math.round(metric.current);
+        defaultKpiData.hasCustomerData = true;
       }
       
       // Project metrics - only from specific departments that track projects
       if ((metricName.includes('projeto') || metricName.includes('tarefa')) && 
           !deptName.includes('financeiro')) {
-        openProjects += Math.round(metric.current);
-        hasProjectData = true;
+        defaultKpiData.openProjects += Math.round(metric.current);
+        defaultKpiData.hasProjectData = true;
       }
     });
     
-    return {
-      salesTotal,
-      newCustomers,
-      conversionRate,
-      openProjects,
-      // Availability flags for each KPI
-      hasSalesData,
-      hasCustomerData,
-      hasConversionData,
-      hasProjectData
-    };
+    return defaultKpiData;
   }, [filteredMetrics, selectedDepartment]);
   
   // Create monthly revenue data - only if there are actual revenue metrics in the selected department
@@ -158,12 +148,9 @@ export const useMetricProcessing = (
       // Department performance chart only in "all departments" view
       departmentPerformance: isAllDepartments && hasDepartmentData,
       // Monthly revenue chart only if there are actual revenue metrics in the department
-      monthlyRevenue: hasRevenueData,
-      // Show KPIs based on actual metric availability in the department
-      showKpis: kpiData.hasSalesData || kpiData.hasCustomerData || 
-                kpiData.hasConversionData || kpiData.hasProjectData
+      monthlyRevenue: hasRevenueData
     };
-  }, [selectedDepartment, monthlyRevenue.length, departmentPerformance.length, kpiData]);
+  }, [selectedDepartment, monthlyRevenue.length, departmentPerformance.length]);
 
   return {
     filteredMetrics,
