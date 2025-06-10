@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
-import { useRealTimeSubscription } from './useRealTimeSubscription';
 
 export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
@@ -32,69 +31,32 @@ export function useUserSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load settings from database when user logs in
+  // Load settings - com fallback robusto
   const loadSettings = useCallback(async () => {
-    if (!user) {
-      // If not logged in, try to load from localStorage as a fallback
-      try {
+    setIsLoading(true);
+    
+    try {
+      // Se não há usuário, carregar do localStorage
+      if (!user) {
         const savedSettings = localStorage.getItem('userSettings');
         if (savedSettings) {
           setSettings(JSON.parse(savedSettings));
         }
-      } catch (error) {
-        console.error('Error loading settings from localStorage:', error);
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
-      return;
-    }
 
-    setIsLoading(true);
-    try {
-      console.log('[useUserSettings] Loading settings for user:', user.id);
-      // Try to load from the new user_settings table first
+      // Primeiro tentar carregar do banco de dados
+      console.log('[useUserSettings] Tentando carregar configurações do banco...');
+      
       const { data, error } = await supabase
         .from('user_settings')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error) {
-        console.error('Error loading settings from user_settings table:', error);
-        
-        // Try to load from the legacy settings table as a fallback
-        const { data: legacyData, error: legacyError } = await supabase
-          .from('settings')
-          .select('*')
-          .eq('key', `user_settings_${user.id}`)
-          .single();
-          
-        if (legacyError) {
-          console.error('Error loading settings from legacy settings table:', legacyError);
-          // Try to load from localStorage as the last resort
-          const savedSettings = localStorage.getItem(`userSettings_${user.id}`);
-          if (savedSettings) {
-            setSettings(JSON.parse(savedSettings));
-          }
-        } else if (legacyData) {
-          // Migrate from legacy value format
-          const userSettings = legacyData.value as Record<string, any>;
-          setSettings({
-            theme: userSettings.theme || DEFAULT_SETTINGS.theme,
-            animationsEnabled: userSettings.animationsEnabled !== undefined ? 
-              userSettings.animationsEnabled : DEFAULT_SETTINGS.animationsEnabled,
-            notificationPreferences: {
-              email: userSettings.notificationPreferences?.email !== undefined ? 
-                userSettings.notificationPreferences.email : DEFAULT_SETTINGS.notificationPreferences.email,
-              system: userSettings.notificationPreferences?.system !== undefined ? 
-                userSettings.notificationPreferences.system : DEFAULT_SETTINGS.notificationPreferences.system,
-              alerts: userSettings.notificationPreferences?.alerts !== undefined ? 
-                userSettings.notificationPreferences.alerts : DEFAULT_SETTINGS.notificationPreferences.alerts
-            }
-          });
-        }
-      } else if (data) {
-        console.log('[useUserSettings] Settings loaded successfully:', data);
-        // Use data from the new user_settings table
+      if (!error && data) {
+        console.log('[useUserSettings] Configurações carregadas do banco:', data);
         const notificationPrefs = data.notification_preferences as Record<string, boolean>;
         setSettings({
           theme: (data.theme as 'light' | 'dark' | 'system') || DEFAULT_SETTINGS.theme,
@@ -106,9 +68,29 @@ export function useUserSettings() {
             alerts: notificationPrefs?.alerts ?? DEFAULT_SETTINGS.notificationPreferences.alerts
           }
         });
+      } else {
+        console.log('[useUserSettings] Erro ao carregar do banco, usando localStorage:', error);
+        // Fallback para localStorage
+        const savedSettings = localStorage.getItem(`userSettings_${user.id}`);
+        if (savedSettings) {
+          setSettings(JSON.parse(savedSettings));
+        } else {
+          // Se nem localStorage tem, usar padrões
+          setSettings(DEFAULT_SETTINGS);
+        }
       }
     } catch (error) {
-      console.error('Error loading settings:', error);
+      console.error('[useUserSettings] Erro inesperado:', error);
+      // Fallback final para localStorage
+      try {
+        const key = user ? `userSettings_${user.id}` : 'userSettings';
+        const savedSettings = localStorage.getItem(key);
+        if (savedSettings) {
+          setSettings(JSON.parse(savedSettings));
+        }
+      } catch (e) {
+        console.error('[useUserSettings] Erro ao carregar localStorage:', e);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -117,83 +99,79 @@ export function useUserSettings() {
   // Load settings when user changes
   useEffect(() => {
     loadSettings();
-  }, [user, loadSettings]);
-
-  // Listen for real-time updates for user settings
-  const handleRealtimeUpdate = useCallback((payload: any) => {
-    if (!user || payload.new.user_id !== user.id) return;
-    
-    console.log('[useUserSettings] Settings updated in real-time:', payload);
-    const data = payload.new;
-    const notificationPrefs = data.notification_preferences as Record<string, boolean>;
-    
-    setSettings({
-      theme: (data.theme as 'light' | 'dark' | 'system') || DEFAULT_SETTINGS.theme,
-      animationsEnabled: data.animations_enabled !== undefined ? 
-        data.animations_enabled : DEFAULT_SETTINGS.animationsEnabled,
-      notificationPreferences: {
-        email: notificationPrefs?.email ?? DEFAULT_SETTINGS.notificationPreferences.email,
-        system: notificationPrefs?.system ?? DEFAULT_SETTINGS.notificationPreferences.system,
-        alerts: notificationPrefs?.alerts ?? DEFAULT_SETTINGS.notificationPreferences.alerts
-      }
-    });
-  }, [user]);
-
-  // Subscribe for real-time updates when user is logged in
-  useRealTimeSubscription(
-    {
-      schema: 'public', 
-      table: 'user_settings', 
-      event: 'UPDATE'
-    }, 
-    user ? handleRealtimeUpdate : () => {}
-  );
+  }, [loadSettings]);
 
   // Save to localStorage whenever settings change
   useEffect(() => {
     if (isLoading) return;
     
-    // Save to localStorage as a fallback
-    if (user) {
-      localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(settings));
-    } else {
-      localStorage.setItem('userSettings', JSON.stringify(settings));
+    try {
+      const key = user ? `userSettings_${user.id}` : 'userSettings';
+      localStorage.setItem(key, JSON.stringify(settings));
+      console.log('[useUserSettings] Configurações salvas no localStorage');
+    } catch (error) {
+      console.error('[useUserSettings] Erro ao salvar no localStorage:', error);
     }
   }, [settings, isLoading, user]);
 
   // Function to update settings
   const updateSettings = async (newSettings: Partial<UserSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
+    
+    // Atualizar estado imediatamente para UI responsiva
     setSettings(updatedSettings);
     
+    // Salvar no localStorage imediatamente
+    try {
+      const key = user ? `userSettings_${user.id}` : 'userSettings';
+      localStorage.setItem(key, JSON.stringify(updatedSettings));
+    } catch (error) {
+      console.error('[useUserSettings] Erro ao salvar no localStorage:', error);
+    }
+    
+    // Tentar salvar no banco se há usuário
     if (!user) return;
     
     setIsSaving(true);
     try {
-      console.log('[useUserSettings] Saving settings:', updatedSettings);
-      // Save to the new user_settings table
-      const { error } = await supabase.rpc('save_user_settings', {
+      console.log('[useUserSettings] Tentando salvar no banco:', updatedSettings);
+      
+      // Tentar usando a função RPC
+      const { error: rpcError } = await supabase.rpc('save_user_settings', {
         p_user_id: user.id,
         p_theme: updatedSettings.theme,
         p_animations_enabled: updatedSettings.animationsEnabled,
         p_notification_preferences: updatedSettings.notificationPreferences
       });
 
-      if (error) {
-        throw error;
+      if (rpcError) {
+        console.warn('[useUserSettings] RPC falhou, tentando upsert direto:', rpcError);
+        
+        // Fallback: upsert direto na tabela
+        const { error: upsertError } = await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: user.id,
+            theme: updatedSettings.theme,
+            animations_enabled: updatedSettings.animationsEnabled,
+            notification_preferences: updatedSettings.notificationPreferences
+          }, {
+            onConflict: 'user_id'
+          });
+          
+        if (upsertError) {
+          console.error('[useUserSettings] Upsert também falhou:', upsertError);
+          // Não mostrar erro se localStorage funcionou
+          console.log('[useUserSettings] Continuando com localStorage apenas');
+        } else {
+          console.log('[useUserSettings] Salvo com upsert direto');
+        }
+      } else {
+        console.log('[useUserSettings] Salvo com RPC');
       }
-
-      toast({
-        title: "Settings saved",
-        description: "Your preferences were updated successfully"
-      });
     } catch (error) {
-      console.error('Error saving settings:', error);
-      toast({
-        title: "Error saving",
-        description: "Failed to save your preferences",
-        variant: "destructive"
-      });
+      console.error('[useUserSettings] Erro inesperado ao salvar:', error);
+      // Não mostrar erro se localStorage funcionou
     } finally {
       setIsSaving(false);
     }
