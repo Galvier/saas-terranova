@@ -12,7 +12,7 @@ import { useProfileSettings } from '@/hooks/useProfileSettings';
 import { SelfPasswordChangeDialog } from '../SelfPasswordChangeDialog';
 
 const ProfileTab = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const { uploadAvatar, isUploading } = useAvatarUpload();
   const { saveProfile, isSaving } = useProfileSettings();
@@ -46,9 +46,15 @@ const ProfileTab = () => {
     });
     
     if (success) {
-      // Update local avatar URL if it was changed
-      if (user?.user_metadata?.avatar_url) {
-        setAvatarUrl(user.user_metadata.avatar_url);
+      // Refresh user data to get the latest metadata
+      await refreshUser();
+      
+      // Update local state with the refreshed data
+      if (user?.user_metadata) {
+        const metadata = user.user_metadata;
+        setFullName(metadata.full_name || metadata.name || '');
+        setDisplayName(metadata.display_name || metadata.name || '');
+        setAvatarUrl(metadata.avatar_url || '');
       }
     }
   };
@@ -60,6 +66,8 @@ const ProfileTab = () => {
     const newAvatarUrl = await uploadAvatar(file, user.id);
     if (newAvatarUrl) {
       setAvatarUrl(newAvatarUrl);
+      // Refresh user data to get the updated avatar URL
+      await refreshUser();
     }
     
     // Reset the input
@@ -145,6 +153,7 @@ const ProfileTab = () => {
                     id="fullName" 
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Digite seu nome completo"
                   />
                 </div>
                 <div className="space-y-2">
@@ -153,6 +162,7 @@ const ProfileTab = () => {
                     id="displayName" 
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Como você quer ser chamado"
                   />
                 </div>
               </div>

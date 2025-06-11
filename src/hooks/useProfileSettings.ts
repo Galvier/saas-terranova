@@ -23,12 +23,12 @@ export const useProfileSettings = () => {
         throw new Error('Usuário não encontrado');
       }
 
-      // Update user metadata
+      // Update user metadata with both full name and display name
       const { error: authError } = await supabase.auth.updateUser({
         data: {
           full_name: profileData.fullName,
           display_name: profileData.displayName,
-          name: profileData.displayName
+          name: profileData.displayName // Keep name for backward compatibility
         }
       });
 
