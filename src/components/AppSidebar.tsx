@@ -25,7 +25,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import AppLogo from "@/components/AppLogo";
 
 export function AppSidebar() {
-  const { user, logout } = useAuth();
+  const { user, manager, logout } = useAuth();
   const navigate = useNavigate();
 
   const navigation = [
@@ -66,6 +66,30 @@ export function AppSidebar() {
     navigate('/login');
   };
 
+  // Função para obter o nome de exibição com prioridade correta
+  const getDisplayName = () => {
+    // Prioridade: nome do manager > metadados do usuário > fallback
+    if (manager?.name) {
+      return manager.name;
+    }
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
+    }
+    return "Sem nome";
+  };
+
+  // Função para obter as iniciais baseadas no nome correto
+  const getNameInitials = () => {
+    const displayName = getDisplayName();
+    if (displayName === "Sem nome") {
+      return "XX";
+    }
+    return displayName.charAt(0).toUpperCase();
+  };
+
+  const displayName = getDisplayName();
+  const nameInitials = getNameInitials();
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -82,10 +106,10 @@ export function AppSidebar() {
                   <Button variant="ghost" className="justify-start px-2 w-full font-normal">
                     <Avatar className="mr-2 h-8 w-8">
                       <AvatarImage src={user?.user_metadata?.avatar_url || ""} />
-                      <AvatarFallback>{user?.user_metadata?.name?.charAt(0) || "XX"}</AvatarFallback>
+                      <AvatarFallback>{nameInitials}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col text-left">
-                      <span className="font-semibold text-sm">{user?.user_metadata?.name || "Sem nome"}</span>
+                      <span className="font-semibold text-sm">{displayName}</span>
                       <span className="text-muted-foreground text-xs">{user?.email}</span>
                     </div>
                   </Button>
