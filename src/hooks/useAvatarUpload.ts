@@ -56,18 +56,12 @@ export const useAvatarUpload = () => {
         .from('avatars')
         .getPublicUrl(fileName);
 
-      // Update user metadata with avatar URL
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { avatar_url: data.publicUrl }
-      });
-
-      if (updateError) {
-        throw updateError;
-      }
-
+      // Don't update user metadata here - just return the URL
+      // The metadata will be updated when user clicks "Save Profile"
+      
       toast({
         title: "Sucesso",
-        description: "Foto de perfil atualizada com sucesso"
+        description: "Imagem carregada. Clique em 'Salvar Perfil' para confirmar as alterações"
       });
 
       return data.publicUrl;

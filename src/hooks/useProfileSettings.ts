@@ -8,6 +8,7 @@ interface ProfileData {
   fullName: string;
   displayName: string;
   email: string;
+  avatarUrl?: string;
 }
 
 export const useProfileSettings = () => {
@@ -23,13 +24,22 @@ export const useProfileSettings = () => {
         throw new Error('Usuário não encontrado');
       }
 
-      // Update user metadata with both full name and display name
+      console.log('Saving profile data:', profileData);
+
+      // Update user metadata with all profile data including avatar
+      const updateData: any = {
+        full_name: profileData.fullName,
+        display_name: profileData.displayName,
+        name: profileData.displayName // Keep name for backward compatibility
+      };
+
+      // Include avatar URL if provided
+      if (profileData.avatarUrl) {
+        updateData.avatar_url = profileData.avatarUrl;
+      }
+
       const { error: authError } = await supabase.auth.updateUser({
-        data: {
-          full_name: profileData.fullName,
-          display_name: profileData.displayName,
-          name: profileData.displayName // Keep name for backward compatibility
-        }
+        data: updateData
       });
 
       if (authError) {

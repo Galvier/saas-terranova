@@ -22,6 +22,7 @@ const ProfileTab = () => {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [pendingAvatarUrl, setPendingAvatarUrl] = useState(''); // For preview before saving
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   
   useEffect(() => {
@@ -31,9 +32,11 @@ const ProfileTab = () => {
       // Use metadata if available
       const metadata = user?.user_metadata;
       if (metadata) {
-        setFullName(metadata.full_name || metadata.name || '');
+        setFullName(metadata.full_name || '');
         setDisplayName(metadata.display_name || metadata.name || '');
-        setAvatarUrl(metadata.avatar_url || '');
+        const currentAvatarUrl = metadata.avatar_url || '';
+        setAvatarUrl(currentAvatarUrl);
+        setPendingAvatarUrl(currentAvatarUrl);
       }
     }
   }, [user]);
@@ -42,20 +45,13 @@ const ProfileTab = () => {
     const success = await saveProfile({
       fullName,
       displayName,
-      email
+      email,
+      avatarUrl: pendingAvatarUrl // Use the pending avatar URL
     });
     
     if (success) {
-      // Refresh user data to get the latest metadata
-      await refreshUser();
-      
-      // Update local state with the refreshed data
-      if (user?.user_metadata) {
-        const metadata = user.user_metadata;
-        setFullName(metadata.full_name || metadata.name || '');
-        setDisplayName(metadata.display_name || metadata.name || '');
-        setAvatarUrl(metadata.avatar_url || '');
-      }
+      // Update local state after successful save
+      setAvatarUrl(pendingAvatarUrl);
     }
   };
 
@@ -65,9 +61,8 @@ const ProfileTab = () => {
 
     const newAvatarUrl = await uploadAvatar(file, user.id);
     if (newAvatarUrl) {
-      setAvatarUrl(newAvatarUrl);
-      // Refresh user data to get the updated avatar URL
-      await refreshUser();
+      // Only update the pending URL for preview - don't refresh yet
+      setPendingAvatarUrl(newAvatarUrl);
     }
     
     // Reset the input
@@ -88,10 +83,13 @@ const ProfileTab = () => {
   };
 
   const getAvatarDisplay = () => {
-    if (avatarUrl) {
+    // Use pending avatar URL for preview, fallback to current avatar URL
+    const displayUrl = pendingAvatarUrl || avatarUrl;
+    
+    if (displayUrl) {
       return (
         <img 
-          src={avatarUrl} 
+          src={displayUrl} 
           alt="Avatar" 
           className="h-32 w-32 rounded-full object-cover"
         />
@@ -144,6 +142,11 @@ const ProfileTab = () => {
               <p className="text-sm text-muted-foreground text-center">
                 Clique para alterar sua foto de perfil
               </p>
+              {pendingAvatarUrl !== avatarUrl && (
+                <p className="text-xs text-orange-600 text-center">
+                  Nova imagem carregada. Clique em "Salvar Perfil" para confirmar.
+                </p>
+              )}
             </div>
             <div className="md:w-2/3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
