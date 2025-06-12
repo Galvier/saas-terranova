@@ -24,7 +24,7 @@ export const useProfileSettings = () => {
         throw new Error('Usuário não encontrado');
       }
 
-      console.log('Saving profile data:', profileData);
+      console.log('[useProfileSettings] Salvando dados do perfil:', profileData);
 
       // Update user metadata with all profile data including avatar
       const updateData: any = {
@@ -36,31 +36,50 @@ export const useProfileSettings = () => {
       // Include avatar URL if provided
       if (profileData.avatarUrl) {
         updateData.avatar_url = profileData.avatarUrl;
+        console.log('[useProfileSettings] Incluindo avatar URL:', profileData.avatarUrl);
       }
+
+      console.log('[useProfileSettings] Atualizando metadados do usuário:', updateData);
 
       const { error: authError } = await supabase.auth.updateUser({
         data: updateData
       });
 
       if (authError) {
+        console.error('[useProfileSettings] Erro ao atualizar auth:', authError);
         throw authError;
       }
 
-      // Update manager record if exists
-      const { error: managerError } = await supabase
-        .from('managers')
-        .update({
-          name: profileData.displayName,
-          email: profileData.email
-        })
-        .eq('user_id', user.id);
+      console.log('[useProfileSettings] Metadados do usuário atualizados com sucesso');
 
-      // Note: We don't throw on manager error as the user might not be a manager
-      if (managerError) {
-        console.warn('Manager update failed:', managerError);
+      // Update manager record if exists
+      const { data: managerData, error: managerSelectError } = await supabase
+        .from('managers')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!managerSelectError && managerData) {
+        console.log('[useProfileSettings] Atualizando registro do manager');
+        const { error: managerError } = await supabase
+          .from('managers')
+          .update({
+            name: profileData.displayName,
+            email: profileData.email
+          })
+          .eq('user_id', user.id);
+
+        if (managerError) {
+          console.warn('[useProfileSettings] Erro ao atualizar manager:', managerError);
+        } else {
+          console.log('[useProfileSettings] Manager atualizado com sucesso');
+        }
+      } else {
+        console.log('[useProfileSettings] Usuário não é um manager ou erro ao buscar:', managerSelectError);
       }
 
       // Refresh user data to get updated metadata
+      console.log('[useProfileSettings] Refreshing user data...');
       await refreshUser();
 
       toast({
@@ -70,7 +89,7 @@ export const useProfileSettings = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Error saving profile:', error);
+      console.error('[useProfileSettings] Erro ao salvar perfil:', error);
       toast({
         title: "Erro",
         description: error.message || "Erro ao salvar perfil",

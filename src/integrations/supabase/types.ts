@@ -1096,13 +1096,20 @@ export type Database = {
         Returns: string
       }
       save_user_settings: {
-        Args: {
-          p_user_id: string
-          p_theme: string
-          p_density?: string
-          p_animations_enabled?: boolean
-          p_notification_preferences?: Json
-        }
+        Args:
+          | {
+              p_user_id: string
+              p_theme: string
+              p_animations_enabled?: boolean
+              p_notification_preferences?: Json
+            }
+          | {
+              p_user_id: string
+              p_theme: string
+              p_density?: string
+              p_animations_enabled?: boolean
+              p_notification_preferences?: Json
+            }
         Returns: string
       }
       update_manager: {

@@ -70,7 +70,7 @@ const NotificationSettings: React.FC = () => {
       
       setConfig(newConfig);
     } catch (error) {
-      console.error('Erro ao carregar configurações:', error);
+      console.error('[NotificationSettings] Erro ao carregar configurações:', error);
       toast({
         title: "Erro",
         description: "Não foi possível carregar as configurações.",
@@ -83,14 +83,21 @@ const NotificationSettings: React.FC = () => {
 
   const saveSetting = async (key: string, value: any) => {
     try {
+      console.log(`[NotificationSettings] Salvando configuração ${key}:`, value);
+      
       const { error } = await supabase.rpc('update_notification_setting', {
         setting_key_param: key,
         new_value: value
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error(`[NotificationSettings] Erro ao salvar ${key}:`, error);
+        throw error;
+      }
+      
+      console.log(`[NotificationSettings] Configuração ${key} salva com sucesso`);
     } catch (error) {
-      console.error(`Erro ao salvar configuração ${key}:`, error);
+      console.error(`[NotificationSettings] Erro ao salvar configuração ${key}:`, error);
       throw error;
     }
   };
@@ -98,6 +105,8 @@ const NotificationSettings: React.FC = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
+      
+      console.log('[NotificationSettings] Salvando todas as configurações:', config);
       
       await Promise.all([
         saveSetting('monthly_deadline_day', config.monthly_deadline_day),
@@ -114,6 +123,7 @@ const NotificationSettings: React.FC = () => {
         description: "As configurações de notificação foram atualizadas com sucesso.",
       });
     } catch (error) {
+      console.error('[NotificationSettings] Erro ao salvar configurações:', error);
       toast({
         title: "Erro",
         description: "Não foi possível salvar as configurações.",
@@ -127,20 +137,26 @@ const NotificationSettings: React.FC = () => {
   const handleProcessNotifications = async () => {
     try {
       setIsProcessing(true);
+      console.log('[NotificationSettings] Processando notificações automáticas...');
       
       const { data, error } = await supabase.functions.invoke('automatic-notifications');
       
-      if (error) throw error;
+      if (error) {
+        console.error('[NotificationSettings] Erro na edge function:', error);
+        throw error;
+      }
+      
+      console.log('[NotificationSettings] Resposta da edge function:', data);
       
       toast({
         title: "Processamento concluído",
         description: `${data?.result?.notifications_sent || 0} notificações foram enviadas.`,
       });
-    } catch (error) {
-      console.error('Erro ao processar notificações:', error);
+    } catch (error: any) {
+      console.error('[NotificationSettings] Erro ao processar notificações:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível processar as notificações automáticas.",
+        description: error.message || "Não foi possível processar as notificações automáticas.",
         variant: "destructive",
       });
     } finally {

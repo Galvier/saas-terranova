@@ -68,14 +68,23 @@ export function AppSidebar() {
 
   // Função para obter o nome de exibição com prioridade correta
   const getDisplayName = () => {
-    // Prioridade: nome do manager > metadados do usuário > fallback
-    if (manager?.name) {
-      return manager.name;
+    // Prioridade: metadados display_name > metadados name > nome do manager > fallback
+    if (user?.user_metadata?.display_name) {
+      return user.user_metadata.display_name;
     }
     if (user?.user_metadata?.name) {
       return user.user_metadata.name;
     }
+    if (manager?.name) {
+      return manager.name;
+    }
     return "Sem nome";
+  };
+
+  // Função para obter o avatar URL com prioridade correta
+  const getAvatarUrl = () => {
+    // Prioridade: metadados avatar_url > fallback vazio
+    return user?.user_metadata?.avatar_url || "";
   };
 
   // Função para obter as iniciais baseadas no nome correto
@@ -84,10 +93,15 @@ export function AppSidebar() {
     if (displayName === "Sem nome") {
       return "XX";
     }
-    return displayName.charAt(0).toUpperCase();
+    const names = displayName.split(' ');
+    if (names.length >= 2) {
+      return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+    }
+    return displayName.substring(0, 2).toUpperCase();
   };
 
   const displayName = getDisplayName();
+  const avatarUrl = getAvatarUrl();
   const nameInitials = getNameInitials();
 
   return (
@@ -105,7 +119,7 @@ export function AppSidebar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="justify-start px-2 w-full font-normal">
                     <Avatar className="mr-2 h-8 w-8">
-                      <AvatarImage src={user?.user_metadata?.avatar_url || ""} />
+                      <AvatarImage src={avatarUrl} alt={displayName} />
                       <AvatarFallback>{nameInitials}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col text-left">

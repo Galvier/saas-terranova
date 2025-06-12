@@ -34,13 +34,19 @@ export const useAvatarUpload = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}/avatar.${fileExt}`;
 
+      console.log('[useAvatarUpload] Fazendo upload:', fileName);
+
       // Delete existing avatar if it exists
-      await supabase.storage
+      const { error: deleteError } = await supabase.storage
         .from('avatars')
         .remove([fileName]);
+      
+      if (deleteError) {
+        console.log('[useAvatarUpload] Erro ao deletar arquivo existente (normal se não existir):', deleteError);
+      }
 
       // Upload new avatar
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, {
           cacheControl: '3600',
@@ -48,25 +54,28 @@ export const useAvatarUpload = () => {
         });
 
       if (uploadError) {
+        console.error('[useAvatarUpload] Erro no upload:', uploadError);
         throw uploadError;
       }
+
+      console.log('[useAvatarUpload] Upload bem-sucedido:', uploadData);
 
       // Get public URL
       const { data } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
 
-      // Don't update user metadata here - just return the URL
-      // The metadata will be updated when user clicks "Save Profile"
-      
+      const publicUrl = data.publicUrl;
+      console.log('[useAvatarUpload] URL pública gerada:', publicUrl);
+
       toast({
         title: "Sucesso",
         description: "Imagem carregada. Clique em 'Salvar Perfil' para confirmar as alterações"
       });
 
-      return data.publicUrl;
+      return publicUrl;
     } catch (error: any) {
-      console.error('Error uploading avatar:', error);
+      console.error('[useAvatarUpload] Erro no upload:', error);
       toast({
         title: "Erro",
         description: error.message || "Erro ao fazer upload da foto",

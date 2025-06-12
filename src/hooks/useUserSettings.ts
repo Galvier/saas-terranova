@@ -136,7 +136,7 @@ export function useUserSettings() {
     try {
       console.log('[useUserSettings] Tentando salvar no banco:', updatedSettings);
       
-      // Tentar usando a função RPC
+      // Usar a função RPC corrigida
       const { error: rpcError } = await supabase.rpc('save_user_settings', {
         p_user_id: user.id,
         p_theme: updatedSettings.theme,
@@ -161,17 +161,32 @@ export function useUserSettings() {
           
         if (upsertError) {
           console.error('[useUserSettings] Upsert também falhou:', upsertError);
-          // Não mostrar erro se localStorage funcionou
-          console.log('[useUserSettings] Continuando com localStorage apenas');
+          toast({
+            title: "Aviso",
+            description: "Configurações salvas localmente. Verifique sua conexão.",
+            variant: "default"
+          });
         } else {
           console.log('[useUserSettings] Salvo com upsert direto');
+          toast({
+            title: "Sucesso",
+            description: "Configurações salvas com sucesso",
+          });
         }
       } else {
         console.log('[useUserSettings] Salvo com RPC');
+        toast({
+          title: "Sucesso",
+          description: "Configurações salvas com sucesso",
+        });
       }
     } catch (error) {
       console.error('[useUserSettings] Erro inesperado ao salvar:', error);
-      // Não mostrar erro se localStorage funcionou
+      toast({
+        title: "Aviso",
+        description: "Configurações salvas localmente. Verifique sua conexão.",
+        variant: "default"
+      });
     } finally {
       setIsSaving(false);
     }
