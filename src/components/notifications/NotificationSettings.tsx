@@ -42,6 +42,7 @@ const NotificationSettings: React.FC = () => {
   const loadSettings = async () => {
     try {
       setIsLoading(true);
+      console.log('[NotificationSettings] Carregando configurações...');
       
       const configKeys = Object.keys(config) as (keyof NotificationConfig)[];
       const promises = configKeys.map(key => 
@@ -69,6 +70,7 @@ const NotificationSettings: React.FC = () => {
       });
       
       setConfig(newConfig);
+      console.log('[NotificationSettings] Configurações carregadas:', newConfig);
     } catch (error) {
       console.error('[NotificationSettings] Erro ao carregar configurações:', error);
       toast({
@@ -83,7 +85,7 @@ const NotificationSettings: React.FC = () => {
 
   const saveSetting = async (key: string, value: any) => {
     try {
-      console.log(`[NotificationSettings] Salvando configuração ${key}:`, value);
+      console.log(`[NotificationSettings] Salvando ${key}:`, value);
       
       const { error } = await supabase.rpc('update_notification_setting', {
         setting_key_param: key,
@@ -95,9 +97,9 @@ const NotificationSettings: React.FC = () => {
         throw error;
       }
       
-      console.log(`[NotificationSettings] Configuração ${key} salva com sucesso`);
+      console.log(`[NotificationSettings] ${key} salvo com sucesso`);
     } catch (error) {
-      console.error(`[NotificationSettings] Erro ao salvar configuração ${key}:`, error);
+      console.error(`[NotificationSettings] Erro ao salvar ${key}:`, error);
       throw error;
     }
   };
@@ -105,10 +107,10 @@ const NotificationSettings: React.FC = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      
       console.log('[NotificationSettings] Salvando todas as configurações:', config);
       
-      await Promise.all([
+      // Salvar cada configuração individualmente para melhor controle
+      const savePromises = [
         saveSetting('monthly_deadline_day', config.monthly_deadline_day),
         saveSetting('reminder_days_before', config.reminder_days_before),
         saveSetting('admin_summary_frequency', config.admin_summary_frequency),
@@ -116,8 +118,11 @@ const NotificationSettings: React.FC = () => {
         saveSetting('business_hours_end', config.business_hours_end),
         saveSetting('enable_achievement_notifications', config.enable_achievement_notifications),
         saveSetting('enable_reminder_notifications', config.enable_reminder_notifications),
-      ]);
+      ];
+      
+      await Promise.all(savePromises);
 
+      console.log('[NotificationSettings] Todas as configurações salvas com sucesso');
       toast({
         title: "Configurações salvas",
         description: "As configurações de notificação foram atualizadas com sucesso.",
@@ -175,114 +180,112 @@ const NotificationSettings: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Configurações de Notificação
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Configurações de Prazo</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="deadline">Dia limite mensal</Label>
-                <Input
-                  id="deadline"
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={config.monthly_deadline_day}
-                  onChange={(e) => setConfig(prev => ({
-                    ...prev,
-                    monthly_deadline_day: parseInt(e.target.value) || 25
-                  }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="frequency">Frequência de resumos</Label>
-                <Select 
-                  value={config.admin_summary_frequency} 
-                  onValueChange={(value) => setConfig(prev => ({
-                    ...prev,
-                    admin_summary_frequency: value
-                  }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Diário</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="monthly">Mensal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Settings className="h-5 w-5" />
+          Configurações de Notificação
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Configurações de Prazo</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="deadline">Dia limite mensal</Label>
+              <Input
+                id="deadline"
+                type="number"
+                min="1"
+                max="31"
+                value={config.monthly_deadline_day}
+                onChange={(e) => setConfig(prev => ({
+                  ...prev,
+                  monthly_deadline_day: parseInt(e.target.value) || 25
+                }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="frequency">Frequência de resumos</Label>
+              <Select 
+                value={config.admin_summary_frequency} 
+                onValueChange={(value) => setConfig(prev => ({
+                  ...prev,
+                  admin_summary_frequency: value
+                }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Diário</SelectItem>
+                  <SelectItem value="weekly">Semanal</SelectItem>
+                  <SelectItem value="monthly">Mensal</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
+        </div>
 
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Tipos de Notificação</h3>
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Tipos de Notificação</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="achievement-notifications">Notificações de metas atingidas</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enviar parabenizações quando métricas atingem suas metas
-                  </p>
-                </div>
-                <Switch
-                  id="achievement-notifications"
-                  checked={config.enable_achievement_notifications}
-                  onCheckedChange={(checked) => setConfig(prev => ({
-                    ...prev,
-                    enable_achievement_notifications: checked
-                  }))}
-                />
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="achievement-notifications">Notificações de metas atingidas</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enviar parabenizações quando métricas atingem suas metas
+                </p>
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="reminder-notifications">Lembretes de preenchimento</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enviar lembretes quando métricas estão próximas do vencimento
-                  </p>
-                </div>
-                <Switch
-                  id="reminder-notifications"
-                  checked={config.enable_reminder_notifications}
-                  onCheckedChange={(checked) => setConfig(prev => ({
-                    ...prev,
-                    enable_reminder_notifications: checked
-                  }))}
-                />
+              <Switch
+                id="achievement-notifications"
+                checked={config.enable_achievement_notifications}
+                onCheckedChange={(checked) => setConfig(prev => ({
+                  ...prev,
+                  enable_achievement_notifications: checked
+                }))}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="reminder-notifications">Lembretes de preenchimento</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enviar lembretes quando métricas estão próximas do vencimento
+                </p>
               </div>
+              <Switch
+                id="reminder-notifications"
+                checked={config.enable_reminder_notifications}
+                onCheckedChange={(checked) => setConfig(prev => ({
+                  ...prev,
+                  enable_reminder_notifications: checked
+                }))}
+              />
             </div>
           </div>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
-            <Button 
-              onClick={handleSave} 
-              disabled={isSaving}
-              className="flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Salvando...' : 'Salvar Configurações'}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleProcessNotifications}
-              disabled={isProcessing}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />
-              {isProcessing ? 'Processando...' : 'Processar Agora'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className="flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {isSaving ? 'Salvando...' : 'Salvar Configurações'}
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleProcessNotifications}
+            disabled={isProcessing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />
+            {isProcessing ? 'Processando...' : 'Processar Agora'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Sidebar,
@@ -66,43 +65,60 @@ export function AppSidebar() {
     navigate('/login');
   };
 
-  // Função para obter o nome de exibição com prioridade correta
+  // Função melhorada para obter o nome de exibição
   const getDisplayName = () => {
-    // Prioridade: metadados display_name > metadados name > nome do manager > fallback
+    // Ordem de prioridade: display_name > name > full_name > manager name > fallback
     if (user?.user_metadata?.display_name) {
       return user.user_metadata.display_name;
     }
     if (user?.user_metadata?.name) {
       return user.user_metadata.name;
     }
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
     if (manager?.name) {
       return manager.name;
     }
-    return "Sem nome";
+    return "Usuário";
   };
 
-  // Função para obter o avatar URL com prioridade correta
+  // Função melhorada para obter o avatar URL
   const getAvatarUrl = () => {
-    // Prioridade: metadados avatar_url > fallback vazio
-    return user?.user_metadata?.avatar_url || "";
+    // Tentar obter do metadata do usuário
+    const avatarUrl = user?.user_metadata?.avatar_url;
+    if (avatarUrl && avatarUrl.trim() !== '') {
+      return avatarUrl;
+    }
+    return "";
   };
 
-  // Função para obter as iniciais baseadas no nome correto
+  // Função para obter as iniciais
   const getNameInitials = () => {
     const displayName = getDisplayName();
-    if (displayName === "Sem nome") {
-      return "XX";
+    if (displayName === "Usuário") {
+      return "U";
     }
-    const names = displayName.split(' ');
+    const names = displayName.split(' ').filter(name => name.length > 0);
     if (names.length >= 2) {
       return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+    } else if (names.length === 1) {
+      return names[0].substring(0, 2).toUpperCase();
     }
-    return displayName.substring(0, 2).toUpperCase();
+    return "U";
   };
 
   const displayName = getDisplayName();
   const avatarUrl = getAvatarUrl();
   const nameInitials = getNameInitials();
+
+  console.log('[AppSidebar] Dados do usuário:', {
+    displayName,
+    avatarUrl,
+    nameInitials,
+    userMetadata: user?.user_metadata,
+    managerName: manager?.name
+  });
 
   return (
     <Sidebar>
