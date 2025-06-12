@@ -94,15 +94,23 @@ export function useUserSettings() {
 
       if (!error && data) {
         console.log('[useUserSettings] Configurações carregadas do banco:', data);
+        
+        // Fazer parsing seguro das notification_preferences
+        let notificationPrefs = DEFAULT_SETTINGS.notificationPreferences;
+        if (data.notification_preferences && typeof data.notification_preferences === 'object') {
+          const prefs = data.notification_preferences as Record<string, any>;
+          notificationPrefs = {
+            email: prefs.email ?? DEFAULT_SETTINGS.notificationPreferences.email,
+            system: prefs.system ?? DEFAULT_SETTINGS.notificationPreferences.system,
+            alerts: prefs.alerts ?? DEFAULT_SETTINGS.notificationPreferences.alerts
+          };
+        }
+        
         const loadedSettings = {
           theme: (data.theme as 'light' | 'dark' | 'system') || DEFAULT_SETTINGS.theme,
           animationsEnabled: data.animations_enabled !== undefined ? 
             data.animations_enabled : DEFAULT_SETTINGS.animationsEnabled,
-          notificationPreferences: {
-            email: data.notification_preferences?.email ?? DEFAULT_SETTINGS.notificationPreferences.email,
-            system: data.notification_preferences?.system ?? DEFAULT_SETTINGS.notificationPreferences.system,
-            alerts: data.notification_preferences?.alerts ?? DEFAULT_SETTINGS.notificationPreferences.alerts
-          }
+          notificationPreferences: notificationPrefs
         };
         
         setSettings(loadedSettings);
