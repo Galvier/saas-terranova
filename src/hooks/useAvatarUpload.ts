@@ -11,6 +11,14 @@ export const useAvatarUpload = () => {
     try {
       setIsUploading(true);
       
+      console.log('[useAvatarUpload] === INICIANDO UPLOAD ===');
+      console.log('[useAvatarUpload] Arquivo:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      console.log('[useAvatarUpload] User ID:', userId);
+      
       // Validate file type
       if (!file.type.startsWith('image/')) {
         toast({
@@ -32,20 +40,31 @@ export const useAvatarUpload = () => {
       }
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/avatar.${fileExt}`;
+      const fileName = `${userId}/avatar-${Date.now()}.${fileExt}`;
 
-      console.log('[useAvatarUpload] Fazendo upload:', fileName);
+      console.log('[useAvatarUpload] Nome do arquivo gerado:', fileName);
 
-      // Delete existing avatar if it exists
-      const { error: deleteError } = await supabase.storage
+      // Delete existing avatars for this user (clean up)
+      console.log('[useAvatarUpload] Limpando avatars antigos...');
+      const { data: existingFiles } = await supabase.storage
         .from('avatars')
-        .remove([fileName]);
-      
-      if (deleteError) {
-        console.log('[useAvatarUpload] Erro ao deletar arquivo existente (normal se não existir):', deleteError);
+        .list(userId);
+
+      if (existingFiles && existingFiles.length > 0) {
+        const filesToDelete = existingFiles.map(f => `${userId}/${f.name}`);
+        const { error: deleteError } = await supabase.storage
+          .from('avatars')
+          .remove(filesToDelete);
+        
+        if (deleteError) {
+          console.log('[useAvatarUpload] Aviso ao deletar arquivos antigos:', deleteError);
+        } else {
+          console.log('[useAvatarUpload] Arquivos antigos removidos:', filesToDelete);
+        }
       }
 
       // Upload new avatar
+      console.log('[useAvatarUpload] Fazendo upload...');
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, {
@@ -68,14 +87,30 @@ export const useAvatarUpload = () => {
       const publicUrl = data.publicUrl;
       console.log('[useAvatarUpload] URL pública gerada:', publicUrl);
 
+      // Verify the URL is accessible
+      try {
+        const response = await fetch(publicUrl, { method: 'HEAD' });
+        if (!response.ok) {
+          console.warn('[useAvatarUpload] Aviso: URL pode não estar acessível ainda');
+        } else {
+          console.log('[useAvatarUpload] URL verificada e acessível');
+        }
+      } catch (e) {
+        console.warn('[useAvatarUpload] Não foi possível verificar a URL:', e);
+      }
+
+      console.log('[useAvatarUpload] === UPLOAD CONCLUÍDO ===');
+
       toast({
         title: "Sucesso",
-        description: "Imagem carregada. Clique em 'Salvar Perfil' para confirmar as alterações"
+        description: "Imagem carregada. Salve o perfil para confirmar as alterações"
       });
 
       return publicUrl;
     } catch (error: any) {
-      console.error('[useAvatarUpload] Erro no upload:', error);
+      console.error('[useAvatarUpload] === ERRO NO UPLOAD ===');
+      console.error('[useAvatarUpload] Erro detalhado:', error);
+      
       toast({
         title: "Erro",
         description: error.message || "Erro ao fazer upload da foto",

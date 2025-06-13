@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Loader2, Upload, Key } from 'lucide-react';
+import { Save, Loader2, Upload, Key, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
@@ -22,36 +22,72 @@ const ProfileTab = () => {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [pendingAvatarUrl, setPendingAvatarUrl] = useState(''); // For preview before saving
+  const [pendingAvatarUrl, setPendingAvatarUrl] = useState('');
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
+  // Initialize form values when user data is loaded
   useEffect(() => {
-    // Initialize form values when user data is loaded
     if (user) {
+      console.log('[ProfileTab] Inicializando dados do usuário:', user.user_metadata);
+      
       setEmail(user.email || '');
-      // Use metadata if available
       const metadata = user?.user_metadata;
       if (metadata) {
-        setFullName(metadata.full_name || '');
-        setDisplayName(metadata.display_name || metadata.name || '');
+        const currentFullName = metadata.full_name || '';
+        const currentDisplayName = metadata.display_name || metadata.name || '';
         const currentAvatarUrl = metadata.avatar_url || '';
+        
+        setFullName(currentFullName);
+        setDisplayName(currentDisplayName);
         setAvatarUrl(currentAvatarUrl);
         setPendingAvatarUrl(currentAvatarUrl);
+        
+        console.log('[ProfileTab] Dados carregados:', {
+          fullName: currentFullName,
+          displayName: currentDisplayName,
+          avatarUrl: currentAvatarUrl
+        });
       }
     }
   }, [user]);
+
+  // Check for unsaved changes
+  useEffect(() => {
+    if (!user?.user_metadata) return;
+    
+    const metadata = user.user_metadata;
+    const originalFullName = metadata.full_name || '';
+    const originalDisplayName = metadata.display_name || metadata.name || '';
+    const originalAvatarUrl = metadata.avatar_url || '';
+    
+    const hasChanges = 
+      fullName !== originalFullName ||
+      displayName !== originalDisplayName ||
+      pendingAvatarUrl !== originalAvatarUrl;
+    
+    setHasUnsavedChanges(hasChanges);
+  }, [fullName, displayName, pendingAvatarUrl, user]);
   
   const handleSaveProfile = async () => {
+    console.log('[ProfileTab] Salvando perfil...');
+    
     const success = await saveProfile({
       fullName,
       displayName,
       email,
-      avatarUrl: pendingAvatarUrl // Use the pending avatar URL
+      avatarUrl: pendingAvatarUrl
     });
     
     if (success) {
       // Update local state after successful save
       setAvatarUrl(pendingAvatarUrl);
+      setHasUnsavedChanges(false);
+      
+      // Force a manual refresh to ensure UI is updated
+      setTimeout(() => {
+        refreshUser();
+      }, 500);
     }
   };
 
@@ -59,9 +95,11 @@ const ProfileTab = () => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
+    console.log('[ProfileTab] Iniciando upload de avatar...');
+    
     const newAvatarUrl = await uploadAvatar(file, user.id);
     if (newAvatarUrl) {
-      // Only update the pending URL for preview - don't refresh yet
+      console.log('[ProfileTab] Avatar carregado, URL:', newAvatarUrl);
       setPendingAvatarUrl(newAvatarUrl);
     }
     
@@ -82,8 +120,16 @@ const ProfileTab = () => {
     });
   };
 
+  const handleManualRefresh = async () => {
+    console.log('[ProfileTab] Refresh manual solicitado...');
+    await refreshUser();
+    toast({
+      title: "Dados atualizados",
+      description: "Informações do perfil foram recarregadas"
+    });
+  };
+
   const getAvatarDisplay = () => {
-    // Use pending avatar URL for preview, fallback to current avatar URL
     const displayUrl = pendingAvatarUrl || avatarUrl;
     
     if (displayUrl) {
@@ -91,13 +137,17 @@ const ProfileTab = () => {
         <img 
           src={displayUrl} 
           alt="Avatar" 
-          className="h-32 w-32 rounded-full object-cover"
+          className="h-32 w-32 rounded-full object-cover border-2 border-gray-200"
+          onError={(e) => {
+            console.warn('[ProfileTab] Erro ao carregar imagem:', displayUrl);
+            e.currentTarget.style.display = 'none';
+          }}
         />
       );
     }
     
     return (
-      <div className="h-32 w-32 rounded-full bg-muted flex items-center justify-center text-2xl font-bold">
+      <div className="h-32 w-32 rounded-full bg-muted flex items-center justify-center text-2xl font-bold border-2 border-gray-200">
         {displayName?.substring(0, 2).toUpperCase() || 'U'}
       </div>
     );
@@ -108,12 +158,33 @@ const ProfileTab = () => {
       {/* Profile Information Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Informações do Perfil</CardTitle>
-          <CardDescription>
-            Gerencie suas informações pessoais e preferências
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Informações do Perfil</CardTitle>
+              <CardDescription>
+                Gerencie suas informações pessoais e preferências
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleManualRefresh}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Atualizar
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {hasUnsavedChanges && (
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+              <p className="text-sm text-orange-800">
+                ⚠️ Você tem alterações não salvas. Clique em "Salvar Perfil" para confirmar.
+              </p>
+            </div>
+          )}
+          
           <div className="flex flex-col md:flex-row gap-6">
             <div className="md:w-1/3 flex flex-col items-center space-y-4">
               <div className="relative">
@@ -200,7 +271,11 @@ const ProfileTab = () => {
           </div>
         </CardContent>
         <CardFooter className="border-t bg-muted/50 px-6 py-4">
-          <Button onClick={handleSaveProfile} disabled={isSaving || isUploading}>
+          <Button 
+            onClick={handleSaveProfile} 
+            disabled={isSaving || isUploading || !hasUnsavedChanges}
+            className={hasUnsavedChanges ? "bg-primary" : ""}
+          >
             {isSaving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

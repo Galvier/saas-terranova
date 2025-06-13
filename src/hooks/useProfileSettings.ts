@@ -24,44 +24,76 @@ export const useProfileSettings = () => {
         throw new Error('Usuário não encontrado');
       }
 
-      console.log('[useProfileSettings] Iniciando salvamento do perfil:', profileData);
+      console.log('[useProfileSettings] === INICIANDO SALVAMENTO ===');
+      console.log('[useProfileSettings] User ID:', user.id);
+      console.log('[useProfileSettings] Dados recebidos:', profileData);
+      console.log('[useProfileSettings] Metadados atuais do usuário:', user.user_metadata);
 
-      // Primeiro, atualizar os metadados do usuário com TODOS os dados
-      const updateData: any = {
+      // Preparar os dados de atualização com TODOS os metadados existentes preservados
+      const currentMetadata = user.user_metadata || {};
+      const updateData = {
+        ...currentMetadata, // Preservar todos os metadados existentes
         full_name: profileData.fullName,
         display_name: profileData.displayName,
-        name: profileData.displayName // Manter compatibilidade
+        name: profileData.displayName, // Manter compatibilidade
       };
 
       // Incluir avatar URL se fornecido
-      if (profileData.avatarUrl) {
+      if (profileData.avatarUrl && profileData.avatarUrl.trim() !== '') {
         updateData.avatar_url = profileData.avatarUrl;
-        console.log('[useProfileSettings] Incluindo avatar URL nos metadados:', profileData.avatarUrl);
+        console.log('[useProfileSettings] Avatar URL incluído:', profileData.avatarUrl);
       }
 
-      console.log('[useProfileSettings] Dados completos para atualização:', updateData);
+      console.log('[useProfileSettings] Dados COMPLETOS para atualização:', updateData);
 
-      // Atualizar metadados do usuário
-      const { error: authError } = await supabase.auth.updateUser({
+      // 1. Atualizar metadados do usuário no auth.users
+      console.log('[useProfileSettings] Atualizando auth.users...');
+      const { data: authData, error: authError } = await supabase.auth.updateUser({
         data: updateData
       });
 
       if (authError) {
-        console.error('[useProfileSettings] Erro ao atualizar metadados:', authError);
+        console.error('[useProfileSettings] ERRO ao atualizar auth.users:', authError);
         throw authError;
       }
 
-      console.log('[useProfileSettings] Metadados atualizados com sucesso');
+      console.log('[useProfileSettings] Auth.users atualizado com sucesso:', authData?.user?.user_metadata);
 
-      // Atualizar tabela de managers se existir
+      // 2. Verificar se os dados foram realmente salvos
+      console.log('[useProfileSettings] Verificando persistência...');
+      const { data: { user: updatedUser }, error: getUserError } = await supabase.auth.getUser();
+      
+      if (!getUserError && updatedUser) {
+        console.log('[useProfileSettings] Metadados após atualização:', updatedUser.user_metadata);
+        
+        // Verificar se os dados principais foram salvos
+        const savedCorrectly = 
+          updatedUser.user_metadata?.display_name === profileData.displayName &&
+          updatedUser.user_metadata?.full_name === profileData.fullName;
+          
+        if (!savedCorrectly) {
+          console.warn('[useProfileSettings] AVISO: Dados podem não ter sido salvos corretamente');
+          console.warn('[useProfileSettings] Esperado:', { 
+            display_name: profileData.displayName, 
+            full_name: profileData.fullName 
+          });
+          console.warn('[useProfileSettings] Encontrado:', {
+            display_name: updatedUser.user_metadata?.display_name,
+            full_name: updatedUser.user_metadata?.full_name
+          });
+        }
+      }
+
+      // 3. Atualizar tabela de managers se existir
+      console.log('[useProfileSettings] Verificando tabela managers...');
       const { data: managerData, error: managerSelectError } = await supabase
         .from('managers')
-        .select('id')
+        .select('id, name, email')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (!managerSelectError && managerData) {
-        console.log('[useProfileSettings] Atualizando registro do manager');
+        console.log('[useProfileSettings] Manager encontrado, atualizando...', managerData);
         const { error: managerError } = await supabase
           .from('managers')
           .update({
@@ -75,17 +107,21 @@ export const useProfileSettings = () => {
         } else {
           console.log('[useProfileSettings] Manager atualizado com sucesso');
         }
+      } else {
+        console.log('[useProfileSettings] Nenhum manager encontrado para este usuário');
       }
 
-      // Aguardar um pouco antes de fazer refresh para garantir que os dados foram persistidos
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 4. Aguardar e fazer refresh dos dados
+      console.log('[useProfileSettings] Aguardando antes do refresh...');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Aumentar tempo de espera
 
-      // Fazer refresh dos dados do usuário
-      console.log('[useProfileSettings] Fazendo refresh dos dados do usuário...');
+      console.log('[useProfileSettings] Fazendo refresh do usuário...');
       await refreshUser();
 
-      // Aguardar mais um pouco para garantir que a UI seja atualizada
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // 5. Aguardar mais um pouco para garantir que a UI seja atualizada
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      console.log('[useProfileSettings] === SALVAMENTO CONCLUÍDO COM SUCESSO ===');
 
       toast({
         title: "Sucesso",
@@ -94,7 +130,10 @@ export const useProfileSettings = () => {
 
       return true;
     } catch (error: any) {
-      console.error('[useProfileSettings] Erro ao salvar perfil:', error);
+      console.error('[useProfileSettings] === ERRO NO SALVAMENTO ===');
+      console.error('[useProfileSettings] Erro detalhado:', error);
+      console.error('[useProfileSettings] Stack trace:', error.stack);
+      
       toast({
         title: "Erro",
         description: error.message || "Erro ao salvar perfil",

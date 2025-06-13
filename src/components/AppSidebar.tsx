@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Sidebar,
@@ -112,7 +113,7 @@ export function AppSidebar() {
   const avatarUrl = getAvatarUrl();
   const nameInitials = getNameInitials();
 
-  console.log('[AppSidebar] Dados do usuário:', {
+  console.log('[AppSidebar] Renderizando com dados:', {
     displayName,
     avatarUrl,
     nameInitials,
@@ -135,7 +136,14 @@ export function AppSidebar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="justify-start px-2 w-full font-normal">
                     <Avatar className="mr-2 h-8 w-8">
-                      <AvatarImage src={avatarUrl} alt={displayName} />
+                      <AvatarImage 
+                        src={avatarUrl} 
+                        alt={displayName}
+                        onError={(e) => {
+                          console.warn('[AppSidebar] Erro ao carregar avatar:', avatarUrl);
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
                       <AvatarFallback>{nameInitials}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col text-left">
