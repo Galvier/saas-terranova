@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface BackupSettings {
@@ -20,6 +19,24 @@ export interface BackupHistory {
   total_records: number;
   status: string;
   created_at: string;
+}
+
+export interface BackupData {
+  metadata: {
+    created_at: string;
+    tables_count: number;
+    total_records: number;
+  };
+  data: {
+    [tableName: string]: any[];
+  };
+}
+
+export interface BackupResult {
+  success: boolean;
+  data?: BackupData;
+  filename?: string;
+  error?: string;
 }
 
 export const getBackupSettings = async (): Promise<BackupSettings | null> => {
@@ -188,5 +205,148 @@ export const createBackup = async (): Promise<boolean> => {
   } catch (error) {
     console.error('[backupService] === ERRO GERAL NA CRIAÇÃO ===', error);
     throw error;
+  }
+};
+
+export const generateBackup = async (): Promise<BackupResult> => {
+  console.log('[backupService] === GERANDO BACKUP ===');
+  
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('[backupService] Usuário não autenticado');
+      return { success: false, error: 'Usuário não autenticado' };
+    }
+
+    console.log('[backupService] Usuário autenticado:', user.id);
+
+    // Obter dados das principais tabelas do usuário
+    const tables = ['user_settings', 'backup_settings'];
+    const backupData: BackupData = {
+      metadata: {
+        created_at: new Date().toISOString(),
+        tables_count: 0,
+        total_records: 0
+      },
+      data: {}
+    };
+
+    let totalRecords = 0;
+
+    // Backup das configurações do usuário
+    const { data: userSettings } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (userSettings) {
+      backupData.data.user_settings = userSettings;
+      totalRecords += userSettings.length;
+    }
+
+    // Backup das configurações de backup
+    const { data: backupSettings } = await supabase
+      .from('backup_settings')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (backupSettings) {
+      backupData.data.backup_settings = backupSettings;
+      totalRecords += backupSettings.length;
+    }
+
+    backupData.metadata.tables_count = Object.keys(backupData.data).length;
+    backupData.metadata.total_records = totalRecords;
+
+    const filename = `backup_${user.id}_${Date.now()}.json`;
+
+    console.log('[backupService] Backup gerado com sucesso:', {
+      filename,
+      tables: backupData.metadata.tables_count,
+      records: backupData.metadata.total_records
+    });
+
+    return {
+      success: true,
+      data: backupData,
+      filename
+    };
+  } catch (error) {
+    console.error('[backupService] === ERRO NA GERAÇÃO DO BACKUP ===', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro desconhecido'
+    };
+  }
+};
+
+export const downloadBackup = (backupData: BackupData, filename: string): number => {
+  console.log('[backupService] === FAZENDO DOWNLOAD DO BACKUP ===');
+  
+  try {
+    const jsonString = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    const fileSize = blob.size;
+    console.log('[backupService] Download realizado com sucesso, tamanho:', fileSize);
+    
+    return fileSize;
+  } catch (error) {
+    console.error('[backupService] === ERRO NO DOWNLOAD ===', error);
+    return 0;
+  }
+};
+
+export const saveBackupHistory = async (
+  filename: string,
+  fileSize: number,
+  tablesCount: number,
+  totalRecords: number
+): Promise<boolean> => {
+  console.log('[backupService] === SALVANDO HISTÓRICO DE BACKUP ===');
+  
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('[backupService] Usuário não autenticado para salvar histórico');
+      return false;
+    }
+
+    console.log('[backupService] Salvando histórico para usuário:', user.id);
+
+    const { data, error } = await supabase
+      .from('backup_history')
+      .insert({
+        user_id: user.id,
+        filename,
+        file_size: fileSize,
+        tables_count: tablesCount,
+        total_records: totalRecords,
+        status: 'completed'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[backupService] ERRO ao salvar histórico:', error);
+      return false;
+    }
+
+    console.log('[backupService] Histórico salvo com SUCESSO:', data);
+    return true;
+  } catch (error) {
+    console.error('[backupService] === ERRO GERAL NO HISTÓRICO ===', error);
+    return false;
   }
 };

@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from 'react';
-import { getBackupHistory, BackupHistoryItem } from '@/services/backupService';
+import { getBackupHistory, BackupHistory } from '@/services/backupService';
 
 export const useBackupHistory = () => {
-  const [history, setHistory] = useState<BackupHistoryItem[]>([]);
+  const [history, setHistory] = useState<BackupHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
