@@ -68,6 +68,7 @@ export function useUserSettings() {
     
     try {
       if (!user) {
+        console.log('[useUserSettings] Sem usuário, carregando do localStorage');
         // Carregar do localStorage se não há usuário
         const savedSettings = localStorage.getItem('userSettings');
         if (savedSettings) {
@@ -92,7 +93,22 @@ export function useUserSettings() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!error && data) {
+      if (error) {
+        console.error('[useUserSettings] Erro ao carregar do banco:', error);
+        // Fallback para localStorage
+        const key = `userSettings_${user.id}`;
+        const savedSettings = localStorage.getItem(key);
+        if (savedSettings) {
+          const parsed = JSON.parse(savedSettings);
+          setSettings(parsed);
+          applyTheme(parsed.theme);
+          applyAnimations(parsed.animationsEnabled);
+        } else {
+          setSettings(DEFAULT_SETTINGS);
+          applyTheme(DEFAULT_SETTINGS.theme);
+          applyAnimations(DEFAULT_SETTINGS.animationsEnabled);
+        }
+      } else if (data) {
         console.log('[useUserSettings] Configurações carregadas do banco:', data);
         
         // Fazer parsing seguro das notification_preferences
@@ -117,18 +133,30 @@ export function useUserSettings() {
         applyTheme(loadedSettings.theme);
         applyAnimations(loadedSettings.animationsEnabled);
       } else {
-        console.log('[useUserSettings] Usando configurações padrão ou do localStorage');
-        const key = `userSettings_${user.id}`;
-        const savedSettings = localStorage.getItem(key);
-        if (savedSettings) {
-          const parsed = JSON.parse(savedSettings);
-          setSettings(parsed);
-          applyTheme(parsed.theme);
-          applyAnimations(parsed.animationsEnabled);
-        } else {
-          setSettings(DEFAULT_SETTINGS);
-          applyTheme(DEFAULT_SETTINGS.theme);
-          applyAnimations(DEFAULT_SETTINGS.animationsEnabled);
+        console.log('[useUserSettings] Nenhuma configuração encontrada, usando padrão');
+        // Usar configurações padrão e salvar no banco
+        setSettings(DEFAULT_SETTINGS);
+        applyTheme(DEFAULT_SETTINGS.theme);
+        applyAnimations(DEFAULT_SETTINGS.animationsEnabled);
+        
+        // Salvar configurações padrão no banco
+        try {
+          const { error: insertError } = await supabase
+            .from('user_settings')
+            .insert({
+              user_id: user.id,
+              theme: DEFAULT_SETTINGS.theme,
+              animations_enabled: DEFAULT_SETTINGS.animationsEnabled,
+              notification_preferences: DEFAULT_SETTINGS.notificationPreferences
+            });
+          
+          if (insertError) {
+            console.error('[useUserSettings] Erro ao inserir configurações padrão:', insertError);
+          } else {
+            console.log('[useUserSettings] Configurações padrão inseridas no banco');
+          }
+        } catch (err) {
+          console.error('[useUserSettings] Erro inesperado ao inserir padrão:', err);
         }
       }
     } catch (error) {
@@ -161,15 +189,21 @@ export function useUserSettings() {
 
   // Função para atualizar configurações
   const updateSettings = async (newSettings: Partial<UserSettings>) => {
+    console.log('[useUserSettings] === INICIANDO ATUALIZAÇÃO ===');
+    console.log('[useUserSettings] Configurações atuais:', settings);
+    console.log('[useUserSettings] Novas configurações:', newSettings);
+    
     const updatedSettings = { ...settings, ...newSettings };
     
     // Aplicar tema imediatamente se mudou
     if (newSettings.theme && newSettings.theme !== settings.theme) {
+      console.log('[useUserSettings] Aplicando novo tema:', newSettings.theme);
       applyTheme(newSettings.theme);
     }
     
     // Aplicar animações imediatamente se mudou
     if (newSettings.animationsEnabled !== undefined && newSettings.animationsEnabled !== settings.animationsEnabled) {
+      console.log('[useUserSettings] Aplicando configuração de animações:', newSettings.animationsEnabled);
       applyAnimations(newSettings.animationsEnabled);
     }
     
@@ -180,18 +214,22 @@ export function useUserSettings() {
     try {
       const key = user ? `userSettings_${user.id}` : 'userSettings';
       localStorage.setItem(key, JSON.stringify(updatedSettings));
+      console.log('[useUserSettings] Salvo no localStorage');
     } catch (error) {
       console.error('[useUserSettings] Erro ao salvar no localStorage:', error);
     }
     
     // Tentar salvar no banco se há usuário
-    if (!user) return;
+    if (!user) {
+      console.log('[useUserSettings] Sem usuário, salvamento só no localStorage');
+      return;
+    }
     
     setIsSaving(true);
     try {
-      console.log('[useUserSettings] Salvando no banco:', updatedSettings);
+      console.log('[useUserSettings] Salvando no banco de dados...');
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('user_settings')
         .upsert({
           user_id: user.id,
@@ -200,31 +238,38 @@ export function useUserSettings() {
           notification_preferences: updatedSettings.notificationPreferences
         }, {
           onConflict: 'user_id'
-        });
+        })
+        .select()
+        .single();
           
       if (error) {
-        console.error('[useUserSettings] Erro ao salvar no banco:', error);
+        console.error('[useUserSettings] ERRO ao salvar no banco:', error);
+        console.error('[useUserSettings] Detalhes do erro:', error.details, error.hint, error.code);
+        
         toast({
-          title: "Aviso",
-          description: "Configurações aplicadas mas podem não ter sido salvas no servidor",
-          variant: "default"
+          title: "Erro",
+          description: "Erro ao salvar configurações no servidor: " + error.message,
+          variant: "destructive"
         });
       } else {
-        console.log('[useUserSettings] Configurações salvas no banco com sucesso');
+        console.log('[useUserSettings] Configurações salvas no banco com SUCESSO:', data);
         toast({
           title: "Sucesso",
           description: "Configurações salvas com sucesso",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[useUserSettings] Erro inesperado ao salvar:', error);
+      console.error('[useUserSettings] Stack trace:', error.stack);
+      
       toast({
-        title: "Aviso",
-        description: "Configurações aplicadas localmente",
-        variant: "default"
+        title: "Erro",
+        description: "Erro inesperado ao salvar configurações: " + (error.message || 'Desconhecido'),
+        variant: "destructive"
       });
     } finally {
       setIsSaving(false);
+      console.log('[useUserSettings] === ATUALIZAÇÃO FINALIZADA ===');
     }
   };
 
