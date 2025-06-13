@@ -84,14 +84,24 @@ export function AppSidebar() {
     return "Usuário";
   };
 
-  // Função melhorada para obter o avatar URL
+  // Função melhorada para obter o avatar URL com múltiplas tentativas de recuperação
   const getAvatarUrl = () => {
-    // Tentar obter do metadata do usuário
-    const avatarUrl = user?.user_metadata?.avatar_url;
-    if (avatarUrl && avatarUrl.trim() !== '') {
-      return avatarUrl;
+    // Tentar obter do metadata do usuário primeiro
+    let avatarUrl = user?.user_metadata?.avatar_url;
+    
+    // Se não encontrou, tentar outras propriedades possíveis
+    if (!avatarUrl || avatarUrl.trim() === '') {
+      avatarUrl = user?.user_metadata?.avatar;
     }
-    return "";
+    
+    // Log para debugging
+    console.log('[AppSidebar] Procurando avatar URL:', {
+      metadata_avatar_url: user?.user_metadata?.avatar_url,
+      metadata_avatar: user?.user_metadata?.avatar,
+      finalUrl: avatarUrl
+    });
+    
+    return avatarUrl && avatarUrl.trim() !== '' ? avatarUrl : "";
   };
 
   // Função para obter as iniciais
@@ -139,6 +149,9 @@ export function AppSidebar() {
                       <AvatarImage 
                         src={avatarUrl} 
                         alt={displayName}
+                        onLoad={() => {
+                          console.log('[AppSidebar] Avatar carregado com sucesso:', avatarUrl);
+                        }}
                         onError={(e) => {
                           console.warn('[AppSidebar] Erro ao carregar avatar:', avatarUrl);
                           e.currentTarget.style.display = 'none';

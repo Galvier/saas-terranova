@@ -34,9 +34,10 @@ const ProfileTab = () => {
       setEmail(user.email || '');
       const metadata = user?.user_metadata;
       if (metadata) {
+        // Garantir que valores sejam strings e não undefined
         const currentFullName = metadata.full_name || '';
         const currentDisplayName = metadata.display_name || metadata.name || '';
-        const currentAvatarUrl = metadata.avatar_url || '';
+        const currentAvatarUrl = metadata.avatar_url || metadata.avatar || '';
         
         setFullName(currentFullName);
         setDisplayName(currentDisplayName);
@@ -59,7 +60,7 @@ const ProfileTab = () => {
     const metadata = user.user_metadata;
     const originalFullName = metadata.full_name || '';
     const originalDisplayName = metadata.display_name || metadata.name || '';
-    const originalAvatarUrl = metadata.avatar_url || '';
+    const originalAvatarUrl = metadata.avatar_url || metadata.avatar || '';
     
     const hasChanges = 
       fullName !== originalFullName ||
@@ -87,7 +88,7 @@ const ProfileTab = () => {
       // Force a manual refresh to ensure UI is updated
       setTimeout(() => {
         refreshUser();
-      }, 500);
+      }, 1000);
     }
   };
 
@@ -138,6 +139,9 @@ const ProfileTab = () => {
           src={displayUrl} 
           alt="Avatar" 
           className="h-32 w-32 rounded-full object-cover border-2 border-gray-200"
+          onLoad={() => {
+            console.log('[ProfileTab] Avatar exibido com sucesso:', displayUrl);
+          }}
           onError={(e) => {
             console.warn('[ProfileTab] Erro ao carregar imagem:', displayUrl);
             e.currentTarget.style.display = 'none';

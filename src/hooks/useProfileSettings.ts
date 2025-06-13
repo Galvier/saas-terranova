@@ -11,6 +11,14 @@ interface ProfileData {
   avatarUrl?: string;
 }
 
+interface UserMetadataUpdate {
+  full_name: string;
+  display_name: string;
+  name: string;
+  avatar_url?: string;
+  [key: string]: any;
+}
+
 export const useProfileSettings = () => {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -31,9 +39,13 @@ export const useProfileSettings = () => {
 
       // Preparar os dados de atualização com TODOS os metadados existentes preservados
       const currentMetadata = user.user_metadata || {};
-      const updateData = {
+      
+      // Garantir que full_name seja uma string vazia em vez de undefined
+      const fullName = profileData.fullName || '';
+      
+      const updateData: UserMetadataUpdate = {
         ...currentMetadata, // Preservar todos os metadados existentes
-        full_name: profileData.fullName,
+        full_name: fullName,
         display_name: profileData.displayName,
         name: profileData.displayName, // Manter compatibilidade
       };
@@ -59,29 +71,52 @@ export const useProfileSettings = () => {
 
       console.log('[useProfileSettings] Auth.users atualizado com sucesso:', authData?.user?.user_metadata);
 
-      // 2. Verificar se os dados foram realmente salvos
+      // 2. Verificar se os dados foram realmente salvos com retry
       console.log('[useProfileSettings] Verificando persistência...');
-      const { data: { user: updatedUser }, error: getUserError } = await supabase.auth.getUser();
-      
-      if (!getUserError && updatedUser) {
-        console.log('[useProfileSettings] Metadados após atualização:', updatedUser.user_metadata);
+      let verificationAttempts = 0;
+      const maxAttempts = 3;
+      let dataVerified = false;
+
+      while (!dataVerified && verificationAttempts < maxAttempts) {
+        verificationAttempts++;
+        console.log('[useProfileSettings] Tentativa de verificação:', verificationAttempts);
         
-        // Verificar se os dados principais foram salvos
-        const savedCorrectly = 
-          updatedUser.user_metadata?.display_name === profileData.displayName &&
-          updatedUser.user_metadata?.full_name === profileData.fullName;
+        // Pequena pausa antes da verificação
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const { data: { user: updatedUser }, error: getUserError } = await supabase.auth.getUser();
+        
+        if (!getUserError && updatedUser) {
+          console.log('[useProfileSettings] Metadados após atualização:', updatedUser.user_metadata);
           
-        if (!savedCorrectly) {
-          console.warn('[useProfileSettings] AVISO: Dados podem não ter sido salvos corretamente');
-          console.warn('[useProfileSettings] Esperado:', { 
-            display_name: profileData.displayName, 
-            full_name: profileData.fullName 
-          });
-          console.warn('[useProfileSettings] Encontrado:', {
-            display_name: updatedUser.user_metadata?.display_name,
-            full_name: updatedUser.user_metadata?.full_name
-          });
+          // Verificar se os dados principais foram salvos
+          const savedCorrectly = 
+            updatedUser.user_metadata?.display_name === profileData.displayName &&
+            (updatedUser.user_metadata?.full_name === fullName || 
+             (fullName === '' && updatedUser.user_metadata?.full_name === undefined)) &&
+            (!profileData.avatarUrl || updatedUser.user_metadata?.avatar_url === profileData.avatarUrl);
+            
+          if (savedCorrectly) {
+            console.log('[useProfileSettings] Dados verificados com sucesso');
+            dataVerified = true;
+          } else {
+            console.warn('[useProfileSettings] AVISO: Dados não verificados na tentativa', verificationAttempts);
+            console.warn('[useProfileSettings] Esperado:', { 
+              display_name: profileData.displayName, 
+              full_name: fullName,
+              avatar_url: profileData.avatarUrl 
+            });
+            console.warn('[useProfileSettings] Encontrado:', {
+              display_name: updatedUser.user_metadata?.display_name,
+              full_name: updatedUser.user_metadata?.full_name,
+              avatar_url: updatedUser.user_metadata?.avatar_url
+            });
+          }
         }
+      }
+
+      if (!dataVerified) {
+        console.warn('[useProfileSettings] AVISO: Não foi possível verificar se os dados foram salvos após', maxAttempts, 'tentativas');
       }
 
       // 3. Atualizar tabela de managers se existir
@@ -113,13 +148,13 @@ export const useProfileSettings = () => {
 
       // 4. Aguardar e fazer refresh dos dados
       console.log('[useProfileSettings] Aguardando antes do refresh...');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Aumentar tempo de espera
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       console.log('[useProfileSettings] Fazendo refresh do usuário...');
       await refreshUser();
 
       // 5. Aguardar mais um pouco para garantir que a UI seja atualizada
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       console.log('[useProfileSettings] === SALVAMENTO CONCLUÍDO COM SUCESSO ===');
 
