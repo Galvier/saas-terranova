@@ -88,7 +88,7 @@ const ProfileTab = () => {
       // Force a manual refresh to ensure UI is updated
       setTimeout(() => {
         refreshUser();
-      }, 1000);
+      }, 2000);
     }
   };
 
@@ -133,7 +133,7 @@ const ProfileTab = () => {
   const getAvatarDisplay = () => {
     const displayUrl = pendingAvatarUrl || avatarUrl;
     
-    if (displayUrl) {
+    if (displayUrl && displayUrl.trim() !== '') {
       return (
         <img 
           src={displayUrl} 

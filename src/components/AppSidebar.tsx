@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Sidebar,
@@ -84,24 +83,31 @@ export function AppSidebar() {
     return "Usuário";
   };
 
-  // Função melhorada para obter o avatar URL com múltiplas tentativas de recuperação
+  // Função robusta para obter o avatar URL
   const getAvatarUrl = () => {
-    // Tentar obter do metadata do usuário primeiro
-    let avatarUrl = user?.user_metadata?.avatar_url;
+    const metadata = user?.user_metadata;
     
-    // Se não encontrou, tentar outras propriedades possíveis
-    if (!avatarUrl || avatarUrl.trim() === '') {
-      avatarUrl = user?.user_metadata?.avatar;
+    if (!metadata) {
+      console.log('[AppSidebar] Sem metadados de usuário');
+      return "";
     }
     
-    // Log para debugging
-    console.log('[AppSidebar] Procurando avatar URL:', {
-      metadata_avatar_url: user?.user_metadata?.avatar_url,
-      metadata_avatar: user?.user_metadata?.avatar,
-      finalUrl: avatarUrl
+    // Tentar múltiplas propriedades de avatar
+    let avatarUrl = metadata.avatar_url || metadata.avatar;
+    
+    // Validar se a URL não é undefined, null ou string vazia
+    if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim() !== '') {
+      avatarUrl = avatarUrl.trim();
+      console.log('[AppSidebar] Avatar URL encontrado:', avatarUrl);
+      return avatarUrl;
+    }
+    
+    console.log('[AppSidebar] Nenhum avatar válido encontrado nos metadados:', {
+      avatar_url: metadata.avatar_url,
+      avatar: metadata.avatar
     });
     
-    return avatarUrl && avatarUrl.trim() !== '' ? avatarUrl : "";
+    return "";
   };
 
   // Função para obter as iniciais
