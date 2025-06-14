@@ -223,6 +223,7 @@ export type Database = {
       }
       managers: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           department_id: string | null
           email: string
@@ -234,6 +235,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           department_id?: string | null
           email: string
@@ -245,6 +247,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           department_id?: string | null
           email?: string
@@ -944,6 +947,7 @@ export type Database = {
       get_current_user_manager: {
         Args: Record<PropertyKey, never>
         Returns: {
+          avatar_url: string | null
           created_at: string | null
           department_id: string | null
           email: string
@@ -958,6 +962,7 @@ export type Database = {
       get_manager_by_id: {
         Args: { manager_id: string }
         Returns: {
+          avatar_url: string | null
           created_at: string | null
           department_id: string | null
           email: string
