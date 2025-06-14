@@ -153,13 +153,17 @@ export function AppSidebar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="justify-start px-2 w-full font-normal">
-                    <Avatar className="mr-2 h-8 w-8">
-                      <AvatarImage src={avatarSrc} alt={displayName} />
+                    <Avatar className="mr-2 h-8 w-8 flex-shrink-0">
+                      <AvatarImage 
+                        src={avatarSrc} 
+                        alt={displayName}
+                        className="object-contain"
+                      />
                       <AvatarFallback>{nameInitials}</AvatarFallback>
                     </Avatar>
-                    <div className="flex flex-col text-left">
-                      <span className="font-semibold text-sm">{displayName}</span>
-                      <span className="text-muted-foreground text-xs">{user?.email}</span>
+                    <div className="flex flex-col text-left min-w-0 flex-1">
+                      <span className="font-semibold text-sm truncate">{displayName}</span>
+                      <span className="text-muted-foreground text-xs truncate">{user?.email}</span>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
