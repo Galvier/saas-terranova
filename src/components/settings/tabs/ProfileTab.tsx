@@ -28,37 +28,42 @@ const ProfileTab = () => {
   // Carregar dados do gestor para garantir a persistência no banco
   useEffect(() => {
     if (manager) {
-      setEmail(manager.email || user?.email || '');
-      setFullName(manager.name || user?.user_metadata?.full_name || '');
-      setDisplayName(manager.name || user?.user_metadata?.display_name || user?.user_metadata?.name || '');
-      setAvatarUrl(manager.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.avatar || '');
-      setPendingAvatarUrl(manager.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.avatar || '');
+      setEmail(manager.email || '');
+      setFullName(manager.name || '');
+      setDisplayName(manager.name || '');
+      setAvatarUrl(manager.avatar_url || '');
+      setPendingAvatarUrl(manager.avatar_url || '');
     } else if (user) {
+      // Só usar user se não tiver manager carregado
       setEmail(user.email || '');
-      const metadata = user?.user_metadata;
-      setFullName(metadata?.full_name || '');
-      setDisplayName(metadata?.display_name || metadata?.name || '');
-      setAvatarUrl(metadata?.avatar_url || metadata?.avatar || '');
-      setPendingAvatarUrl(metadata?.avatar_url || metadata?.avatar || '');
+      const metadata = user.user_metadata || {};
+      setFullName(metadata.full_name || '');
+      setDisplayName(metadata.display_name || metadata.name || '');
+      setAvatarUrl(metadata.avatar_url || metadata.avatar || '');
+      setPendingAvatarUrl(metadata.avatar_url || metadata.avatar || '');
     }
   }, [manager, user]);
 
-  // Check for unsaved changes
+  // Detectar alterações sempre comparando com base no MANAGER (prioridade banco)
   useEffect(() => {
-    if (!user?.user_metadata) return;
-    
-    const metadata = user.user_metadata;
-    const originalFullName = metadata.full_name || '';
-    const originalDisplayName = metadata.display_name || metadata.name || '';
-    const originalAvatarUrl = metadata.avatar_url || metadata.avatar || '';
-    
-    const hasChanges = 
+    let originalFullName = '';
+    let originalDisplayName = '';
+    let originalAvatarUrl = '';
+    if (manager) {
+      originalFullName = manager.name || '';
+      originalDisplayName = manager.name || '';
+      originalAvatarUrl = manager.avatar_url || '';
+    } else if (user?.user_metadata) {
+      originalFullName = user.user_metadata.full_name || '';
+      originalDisplayName = user.user_metadata.display_name || user.user_metadata.name || '';
+      originalAvatarUrl = user.user_metadata.avatar_url || user.user_metadata.avatar || '';
+    }
+    const hasChanges =
       fullName !== originalFullName ||
       displayName !== originalDisplayName ||
       pendingAvatarUrl !== originalAvatarUrl;
-    
     setHasUnsavedChanges(hasChanges);
-  }, [fullName, displayName, pendingAvatarUrl, user]);
+  }, [fullName, displayName, pendingAvatarUrl, manager, user]);
   
   const handleSaveProfile = async () => {
     console.log('[ProfileTab] Salvando perfil...');
