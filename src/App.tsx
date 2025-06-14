@@ -48,7 +48,7 @@ function App() {
                 <Route path="managers/update/:id" element={<ManagersUpdate />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="notifications" element={<Notifications />} />
-                <Route path="diagnostic" element={<Diagnostic />} />
+                <Route path="diagnostico" element={<Diagnostic />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

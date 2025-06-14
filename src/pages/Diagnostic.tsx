@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDown, Home } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDown, Home, ShieldAlert } from 'lucide-react';
 import { 
   runFullDiagnostic, 
   ConnectionInfo, 
@@ -15,9 +15,10 @@ import {
   checkAuthUsersSyncStatus
 } from '@/utils/supabaseDiagnostic';
 import { CustomBadge } from '@/components/ui/custom-badge';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { TriggerCard } from '@/components/diagnostic/TriggerCard';
 import { LogsCard } from '@/components/diagnostic/LogsCard';
+import { useAuth } from '@/hooks/useAuth';
 
 const ESSENTIAL_TABLES = [
   'users',
@@ -31,6 +32,7 @@ const ESSENTIAL_TABLES = [
 
 const Diagnostic = () => {
   const { toast } = useToast();
+  const { isAdmin, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [connection, setConnection] = useState<ConnectionInfo | null>(null);
   const [tables, setTables] = useState<TableInfo[]>([]);
@@ -38,6 +40,35 @@ const Diagnostic = () => {
   const [syncStatus, setSyncStatus] = useState<DiagnosticResult | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [triggerFixed, setTriggerFixed] = useState(false);
+
+  // Verificar se o usuário é admin
+  if (!authLoading && !isAdmin) {
+    return (
+      <div className="animate-fade-in space-y-6 p-4 md:p-8 min-h-screen bg-muted/30">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                <ShieldAlert className="h-6 w-6 text-destructive" />
+              </div>
+              <CardTitle>Acesso Restrito</CardTitle>
+              <CardDescription>
+                Esta página é restrita apenas para administradores do sistema.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Button asChild variant="outline">
+                <Link to="/">
+                  <Home className="mr-2 h-4 w-4" />
+                  Voltar ao Dashboard
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   const runDiagnostic = async () => {
     setIsLoading(true);
@@ -75,8 +106,10 @@ const Diagnostic = () => {
   };
 
   useEffect(() => {
-    runDiagnostic();
-  }, []);
+    if (isAdmin && !authLoading) {
+      runDiagnostic();
+    }
+  }, [isAdmin, authLoading]);
 
   const generateReport = () => {
     const reportData = {
@@ -104,6 +137,18 @@ const Diagnostic = () => {
     });
   };
 
+  // Se ainda está carregando a autenticação, mostrar loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Verificando permissões...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in space-y-6 p-4 md:p-8 min-h-screen bg-muted/30">
       <div className="flex justify-between items-start flex-col sm:flex-row gap-4">
@@ -115,10 +160,10 @@ const Diagnostic = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild className="flex items-center gap-2">
-            <Link to="/login">
+            <Link to="/">
               <Home className="h-4 w-4" />
-              <span className="hidden md:inline">Voltar para o Login</span>
-              <span className="inline md:hidden">Login</span>
+              <span className="hidden md:inline">Voltar ao Dashboard</span>
+              <span className="inline md:hidden">Dashboard</span>
             </Link>
           </Button>
           <Button 
