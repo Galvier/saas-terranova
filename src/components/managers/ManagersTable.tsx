@@ -20,7 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Manager } from '@/integrations/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
-import MobileManagerCard from './MobileManagerCard';
+import { MobileManagerCard } from './MobileManagerCard';
 
 interface ManagersTableProps {
   managers: Manager[];
@@ -46,17 +46,21 @@ const ManagersTable: React.FC<ManagersTableProps> = ({
           <MobileManagerCard
             key={manager.id}
             manager={manager}
-            onEdit={onEdit}
+            isAdmin={true}
+            isCurrentUser={false}
+            hasAuthUser={!!manager.user_id}
+            isFixingInconsistencies={false}
+            onEdit={(id) => onEdit(manager)}
             onDelete={onDelete}
-            onTogglePassword={onTogglePassword}
-            onChangePassword={onChangePassword}
+            onCreateAuth={() => {}}
+            onSyncData={() => {}}
           />
         ))}
       </div>
     );
   }
 
-  const getAccessLevelBadge = (accessLevel: string) => {
+  const getRoleBadge = (role: string) => {
     const variants = {
       'admin': 'destructive',
       'manager': 'default',
@@ -70,8 +74,8 @@ const ManagersTable: React.FC<ManagersTableProps> = ({
     };
 
     return (
-      <Badge variant={variants[accessLevel as keyof typeof variants] || 'secondary'}>
-        {labels[accessLevel as keyof typeof labels] || accessLevel}
+      <Badge variant={variants[role as keyof typeof variants] || 'secondary'}>
+        {labels[role as keyof typeof labels] || role}
       </Badge>
     );
   };
@@ -85,7 +89,7 @@ const ManagersTable: React.FC<ManagersTableProps> = ({
               <TableHead>Nome</TableHead>
               <TableHead className="hidden sm:table-cell">Email</TableHead>
               <TableHead className="hidden md:table-cell">Departamento</TableHead>
-              <TableHead className="hidden lg:table-cell">Nível de Acesso</TableHead>
+              <TableHead className="hidden lg:table-cell">Função</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -102,10 +106,10 @@ const ManagersTable: React.FC<ManagersTableProps> = ({
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">{manager.email}</TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {manager.department?.name || 'Sem departamento'}
+                  {manager.department_name || 'Sem departamento'}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
-                  {getAccessLevelBadge(manager.access_level)}
+                  {getRoleBadge(manager.role || 'manager')}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -124,19 +128,6 @@ const ManagersTable: React.FC<ManagersTableProps> = ({
                       <DropdownMenuItem onClick={() => onChangePassword(manager)}>
                         <Eye className="mr-2 h-4 w-4" />
                         Alterar Senha
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onTogglePassword(manager)}>
-                        {manager.show_password ? (
-                          <>
-                            <EyeOff className="mr-2 h-4 w-4" />
-                            Ocultar Senha
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Mostrar Senha
-                          </>
-                        )}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => onDelete(manager)}

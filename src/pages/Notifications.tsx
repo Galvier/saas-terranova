@@ -25,7 +25,7 @@ const Notifications = () => {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
     <div className="animate-fade-in">
@@ -67,9 +67,9 @@ const Notifications = () => {
             <Card 
               key={notification.id} 
               className={`mobile-card cursor-pointer transition-colors ${
-                !notification.read ? 'border-l-4 border-l-blue-500 bg-blue-50/50' : ''
+                !notification.is_read ? 'border-l-4 border-l-blue-500 bg-blue-50/50' : ''
               }`}
-              onClick={() => !notification.read && markAsRead(notification.id)}
+              onClick={() => !notification.is_read && markAsRead(notification.id)}
             >
               <CardHeader className={`pb-2 ${isMobile ? 'p-4' : 'p-6'}`}>
                 <div className="flex items-start justify-between gap-3">
@@ -88,7 +88,7 @@ const Notifications = () => {
                   </div>
                   
                   <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    {!notification.read && (
+                    {!notification.is_read && (
                       <div className="w-2 h-2 bg-blue-500 rounded-full" />
                     )}
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">

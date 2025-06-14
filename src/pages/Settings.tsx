@@ -37,11 +37,20 @@ const Settings = () => {
             </TabsContent>
             
             <TabsContent value="notifications" className="mt-0">
-              <NotificationsTab />
+              <NotificationsTab 
+                settings={{}}
+                isLoading={false}
+                onUpdateSettings={() => {}}
+              />
             </TabsContent>
             
             <TabsContent value="interface" className="mt-0">
-              <InterfaceTab />
+              <InterfaceTab 
+                settings={{}}
+                isSaving={false}
+                onSave={() => {}}
+                onUpdateSettings={() => {}}
+              />
             </TabsContent>
             
             <TabsContent value="integrations" className="mt-0">
@@ -76,11 +85,20 @@ const Settings = () => {
             </TabsContent>
             
             <TabsContent value="notifications">
-              <NotificationsTab />
+              <NotificationsTab 
+                settings={{}}
+                isLoading={false}
+                onUpdateSettings={() => {}}
+              />
             </TabsContent>
             
             <TabsContent value="interface">
-              <InterfaceTab />
+              <InterfaceTab 
+                settings={{}}
+                isSaving={false}
+                onSave={() => {}}
+                onUpdateSettings={() => {}}
+              />
             </TabsContent>
             
             <TabsContent value="integrations">

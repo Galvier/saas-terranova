@@ -10,7 +10,11 @@ const Dashboard = () => {
   return (
     <div className="animate-fade-in mobile-container">
       <div className="space-y-4 md:space-y-6">
-        {isAdmin ? <AnalyticsDashboard /> : <ManagerDashboard />}
+        {isAdmin ? (
+          <AnalyticsDashboard metrics={[]} />
+        ) : (
+          <ManagerDashboard metrics={[]} departmentName="" />
+        )}
       </div>
     </div>
   );
