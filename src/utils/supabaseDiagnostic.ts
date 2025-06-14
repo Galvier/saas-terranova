@@ -152,7 +152,7 @@ export async function testDiagnosticWrite(): Promise<DiagnosticResult> {
   }
 }
 
-// Função para verificar sincronização entre auth.users e managers
+// Função para verificar sincronização entre managers e dados de autenticação
 export async function checkAuthUsersSyncStatus(): Promise<DiagnosticResult> {
   try {
     const { data, error } = await supabase.rpc('diagnose_auth_sync_issues');
@@ -161,7 +161,7 @@ export async function checkAuthUsersSyncStatus(): Promise<DiagnosticResult> {
     
     return {
       status: 'success',
-      message: 'Verificação de sincronização concluída',
+      message: 'Verificação de sincronização concluída - usando dados seguros dos managers',
       timestamp: new Date(),
       details: data
     };
@@ -197,12 +197,13 @@ export async function runFullDiagnostic(essentialTables: string[]) {
 
 // Funções para compatibilidade com Settings.tsx
 export const testTables = async () => {
+  // Lista de tabelas seguras que podemos verificar (sem auth.users)
   const essentialTables = [
-    'users',
     'profiles',
     'departments',
     'managers',
     'settings',
+    'user_settings',
     'logs',
     'admin_dashboard_config',
     'metrics_definition',

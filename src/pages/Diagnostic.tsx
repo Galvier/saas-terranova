@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,11 +25,11 @@ import { TableUsageAnalysis } from '@/components/diagnostic/TableUsageAnalysis';
 import { useAuth } from '@/hooks/useAuth';
 
 const ESSENTIAL_TABLES = [
-  'users',
   'profiles',
-  'departments',
+  'departments', 
   'managers',
   'settings',
+  'user_settings',
   'logs',
   'metrics_definition',
   'metrics_values',

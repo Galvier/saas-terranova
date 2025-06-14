@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,19 +18,13 @@ interface TableUsageAnalysisProps {
 }
 
 export function TableUsageAnalysis({ tables }: TableUsageAnalysisProps) {
-  // Análise de uso das tabelas baseada no código do projeto
+  // Análise de uso das tabelas baseada no código do projeto (SEM auth.users)
   const tableUsageMap: Record<string, TableUsageInfo> = {
-    'users': {
-      name: 'users (auth.users)',
-      usage: 'active',
-      usedIn: ['Authentication', 'User Management', 'Managers Sync'],
-      description: 'Tabela principal de autenticação do Supabase'
-    },
     'profiles': {
       name: 'profiles',
       usage: 'minimal',
       usedIn: ['User Profile Settings'],
-      description: 'Perfis estendidos de usuários'
+      description: 'Perfis estendidos de usuários (dados seguros)'
     },
     'departments': {
       name: 'departments',
@@ -43,7 +36,7 @@ export function TableUsageAnalysis({ tables }: TableUsageAnalysisProps) {
       name: 'managers',
       usage: 'active',
       usedIn: ['Manager Management', 'Authentication Sync', 'Department Assignment'],
-      description: 'Gestores do sistema'
+      description: 'Gestores do sistema (dados seguros de usuários)'
     },
     'metrics_definition': {
       name: 'metrics_definition',
@@ -332,12 +325,13 @@ export function TableUsageAnalysis({ tables }: TableUsageAnalysisProps) {
 
         {/* Resumo das Melhorias */}
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-          <h4 className="font-medium text-sm text-green-800 mb-2">✅ Melhorias Realizadas:</h4>
+          <h4 className="font-medium text-sm text-green-800 mb-2">✅ Melhorias de Segurança Realizadas:</h4>
           <ul className="text-sm text-green-700 space-y-1">
             <li>• Tabela legada 'metrics' removida com sucesso</li>
             <li>• Novas tabelas criadas: push_subscriptions, scheduled_notifications, department_managers</li>
             <li>• Políticas de segurança (RLS) configuradas para as novas tabelas</li>
-            <li>• Estrutura do banco de dados otimizada e atualizada</li>
+            <li>• Diagnóstico configurado para usar apenas dados seguros (sem acesso a auth.users)</li>
+            <li>• Estrutura do banco de dados otimizada e segura</li>
           </ul>
         </div>
       </CardContent>
