@@ -135,47 +135,23 @@ export function SecurityAuditLogs() {
     try {
       console.log('[SecurityAuditLogs] Criando log de teste de segurança...');
       
-      // Tentar usar a função RPC primeiro
-      let success = false;
-      try {
-        const { data, error } = await supabase.rpc('create_security_log', {
-          log_level: 'info',
-          log_message: 'Teste de log de segurança gerado pelo usuário',
-          log_details: {
-            test: true,
-            timestamp: new Date().toISOString(),
-            action: 'manual_test',
-            source: 'security_audit_logs_component'
-          }
-        });
-
-        if (!error) {
-          console.log('[SecurityAuditLogs] Log de teste criado via RPC:', data);
-          success = true;
+      // Usar apenas o serviço de logs para evitar problemas com RPC
+      const result = await createLog(
+        'info',
+        'Teste de log de segurança gerado pelo usuário',
+        {
+          test: true,
+          timestamp: new Date().toISOString(),
+          action: 'manual_test',
+          source: 'security_audit_logs_component'
         }
-      } catch (rpcError) {
-        console.warn('[SecurityAuditLogs] RPC falhou, tentando método alternativo:', rpcError);
+      );
+
+      if (result.error) {
+        throw new Error(result.error.message || 'Erro ao criar log via serviço');
       }
 
-      // Se RPC falhou, usar serviço de logs como fallback
-      if (!success) {
-        const result = await createLog(
-          'info',
-          'Teste de log de segurança gerado pelo usuário',
-          {
-            test: true,
-            timestamp: new Date().toISOString(),
-            action: 'manual_test_fallback',
-            source: 'security_audit_logs_component'
-          }
-        );
-
-        if (!result.success) {
-          throw new Error(result.error?.message || 'Erro ao criar log via serviço');
-        }
-
-        console.log('[SecurityAuditLogs] Log criado via serviço:', result.data);
-      }
+      console.log('[SecurityAuditLogs] Log criado via serviço:', result.data);
       
       toast({
         title: 'Log de teste criado',
@@ -210,40 +186,19 @@ export function SecurityAuditLogs() {
       
       for (const logType of logTypes) {
         try {
-          // Tentar RPC primeiro
-          let success = false;
-          try {
-            const { error } = await supabase.rpc('create_security_log', {
-              log_level: logType.level,
-              log_message: logType.message,
-              log_details: {
-                ...logType.details,
-                timestamp: new Date().toISOString(),
-                source: 'security_audit_generator'
-              }
-            });
-            
-            if (!error) success = true;
-          } catch (rpcError) {
-            console.warn('[SecurityAuditLogs] RPC falhou para log tipo:', logType.level);
+          const result = await createLog(
+            logType.level as 'info' | 'warning' | 'error',
+            logType.message,
+            {
+              ...logType.details,
+              timestamp: new Date().toISOString(),
+              source: 'security_audit_generator'
+            }
+          );
+          
+          if (!result.error) {
+            successCount++;
           }
-
-          // Fallback para serviço
-          if (!success) {
-            const result = await createLog(
-              logType.level as 'info' | 'warning' | 'error',
-              logType.message,
-              {
-                ...logType.details,
-                timestamp: new Date().toISOString(),
-                source: 'security_audit_generator_fallback'
-              }
-            );
-            
-            if (result.success) success = true;
-          }
-
-          if (success) successCount++;
           
           // Pequeno delay entre logs
           await new Promise(resolve => setTimeout(resolve, 100));
