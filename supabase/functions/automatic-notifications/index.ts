@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -28,6 +27,8 @@ serve(async (req: Request): Promise<Response> => {
     let notificationCount = 0;
     let achievementCount = 0;
     let pendingCount = 0;
+    let metricsWithoutTargets = 0;
+    let overdueMissedCount = 0;
 
     // Log início do processamento
     await supabase.from('logs').insert({
@@ -129,6 +130,217 @@ serve(async (req: Request): Promise<Response> => {
                     pending_metrics_count: pendingMetricsForDept.length,
                     deadline_day: monthlyDeadline,
                     alert_type: 'department_metrics_reminder'
+                  }
+                });
+                notificationCount++;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Verificar métricas sem metas definidas (para admins)
+    console.log('Verificando métricas sem metas definidas...');
+    
+    const { data: metricsWithoutTargets, error: targetsError } = await supabase
+      .from('metrics_definition')
+      .select(`
+        id, name, department_id,
+        departments(name)
+      `)
+      .eq('is_active', true)
+      .or('target.is.null,target.eq.0');
+
+    if (targetsError) {
+      console.error('Erro ao buscar métricas sem metas:', targetsError);
+    } else if (metricsWithoutTargets && metricsWithoutTargets.length > 0) {
+      metricsWithoutTargets = metricsWithoutTargets.length;
+
+      // Verificar se já enviamos notificação recente sobre métricas sem metas
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const { data: recentTargetNotification } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('metadata->>alert_type', 'metrics_without_targets')
+        .gte('created_at', sevenDaysAgo.toISOString())
+        .single();
+
+      if (!recentTargetNotification) {
+        const { data: admins } = await supabase
+          .from('managers')
+          .select('user_id')
+          .eq('role', 'admin')
+          .eq('is_active', true)
+          .not('user_id', 'is', null);
+
+        if (admins && admins.length > 0) {
+          // Agrupar por departamento para o resumo
+          const departmentSummary = metricsWithoutTargets.reduce((acc, metric) => {
+            const deptName = metric.departments?.name || 'Sem Departamento';
+            acc[deptName] = (acc[deptName] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+
+          const summaryText = Object.entries(departmentSummary)
+            .map(([dept, count]) => `${dept}: ${count}`)
+            .join('; ');
+
+          for (const admin of admins) {
+            await supabase.from('notifications').insert({
+              user_id: admin.user_id,
+              title: `Atenção: ${metricsWithoutTargets} métrica(s) sem meta definida`,
+              message: `Existem métricas ativas sem metas configuradas: ${summaryText}. Configure as metas para melhor acompanhamento dos resultados.`,
+              type: 'warning',
+              metadata: {
+                metrics_without_targets_count: metricsWithoutTargets,
+                departments_affected: Object.keys(departmentSummary).length,
+                alert_type: 'metrics_without_targets'
+              }
+            });
+            notificationCount++;
+          }
+        }
+      }
+    }
+
+    // 4. Verificar métricas não preenchidas após o deadline do mês atual
+    if (currentDay > monthlyDeadline) {
+      console.log('Verificando métricas não preenchidas após deadline...');
+      
+      const { data: overdueMetrics, error: overdueError } = await supabase
+        .from('metrics_definition')
+        .select(`
+          id, name, department_id,
+          departments(name)
+        `)
+        .eq('frequency', 'monthly')
+        .eq('is_active', true);
+
+      if (overdueError) {
+        console.error('Erro ao buscar métricas em atraso:', overdueError);
+      } else if (overdueMetrics && overdueMetrics.length > 0) {
+        const overdueMissedByDepartment = {} as Record<string, any[]>;
+
+        for (const metric of overdueMetrics) {
+          // Verificar se tem valor para este mês
+          const { data: existingValue } = await supabase
+            .from('metrics_values')
+            .select('id')
+            .eq('metrics_definition_id', metric.id)
+            .gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+            .lt('date', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0])
+            .single();
+
+          if (!existingValue) {
+            const deptId = metric.department_id || 'no_department';
+            const deptName = metric.departments?.name || 'Sem Departamento';
+            
+            if (!overdueMissedByDepartment[deptId]) {
+              overdueMissedByDepartment[deptId] = [];
+            }
+            overdueMissedByDepartment[deptId].push({
+              ...metric,
+              department_name: deptName
+            });
+          }
+        }
+
+        // Notificar gestores sobre métricas em atraso em seus departamentos
+        for (const [departmentId, overdueMetricsForDept] of Object.entries(overdueMissedByDepartment)) {
+          if (overdueMetricsForDept.length > 0) {
+            // Verificar se já enviamos notificação recente para este departamento
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            
+            const { data: recentOverdueNotification } = await supabase
+              .from('notifications')
+              .select('id')
+              .eq('metadata->>department_id', departmentId === 'no_department' ? null : departmentId)
+              .eq('metadata->>alert_type', 'department_metrics_overdue')
+              .gte('created_at', threeDaysAgo.toISOString())
+              .single();
+
+            if (!recentOverdueNotification) {
+              // Buscar gestores DESTE departamento específico
+              const { data: departmentManagers } = await supabase
+                .from('managers')
+                .select('user_id')
+                .eq('department_id', departmentId === 'no_department' ? null : departmentId)
+                .eq('is_active', true)
+                .not('user_id', 'is', null);
+
+              if (departmentManagers && departmentManagers.length > 0) {
+                const departmentName = overdueMetricsForDept[0].department_name;
+                const metricNames = overdueMetricsForDept.map(m => m.name).join(', ');
+                const daysOverdue = currentDay - monthlyDeadline;
+
+                for (const manager of departmentManagers) {
+                  await supabase.from('notifications').insert({
+                    user_id: manager.user_id,
+                    title: `Urgente: ${overdueMetricsForDept.length} métrica(s) em atraso`,
+                    message: `As seguintes métricas do departamento ${departmentName} estão ${daysOverdue} dia(s) em atraso: ${metricNames}. Preencha o mais rápido possível.`,
+                    type: 'error',
+                    metadata: {
+                      department_id: departmentId === 'no_department' ? null : departmentId,
+                      department_name: departmentName,
+                      overdue_metrics_count: overdueMetricsForDept.length,
+                      days_overdue: daysOverdue,
+                      alert_type: 'department_metrics_overdue'
+                    }
+                  });
+                  notificationCount++;
+                  overdueMissedCount++;
+                }
+              }
+            }
+          }
+        }
+
+        // Notificar admins sobre resumo geral de métricas em atraso
+        const totalOverdue = Object.values(overdueMissedByDepartment).reduce((sum, metrics) => sum + metrics.length, 0);
+        
+        if (totalOverdue > 0) {
+          // Verificar se já enviamos notificação recente de resumo geral
+          const threeDaysAgo = new Date();
+          threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+          
+          const { data: recentAdminOverdueNotification } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('metadata->>alert_type', 'admin_overdue_metrics_summary')
+            .gte('created_at', threeDaysAgo.toISOString())
+            .single();
+
+          if (!recentAdminOverdueNotification) {
+            const { data: admins } = await supabase
+              .from('managers')
+              .select('user_id')
+              .eq('role', 'admin')
+              .eq('is_active', true)
+              .not('user_id', 'is', null);
+
+            if (admins && admins.length > 0) {
+              // Criar resumo por departamento
+              const departmentSummary = Object.entries(overdueMissedByDepartment)
+                .map(([deptId, metrics]) => `${metrics[0].department_name}: ${metrics.length} métrica(s)`)
+                .join('; ');
+
+              const daysOverdue = currentDay - monthlyDeadline;
+
+              for (const admin of admins) {
+                await supabase.from('notifications').insert({
+                  user_id: admin.user_id,
+                  title: `Resumo: ${totalOverdue} métrica(s) em atraso`,
+                  message: `Existem ${totalOverdue} métricas ${daysOverdue} dia(s) em atraso distribuídas em: ${departmentSummary}. Considere acompanhar mais de perto estes departamentos.`,
+                  type: 'error',
+                  metadata: {
+                    total_overdue: totalOverdue,
+                    days_overdue: daysOverdue,
+                    departments_affected: Object.keys(overdueMissedByDepartment).length,
+                    alert_type: 'admin_overdue_metrics_summary'
                   }
                 });
                 notificationCount++;
@@ -347,20 +559,24 @@ serve(async (req: Request): Promise<Response> => {
     // Log final
     await supabase.from('logs').insert({
       level: 'info',
-      message: 'Processamento de notificações concluído via edge function com filtros por departamento',
+      message: 'Processamento de notificações concluído via edge function com melhorias',
       details: {
         notifications_sent: notificationCount,
         achievements_found: achievementCount,
         pending_justifications: pendingCount,
+        metrics_without_targets: metricsWithoutTargets,
+        overdue_missed_count: overdueMissedCount,
         processed_at: new Date().toISOString(),
-        strategy: 'department_filtered_notifications'
+        strategy: 'enhanced_department_filtered_notifications'
       }
     });
 
     console.log('Processamento concluído:', {
       notifications_sent: notificationCount,
       achievements_found: achievementCount,
-      pending_justifications: pendingCount
+      pending_justifications: pendingCount,
+      metrics_without_targets: metricsWithoutTargets,
+      overdue_missed_count: overdueMissedCount
     });
 
     return new Response(JSON.stringify({
@@ -369,9 +585,11 @@ serve(async (req: Request): Promise<Response> => {
         notifications_sent: notificationCount,
         achievements_found: achievementCount,
         pending_justifications: pendingCount,
+        metrics_without_targets: metricsWithoutTargets,
+        overdue_missed_count: overdueMissedCount,
         processed_at: new Date().toISOString(),
         status: 'success',
-        strategy: 'department_filtered_notifications'
+        strategy: 'enhanced_department_filtered_notifications'
       },
       timestamp: new Date().toISOString()
     }), {
