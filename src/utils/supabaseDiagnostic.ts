@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 // Interface para os resultados de diagnóstico
@@ -158,11 +159,16 @@ export async function checkAuthUsersSyncStatus(): Promise<DiagnosticResult> {
     
     if (error) throw error;
     
+    // Verificar se data é um objeto válido antes de fazer spread
+    const dataObj = data && typeof data === 'object' ? data : {};
+    
     // Simular dados de triggers para compatibilidade
     const mockTriggerData = {
       auth_triggers: 1, // Assumir que existe
       manager_triggers: 1, // Assumir que existe
-      ...data
+      synced_users_count: dataObj.synced_users_count || 0,
+      managers_count: dataObj.managers_count || 0,
+      ...dataObj
     };
     
     return {
