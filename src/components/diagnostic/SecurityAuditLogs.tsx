@@ -30,22 +30,48 @@ export function SecurityAuditLogs() {
   const fetchSecurityLogs = async () => {
     setIsLoading(true);
     try {
+      console.log('[SecurityAuditLogs] Buscando logs de segurança...');
+      
+      // Buscar logs com filtros mais amplos primeiro
       const { data, error } = await supabase
         .from('logs')
         .select('*')
-        .or('level.eq.error,level.eq.warn,message.ilike.%security%,message.ilike.%audit%')
+        .in('level', ['error', 'warn', 'warning', 'info'])
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
-      setLogs(data || []);
+      if (error) {
+        console.error('[SecurityAuditLogs] Erro na consulta:', error);
+        throw error;
+      }
+
+      console.log('[SecurityAuditLogs] Logs encontrados:', data?.length || 0);
+      
+      // Filtrar logs relacionados à segurança no frontend
+      const securityLogs = (data || []).filter(log => 
+        log.level === 'error' || 
+        log.level === 'warn' || 
+        log.level === 'warning' ||
+        (log.message && (
+          log.message.toLowerCase().includes('security') ||
+          log.message.toLowerCase().includes('audit') ||
+          log.message.toLowerCase().includes('auth') ||
+          log.message.toLowerCase().includes('login') ||
+          log.message.toLowerCase().includes('access') ||
+          log.message.toLowerCase().includes('permission')
+        ))
+      );
+
+      console.log('[SecurityAuditLogs] Logs de segurança filtrados:', securityLogs.length);
+      setLogs(securityLogs);
     } catch (error) {
-      console.error('Erro ao buscar logs de segurança:', error);
+      console.error('[SecurityAuditLogs] Erro ao buscar logs de segurança:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível carregar os logs de segurança.',
         variant: 'destructive'
       });
+      setLogs([]); // Define como array vazio em caso de erro
     } finally {
       setIsLoading(false);
     }
@@ -106,26 +132,35 @@ export function SecurityAuditLogs() {
 
   const createTestSecurityLog = async () => {
     try {
+      console.log('[SecurityAuditLogs] Criando log de teste de segurança...');
+      
       const { data, error } = await supabase.rpc('create_security_log', {
         log_level: 'info',
         log_message: 'Teste de log de segurança gerado pelo usuário',
         log_details: {
           test: true,
           timestamp: new Date().toISOString(),
-          action: 'manual_test'
+          action: 'manual_test',
+          source: 'security_audit_logs_component'
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[SecurityAuditLogs] Erro ao criar log de teste:', error);
+        throw error;
+      }
 
+      console.log('[SecurityAuditLogs] Log de teste criado com sucesso:', data);
+      
       toast({
         title: 'Log de teste criado',
         description: 'Um log de teste foi criado com sucesso.'
       });
       
+      // Recarregar logs após criar o teste
       fetchSecurityLogs();
     } catch (error) {
-      console.error('Erro ao criar log de teste:', error);
+      console.error('[SecurityAuditLogs] Erro ao criar log de teste:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível criar o log de teste.',
@@ -144,7 +179,7 @@ export function SecurityAuditLogs() {
               Logs de Auditoria de Segurança
             </CardTitle>
             <CardDescription>
-              Registro de eventos relacionados à segurança do sistema
+              Registro de eventos relacionados à segurança do sistema ({logs.length} logs encontrados)
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -185,7 +220,10 @@ export function SecurityAuditLogs() {
         ) : logs.length === 0 ? (
           <div className="text-center py-8">
             <Shield className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">Nenhum log de segurança encontrado.</p>
+            <p className="text-muted-foreground mb-2">Nenhum log de segurança encontrado.</p>
+            <p className="text-sm text-muted-foreground">
+              Clique em "Teste" para criar um log de exemplo.
+            </p>
           </div>
         ) : (
           <ScrollArea className="h-[400px]">
