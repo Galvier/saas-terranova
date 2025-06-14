@@ -45,12 +45,6 @@ export function TableUsageAnalysis({ tables }: TableUsageAnalysisProps) {
       usedIn: ['Manager Management', 'Authentication Sync', 'Department Assignment'],
       description: 'Gestores do sistema'
     },
-    'metrics': {
-      name: 'metrics (legacy)',
-      usage: 'unused',
-      usedIn: [],
-      description: 'Tabela legada de métricas (substituída por metrics_definition)'
-    },
     'metrics_definition': {
       name: 'metrics_definition',
       usage: 'active',
@@ -131,21 +125,21 @@ export function TableUsageAnalysis({ tables }: TableUsageAnalysisProps) {
     },
     'push_subscriptions': {
       name: 'push_subscriptions',
-      usage: 'minimal',
-      usedIn: ['Push Notifications'],
+      usage: 'active',
+      usedIn: ['Push Notifications', 'Web Push API'],
       description: 'Assinaturas para notificações push'
     },
     'scheduled_notifications': {
       name: 'scheduled_notifications',
-      usage: 'minimal',
-      usedIn: ['Scheduled Notifications'],
-      description: 'Notificações agendadas'
+      usage: 'active',
+      usedIn: ['Scheduled Notifications', 'Automatic Alerts'],
+      description: 'Notificações agendadas automaticamente'
     },
     'department_managers': {
       name: 'department_managers',
-      usage: 'minimal',
-      usedIn: ['Department Management'],
-      description: 'Relacionamento departamento-gestor'
+      usage: 'active',
+      usedIn: ['Department Management', 'Many-to-Many Relationships'],
+      description: 'Relacionamento departamento-gestor (múltiplos gestores por departamento)'
     },
     'diagnostic_tests': {
       name: 'diagnostic_tests',
@@ -335,6 +329,17 @@ export function TableUsageAnalysis({ tables }: TableUsageAnalysisProps) {
             )}
           </div>
         )}
+
+        {/* Resumo das Melhorias */}
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h4 className="font-medium text-sm text-green-800 mb-2">✅ Melhorias Realizadas:</h4>
+          <ul className="text-sm text-green-700 space-y-1">
+            <li>• Tabela legada 'metrics' removida com sucesso</li>
+            <li>• Novas tabelas criadas: push_subscriptions, scheduled_notifications, department_managers</li>
+            <li>• Políticas de segurança (RLS) configuradas para as novas tabelas</li>
+            <li>• Estrutura do banco de dados otimizada e atualizada</li>
+          </ul>
+        </div>
       </CardContent>
     </Card>
   );

@@ -202,10 +202,22 @@ export const testTables = async () => {
     'profiles',
     'departments',
     'managers',
-    'metrics',
     'settings',
     'logs',
-    'admin_dashboard_config' // Make sure admin_dashboard_config is included in the diagnostic check
+    'admin_dashboard_config',
+    'metrics_definition',
+    'metrics_values',
+    'notifications',
+    'notification_settings',
+    'notification_templates',
+    'metric_justifications',
+    'backup_settings',
+    'backup_history',
+    'backup_data',
+    'push_subscriptions',
+    'scheduled_notifications',
+    'department_managers',
+    'diagnostic_tests'
   ];
   
   const tablesResult = await checkTables(essentialTables);

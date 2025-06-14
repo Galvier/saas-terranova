@@ -30,13 +30,22 @@ const ESSENTIAL_TABLES = [
   'profiles',
   'departments',
   'managers',
-  'metrics',
   'settings',
   'logs',
   'metrics_definition',
   'metrics_values',
   'notifications',
-  'admin_dashboard_config'
+  'notification_settings',
+  'notification_templates',
+  'metric_justifications',
+  'admin_dashboard_config',
+  'backup_settings',
+  'backup_history',
+  'backup_data',
+  'push_subscriptions',
+  'scheduled_notifications',
+  'department_managers',
+  'diagnostic_tests'
 ];
 
 const Diagnostic = () => {

@@ -386,41 +386,6 @@ export type Database = {
           },
         ]
       }
-      metrics: {
-        Row: {
-          created_at: string | null
-          date: string
-          department_id: string | null
-          id: string
-          name: string
-          value: number
-        }
-        Insert: {
-          created_at?: string | null
-          date: string
-          department_id?: string | null
-          id?: string
-          name: string
-          value: number
-        }
-        Update: {
-          created_at?: string | null
-          date?: string
-          department_id?: string | null
-          id?: string
-          name?: string
-          value?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "metrics_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       metrics_definition: {
         Row: {
           created_at: string | null
