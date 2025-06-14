@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,18 +44,27 @@ const NotificationSettings: React.FC = () => {
       setIsLoading(true);
       console.log('[NotificationSettings] Carregando configurações...');
       
-      const configKeys = Object.keys(config) as (keyof NotificationConfig)[];
-      const promises = configKeys.map(key => 
-        supabase.rpc('get_notification_setting', { setting_key_param: key })
-      );
-      
-      const results = await Promise.all(promises);
+      const { data, error } = await supabase
+        .from('notification_settings')
+        .select('setting_key, setting_value');
+
+      if (error) {
+        console.error('[NotificationSettings] Erro ao carregar:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar as configurações.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Processar dados carregados
       const newConfig = { ...config };
       
-      results.forEach((result, index) => {
-        const key = configKeys[index];
-        if (result.data && result.data !== null) {
-          const value = result.data;
+      if (data) {
+        data.forEach(item => {
+          const key = item.setting_key as keyof NotificationConfig;
+          const value = item.setting_value;
           
           if (key === 'reminder_days_before') {
             (newConfig as any)[key] = Array.isArray(value) ? value.map(v => Number(v)).filter(v => !isNaN(v)) : [3, 5, 7];
@@ -65,16 +75,16 @@ const NotificationSettings: React.FC = () => {
           } else {
             (newConfig as any)[key] = String(value) || config[key];
           }
-        }
-      });
+        });
+      }
       
       setConfig(newConfig);
       console.log('[NotificationSettings] Configurações carregadas:', newConfig);
     } catch (error) {
-      console.error('[NotificationSettings] Erro ao carregar configurações:', error);
+      console.error('[NotificationSettings] Erro inesperado:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível carregar as configurações.",
+        description: "Erro inesperado ao carregar configurações.",
         variant: "destructive",
       });
     } finally {
@@ -82,14 +92,20 @@ const NotificationSettings: React.FC = () => {
     }
   };
 
-  const updateNotificationSetting = async (key: string, value: any) => {
+  const updateSetting = async (key: string, value: any) => {
     try {
       console.log(`[NotificationSettings] Atualizando ${key}:`, value);
       
-      const { error } = await supabase.rpc('update_notification_setting', {
-        setting_key_param: key,
-        new_value: value
-      });
+      // Usar upsert direto na tabela para evitar problemas de função
+      const { error } = await supabase
+        .from('notification_settings')
+        .upsert({
+          setting_key: key,
+          setting_value: value,
+          description: `Configuração para ${key}`
+        }, {
+          onConflict: 'setting_key'
+        });
 
       if (error) {
         console.error(`[NotificationSettings] Erro ao salvar ${key}:`, error);
@@ -103,63 +119,20 @@ const NotificationSettings: React.FC = () => {
     }
   };
 
-  const ensureSettingExists = async (key: string, defaultValue: any) => {
-    try {
-      // Primeiro, tenta buscar a configuração
-      const { data: existingData } = await supabase.rpc('get_notification_setting', { 
-        setting_key_param: key 
-      });
-      
-      // Se não existir (retornar null), criar uma nova entrada
-      if (existingData === null || existingData === undefined) {
-        console.log(`[NotificationSettings] Criando configuração ${key} com valor padrão:`, defaultValue);
-        
-        const { error } = await supabase
-          .from('notification_settings')
-          .insert({
-            setting_key: key,
-            setting_value: defaultValue,
-            description: `Configuração para ${key}`
-          });
-          
-        if (error) {
-          console.error(`[NotificationSettings] Erro ao criar configuração ${key}:`, error);
-          throw error;
-        }
-        
-        console.log(`[NotificationSettings] Configuração ${key} criada com sucesso`);
-      }
-    } catch (error) {
-      console.error(`[NotificationSettings] Erro ao verificar/criar configuração ${key}:`, error);
-      throw error;
-    }
-  };
-
   const handleSave = async () => {
     try {
       setIsSaving(true);
       console.log('[NotificationSettings] Salvando todas as configurações:', config);
       
-      // Primeiro, garantir que todas as configurações existem no banco
-      await Promise.all([
-        ensureSettingExists('monthly_deadline_day', config.monthly_deadline_day),
-        ensureSettingExists('reminder_days_before', config.reminder_days_before),
-        ensureSettingExists('admin_summary_frequency', config.admin_summary_frequency),
-        ensureSettingExists('business_hours_start', config.business_hours_start),
-        ensureSettingExists('business_hours_end', config.business_hours_end),
-        ensureSettingExists('enable_achievement_notifications', config.enable_achievement_notifications),
-        ensureSettingExists('enable_reminder_notifications', config.enable_reminder_notifications),
-      ]);
-      
-      // Depois, atualizar todas as configurações
+      // Salvar cada configuração individualmente
       const savePromises = [
-        updateNotificationSetting('monthly_deadline_day', config.monthly_deadline_day),
-        updateNotificationSetting('reminder_days_before', config.reminder_days_before),
-        updateNotificationSetting('admin_summary_frequency', config.admin_summary_frequency),
-        updateNotificationSetting('business_hours_start', config.business_hours_start),
-        updateNotificationSetting('business_hours_end', config.business_hours_end),
-        updateNotificationSetting('enable_achievement_notifications', config.enable_achievement_notifications),
-        updateNotificationSetting('enable_reminder_notifications', config.enable_reminder_notifications),
+        updateSetting('monthly_deadline_day', config.monthly_deadline_day),
+        updateSetting('reminder_days_before', config.reminder_days_before),
+        updateSetting('admin_summary_frequency', config.admin_summary_frequency),
+        updateSetting('business_hours_start', config.business_hours_start),
+        updateSetting('business_hours_end', config.business_hours_end),
+        updateSetting('enable_achievement_notifications', config.enable_achievement_notifications),
+        updateSetting('enable_reminder_notifications', config.enable_reminder_notifications),
       ];
       
       await Promise.all(savePromises);
