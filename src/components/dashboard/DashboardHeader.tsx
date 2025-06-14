@@ -1,72 +1,76 @@
 
 import React from 'react';
-import { Settings, Star } from 'lucide-react';
+import { Calendar, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import PageHeader from '@/components/PageHeader';
+import DateFilter from '@/components/filters/DateFilter';
 import DepartmentFilter from '@/components/filters/DepartmentFilter';
-import UserProfileIndicator from '@/components/UserProfileIndicator';
-import DashboardToggle from '@/components/dashboard/DashboardToggle';
 import { Department } from '@/integrations/supabase';
+import { DateRangeType } from '@/components/filters/DateFilter';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DashboardHeaderProps {
   departments: Department[];
   selectedDepartment: string;
-  onDepartmentChange: (departmentId: string) => void;
-  departmentName: string;
-  isAdmin: boolean;
-  viewMode: 'all' | 'favorites';
-  onViewModeChange: (mode: 'all' | 'favorites') => void;
-  onOpenMetricSelection: () => void;
+  setSelectedDepartment: (value: string) => void;
+  selectedDate: Date;
+  setSelectedDate: (date: Date) => void;
+  dateRangeType: DateRangeType;
+  setDateRangeType: (type: DateRangeType) => void;
+  onRefresh: () => void;
+  isRefreshing?: boolean;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   departments,
   selectedDepartment,
-  onDepartmentChange,
-  departmentName,
-  isAdmin,
-  viewMode,
-  onViewModeChange,
-  onOpenMetricSelection
+  setSelectedDepartment,
+  selectedDate,
+  setSelectedDate,
+  dateRangeType,
+  setDateRangeType,
+  onRefresh,
+  isRefreshing = false,
 }) => {
+  const isMobile = useIsMobile();
+
   return (
-    <div className="space-y-4">
-      {/* Main header row - stacked on mobile, side-by-side on desktop */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full lg:w-auto">
-          <DepartmentFilter
+    <div className="mobile-container">
+      <PageHeader 
+        title="Dashboard" 
+        subtitle="Visão geral das métricas e desempenho"
+      />
+      
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <DepartmentFilter 
             departments={departments}
             selectedDepartment={selectedDepartment}
-            onDepartmentChange={onDepartmentChange}
+            onDepartmentChange={setSelectedDepartment}
             className="w-full sm:w-[280px]"
           />
           
-          <UserProfileIndicator 
-            selectedDepartment={selectedDepartment}
-            departmentName={departmentName}
+          <DateFilter
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            dateRangeType={dateRangeType}
+            onDateRangeTypeChange={setDateRangeType}
+            className="w-full sm:w-auto"
           />
         </div>
         
-        {/* Admin controls - stack on mobile, row on larger screens */}
-        {isAdmin && (
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onOpenMetricSelection}
-              className="flex items-center gap-2 justify-center sm:justify-start"
-            >
-              <Settings className="h-4 w-4" />
-              <span className="sm:hidden md:inline">Configurar</span>
-              <span className="hidden sm:inline md:hidden">Config</span>
-              <span className="hidden md:inline">dashboard</span>
-            </Button>
-            
-            <DashboardToggle 
-              viewMode={viewMode}
-              onViewModeChange={onViewModeChange}
-            />
-          </div>
-        )}
+        <div className="flex justify-end">
+          <Button 
+            variant="outline" 
+            size={isMobile ? "default" : "sm"}
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className={`flex items-center gap-2 ${isMobile ? 'w-full mobile-touch' : ''}`}
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+        </div>
       </div>
     </div>
   );

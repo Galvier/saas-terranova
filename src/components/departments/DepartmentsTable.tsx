@@ -1,7 +1,14 @@
 
 import React from 'react';
-import { Check, X, MoreHorizontal, Eye, Star } from 'lucide-react';
-
+import { MoreHorizontal, Pencil, Trash2, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -10,121 +17,124 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Department } from '@/integrations/supabase';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DepartmentsTableProps {
   departments: Department[];
   onEdit: (department: Department) => void;
   onDelete: (department: Department) => void;
-  isAdmin?: boolean;
 }
 
 const DepartmentsTable: React.FC<DepartmentsTableProps> = ({
   departments,
   onEdit,
   onDelete,
-  isAdmin = false,
 }) => {
-  console.log('[DepartmentsTable] Rendering with isAdmin:', isAdmin);
+  const isMobile = useIsMobile();
 
-  const renderManagers = (department: Department) => {
-    if (!department.managers || department.managers.length === 0) {
-      return <span className="text-muted-foreground">-</span>;
-    }
-
+  if (isMobile) {
     return (
-      <div className="space-y-1">
-        {department.managers.map((manager) => (
-          <div key={manager.id} className="flex items-center gap-1">
-            <span className="text-sm">{manager.name}</span>
-            {manager.is_primary && (
-              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-            )}
-          </div>
+      <div className="mobile-container space-y-4">
+        {departments.map((department) => (
+          <Card key={department.id} className="mobile-card">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-start">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-base truncate">{department.name}</h3>
+                  {department.description && (
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {department.description}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{department.manager_count || 0} gestores</span>
+                  </div>
+                </div>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0 mobile-touch">
+                      <span className="sr-only">Abrir menu</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => onEdit(department)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => onDelete(department)}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     );
-  };
+  }
 
   return (
-    <div className="w-full">
-      <div className="rounded-md border bg-card">
+    <div className="rounded-md border overflow-hidden">
+      <div className="table-responsive">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Gestores</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="hidden sm:table-cell">Descrição</TableHead>
+              <TableHead className="hidden md:table-cell">Gestores</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {departments.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  Nenhum setor encontrado.
+            {departments.map((department) => (
+              <TableRow key={department.id}>
+                <TableCell className="font-medium">{department.name}</TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  {department.description || 'Sem descrição'}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <div className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    <span>{department.manager_count || 0}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Abrir menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => onEdit(department)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onDelete(department)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ) : (
-              departments.map((department) => (
-                <TableRow key={department.id}>
-                  <TableCell className="font-medium">{department.name}</TableCell>
-                  <TableCell>{department.description}</TableCell>
-                  <TableCell>
-                    {renderManagers(department)}
-                  </TableCell>
-                  <TableCell>
-                    {department.is_active ? (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">
-                        <Check className="mr-1 h-3.5 w-3.5 text-green-700" />
-                        <span>Ativo</span>
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-rose-50 text-rose-700 hover:bg-rose-50">
-                        <X className="mr-1 h-3.5 w-3.5 text-rose-700" />
-                        <span>Inativo</span>
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {isAdmin ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Abrir menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onEdit(department)}>
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onDelete(department)}>
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      <div className="flex justify-end">
-                        <Button variant="ghost" size="sm" className="h-8 px-3 text-muted-foreground cursor-default">
-                          <Eye className="mr-1 h-3.5 w-3.5" />
-                          Visualizar
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
       </div>
