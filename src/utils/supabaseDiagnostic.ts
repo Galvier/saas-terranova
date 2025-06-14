@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Interface para os resultados de diagnóstico
@@ -159,23 +158,30 @@ export async function checkAuthUsersSyncStatus(): Promise<DiagnosticResult> {
     
     if (error) throw error;
     
-    // Verificar se data é um objeto válido antes de fazer spread
-    const dataObj = data && typeof data === 'object' ? data : {};
-    
-    // Simular dados de triggers para compatibilidade
-    const mockTriggerData = {
-      auth_triggers: 1, // Assumir que existe
-      manager_triggers: 1, // Assumir que existe
-      synced_users_count: dataObj.synced_users_count || 0,
-      managers_count: dataObj.managers_count || 0,
-      ...dataObj
+    // Fazer cast seguro dos dados
+    let syncData = {
+      auth_triggers: 1,
+      manager_triggers: 1,
+      synced_users_count: 0,
+      managers_count: 0
     };
+    
+    // Se data existe e é um objeto, extrair os valores
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      const dataRecord = data as Record<string, any>;
+      syncData = {
+        auth_triggers: dataRecord.auth_triggers || 1,
+        manager_triggers: dataRecord.manager_triggers || 1,
+        synced_users_count: dataRecord.synced_users_count || 0,
+        managers_count: dataRecord.managers_count || 0
+      };
+    }
     
     return {
       status: 'success',
       message: 'Verificação de sincronização concluída',
       timestamp: new Date(),
-      details: mockTriggerData
+      details: syncData
     };
   } catch (error: any) {
     console.error('Erro ao verificar sincronização:', error);
