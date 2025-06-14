@@ -28,32 +28,102 @@ export function SecurityHealthCard() {
     const checks: SecurityCheck[] = [];
 
     try {
-      // Verificar RLS habilitado nas tabelas críticas
-      const criticalTables = ['managers', 'logs', 'metrics_definition', 'notifications'];
+      // Verificar RLS habilitado nas tabelas críticas individualmente
       
-      for (const table of criticalTables) {
-        try {
-          const { data, error } = await supabase
-            .from(table)
-            .select('*')
-            .limit(1);
-          
-          if (!error) {
-            checks.push({
-              name: `RLS Ativo - ${table}`,
-              status: 'pass',
-              message: `Row Level Security habilitado para ${table}`,
-              critical: true
-            });
-          }
-        } catch (err) {
+      // Verificar managers
+      try {
+        const { data, error } = await supabase
+          .from('managers')
+          .select('*')
+          .limit(1);
+        
+        if (!error) {
           checks.push({
-            name: `RLS Verificação - ${table}`,
-            status: 'warning',
-            message: `Não foi possível verificar RLS para ${table}`,
+            name: 'RLS Ativo - managers',
+            status: 'pass',
+            message: 'Row Level Security habilitado para managers',
             critical: true
           });
         }
+      } catch (err) {
+        checks.push({
+          name: 'RLS Verificação - managers',
+          status: 'warning',
+          message: 'Não foi possível verificar RLS para managers',
+          critical: true
+        });
+      }
+
+      // Verificar logs
+      try {
+        const { data, error } = await supabase
+          .from('logs')
+          .select('*')
+          .limit(1);
+        
+        if (!error) {
+          checks.push({
+            name: 'RLS Ativo - logs',
+            status: 'pass',
+            message: 'Row Level Security habilitado para logs',
+            critical: true
+          });
+        }
+      } catch (err) {
+        checks.push({
+          name: 'RLS Verificação - logs',
+          status: 'warning',
+          message: 'Não foi possível verificar RLS para logs',
+          critical: true
+        });
+      }
+
+      // Verificar metrics_definition
+      try {
+        const { data, error } = await supabase
+          .from('metrics_definition')
+          .select('*')
+          .limit(1);
+        
+        if (!error) {
+          checks.push({
+            name: 'RLS Ativo - metrics_definition',
+            status: 'pass',
+            message: 'Row Level Security habilitado para metrics_definition',
+            critical: true
+          });
+        }
+      } catch (err) {
+        checks.push({
+          name: 'RLS Verificação - metrics_definition',
+          status: 'warning',
+          message: 'Não foi possível verificar RLS para metrics_definition',
+          critical: true
+        });
+      }
+
+      // Verificar notifications
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .limit(1);
+        
+        if (!error) {
+          checks.push({
+            name: 'RLS Ativo - notifications',
+            status: 'pass',
+            message: 'Row Level Security habilitado para notifications',
+            critical: true
+          });
+        }
+      } catch (err) {
+        checks.push({
+          name: 'RLS Verificação - notifications',
+          status: 'warning',
+          message: 'Não foi possível verificar RLS para notifications',
+          critical: true
+        });
       }
 
       // Verificar se existem logs de auditoria recentes
