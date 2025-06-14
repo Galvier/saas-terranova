@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Sidebar,
@@ -18,7 +19,6 @@ import {
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import AppLogo from "@/components/AppLogo";
@@ -83,56 +83,20 @@ export function AppSidebar() {
     return "Usuário";
   };
 
-  // Função robusta para obter o avatar URL
-  const getAvatarUrl = () => {
-    const metadata = user?.user_metadata;
-    
-    if (!metadata) {
-      console.log('[AppSidebar] Sem metadados de usuário');
-      return "";
-    }
-    
-    // Tentar múltiplas propriedades de avatar
-    let avatarUrl = metadata.avatar_url || metadata.avatar;
-    
-    // Validar se a URL não é undefined, null ou string vazia
-    if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim() !== '') {
-      avatarUrl = avatarUrl.trim();
-      console.log('[AppSidebar] Avatar URL encontrado:', avatarUrl);
-      return avatarUrl;
-    }
-    
-    console.log('[AppSidebar] Nenhum avatar válido encontrado nos metadados:', {
-      avatar_url: metadata.avatar_url,
-      avatar: metadata.avatar
-    });
-    
-    return "";
-  };
-
-  // Função para obter as iniciais
-  const getNameInitials = () => {
-    const displayName = getDisplayName();
-    if (displayName === "Usuário") {
-      return "U";
-    }
-    const names = displayName.split(' ').filter(name => name.length > 0);
-    if (names.length >= 2) {
-      return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
-    } else if (names.length === 1) {
-      return names[0].substring(0, 2).toUpperCase();
-    }
-    return "U";
-  };
+  // Verificar se está no tema dark
+  const isDarkTheme = document.documentElement.classList.contains('dark');
+  
+  // Selecionar logo baseado no tema
+  const logoSrc = isDarkTheme 
+    ? "/lovable-uploads/3efaf253-28c6-44f9-b580-bf1291deca16.png" // Logo para tema escuro
+    : "/lovable-uploads/28956acd-6e94-4125-8e46-702bdeef77b5.png"; // Logo para tema claro
 
   const displayName = getDisplayName();
-  const avatarUrl = getAvatarUrl();
-  const nameInitials = getNameInitials();
 
   console.log('[AppSidebar] Renderizando com dados:', {
     displayName,
-    avatarUrl,
-    nameInitials,
+    isDarkTheme,
+    logoSrc,
     userMetadata: user?.user_metadata,
     managerName: manager?.name
   });
@@ -151,20 +115,18 @@ export function AppSidebar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="justify-start px-2 w-full font-normal">
-                    <Avatar className="mr-2 h-8 w-8">
-                      <AvatarImage 
-                        src={avatarUrl} 
-                        alt={displayName}
-                        onLoad={() => {
-                          console.log('[AppSidebar] Avatar carregado com sucesso:', avatarUrl);
-                        }}
+                    <div className="mr-2 h-8 w-8 rounded-full bg-terranova-blue flex items-center justify-center overflow-hidden">
+                      <img 
+                        src={logoSrc}
+                        alt="Logo"
+                        className="h-6 w-6 object-contain"
                         onError={(e) => {
-                          console.warn('[AppSidebar] Erro ao carregar avatar:', avatarUrl);
+                          // Fallback para iniciais se a imagem falhar
                           e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerHTML = '<span class="text-white text-xs font-semibold">A2</span>';
                         }}
                       />
-                      <AvatarFallback>{nameInitials}</AvatarFallback>
-                    </Avatar>
+                    </div>
                     <div className="flex flex-col text-left">
                       <span className="font-semibold text-sm">{displayName}</span>
                       <span className="text-muted-foreground text-xs">{user?.email}</span>
