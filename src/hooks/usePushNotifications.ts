@@ -181,8 +181,7 @@ export const usePushNotifications = () => {
         icon: '/favicon.ico',
         badge: '/favicon.ico',
         tag: 'test-notification',
-        requireInteraction: false,
-        timestamp: Date.now()
+        requireInteraction: false
       });
 
       // Auto-fechar após 5 segundos
