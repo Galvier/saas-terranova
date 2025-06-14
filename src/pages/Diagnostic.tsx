@@ -22,6 +22,7 @@ import { LogsCard } from '@/components/diagnostic/LogsCard';
 import { DiagnosticSummary } from '@/components/diagnostic/DiagnosticSummary';
 import { SystemHealth } from '@/components/diagnostic/SystemHealth';
 import { RecommendationsCard } from '@/components/diagnostic/RecommendationsCard';
+import { TableUsageAnalysis } from '@/components/diagnostic/TableUsageAnalysis';
 import { useAuth } from '@/hooks/useAuth';
 
 const ESSENTIAL_TABLES = [
@@ -281,6 +282,9 @@ const Diagnostic = () => {
         writeTest={writeTest}
         syncStatus={syncStatus}
       />
+
+      {/* Análise de Uso das Tabelas */}
+      <TableUsageAnalysis tables={tables} />
 
       {/* Recomendações */}
       <RecommendationsCard 
