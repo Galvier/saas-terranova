@@ -109,7 +109,7 @@ const NotificationSettings: React.FC = () => {
       setIsSaving(true);
       console.log('[NotificationSettings] Salvando todas as configurações:', config);
       
-      // Salvar cada configuração individualmente para melhor controle
+      // Incluir monthly_deadline_day na lista de configurações para salvar
       const savePromises = [
         saveSetting('monthly_deadline_day', config.monthly_deadline_day),
         saveSetting('reminder_days_before', config.reminder_days_before),
