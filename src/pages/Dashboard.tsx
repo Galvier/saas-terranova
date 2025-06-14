@@ -124,7 +124,7 @@ const Dashboard = () => {
   return (
     <div className="animate-fade-in space-y-4 md:space-y-6 lg:space-y-8">
       <PageHeader
-        title="Dashboard"
+        title="Balanced Scorecard Dashboard - (BSC)"
         subtitle="Visão geral dos indicadores de desempenho da empresa"
       />
       
