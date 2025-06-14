@@ -11,7 +11,7 @@ import { useProfileSettings } from '@/hooks/useProfileSettings';
 import { SelfPasswordChangeDialog } from '../SelfPasswordChangeDialog';
 
 const ProfileTab = () => {
-  const { user, refreshUser, markProfileSaved } = useAuth();
+  const { user, manager, refreshUser, markProfileSaved } = useAuth();
   const { toast } = useToast();
   const { uploadAvatar, isUploading } = useAvatarUpload();
   const { saveProfile, isSaving } = useProfileSettings();
@@ -25,32 +25,23 @@ const ProfileTab = () => {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
-  // Initialize form values when user data is loaded
+  // Carregar dados do gestor para garantir a persistência no banco
   useEffect(() => {
-    if (user) {
-      console.log('[ProfileTab] Inicializando dados do usuário:', user.user_metadata);
-      
+    if (manager) {
+      setEmail(manager.email || user?.email || '');
+      setFullName(manager.name || user?.user_metadata?.full_name || '');
+      setDisplayName(manager.name || user?.user_metadata?.display_name || user?.user_metadata?.name || '');
+      setAvatarUrl(manager.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.avatar || '');
+      setPendingAvatarUrl(manager.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.avatar || '');
+    } else if (user) {
       setEmail(user.email || '');
       const metadata = user?.user_metadata;
-      if (metadata) {
-        // Garantir que valores sejam strings e não undefined
-        const currentFullName = metadata.full_name || '';
-        const currentDisplayName = metadata.display_name || metadata.name || '';
-        const currentAvatarUrl = metadata.avatar_url || metadata.avatar || '';
-        
-        setFullName(currentFullName);
-        setDisplayName(currentDisplayName);
-        setAvatarUrl(currentAvatarUrl);
-        setPendingAvatarUrl(currentAvatarUrl);
-        
-        console.log('[ProfileTab] Dados carregados:', {
-          fullName: currentFullName,
-          displayName: currentDisplayName,
-          avatarUrl: currentAvatarUrl
-        });
-      }
+      setFullName(metadata?.full_name || '');
+      setDisplayName(metadata?.display_name || metadata?.name || '');
+      setAvatarUrl(metadata?.avatar_url || metadata?.avatar || '');
+      setPendingAvatarUrl(metadata?.avatar_url || metadata?.avatar || '');
     }
-  }, [user]);
+  }, [manager, user]);
 
   // Check for unsaved changes
   useEffect(() => {
