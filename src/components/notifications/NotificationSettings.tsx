@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -83,9 +82,9 @@ const NotificationSettings: React.FC = () => {
     }
   };
 
-  const saveSetting = async (key: string, value: any) => {
+  const updateNotificationSetting = async (key: string, value: any) => {
     try {
-      console.log(`[NotificationSettings] Salvando ${key}:`, value);
+      console.log(`[NotificationSettings] Atualizando ${key}:`, value);
       
       const { error } = await supabase.rpc('update_notification_setting', {
         setting_key_param: key,
@@ -104,20 +103,63 @@ const NotificationSettings: React.FC = () => {
     }
   };
 
+  const ensureSettingExists = async (key: string, defaultValue: any) => {
+    try {
+      // Primeiro, tenta buscar a configuração
+      const { data: existingData } = await supabase.rpc('get_notification_setting', { 
+        setting_key_param: key 
+      });
+      
+      // Se não existir (retornar null), criar uma nova entrada
+      if (existingData === null || existingData === undefined) {
+        console.log(`[NotificationSettings] Criando configuração ${key} com valor padrão:`, defaultValue);
+        
+        const { error } = await supabase
+          .from('notification_settings')
+          .insert({
+            setting_key: key,
+            setting_value: defaultValue,
+            description: `Configuração para ${key}`
+          });
+          
+        if (error) {
+          console.error(`[NotificationSettings] Erro ao criar configuração ${key}:`, error);
+          throw error;
+        }
+        
+        console.log(`[NotificationSettings] Configuração ${key} criada com sucesso`);
+      }
+    } catch (error) {
+      console.error(`[NotificationSettings] Erro ao verificar/criar configuração ${key}:`, error);
+      throw error;
+    }
+  };
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
       console.log('[NotificationSettings] Salvando todas as configurações:', config);
       
-      // Incluir monthly_deadline_day na lista de configurações para salvar
+      // Primeiro, garantir que todas as configurações existem no banco
+      await Promise.all([
+        ensureSettingExists('monthly_deadline_day', config.monthly_deadline_day),
+        ensureSettingExists('reminder_days_before', config.reminder_days_before),
+        ensureSettingExists('admin_summary_frequency', config.admin_summary_frequency),
+        ensureSettingExists('business_hours_start', config.business_hours_start),
+        ensureSettingExists('business_hours_end', config.business_hours_end),
+        ensureSettingExists('enable_achievement_notifications', config.enable_achievement_notifications),
+        ensureSettingExists('enable_reminder_notifications', config.enable_reminder_notifications),
+      ]);
+      
+      // Depois, atualizar todas as configurações
       const savePromises = [
-        saveSetting('monthly_deadline_day', config.monthly_deadline_day),
-        saveSetting('reminder_days_before', config.reminder_days_before),
-        saveSetting('admin_summary_frequency', config.admin_summary_frequency),
-        saveSetting('business_hours_start', config.business_hours_start),
-        saveSetting('business_hours_end', config.business_hours_end),
-        saveSetting('enable_achievement_notifications', config.enable_achievement_notifications),
-        saveSetting('enable_reminder_notifications', config.enable_reminder_notifications),
+        updateNotificationSetting('monthly_deadline_day', config.monthly_deadline_day),
+        updateNotificationSetting('reminder_days_before', config.reminder_days_before),
+        updateNotificationSetting('admin_summary_frequency', config.admin_summary_frequency),
+        updateNotificationSetting('business_hours_start', config.business_hours_start),
+        updateNotificationSetting('business_hours_end', config.business_hours_end),
+        updateNotificationSetting('enable_achievement_notifications', config.enable_achievement_notifications),
+        updateNotificationSetting('enable_reminder_notifications', config.enable_reminder_notifications),
       ];
       
       await Promise.all(savePromises);
@@ -127,6 +169,9 @@ const NotificationSettings: React.FC = () => {
         title: "Configurações salvas",
         description: "As configurações de notificação foram atualizadas com sucesso.",
       });
+      
+      // Recarregar as configurações para confirmar que foram salvas
+      await loadSettings();
     } catch (error) {
       console.error('[NotificationSettings] Erro ao salvar configurações:', error);
       toast({
