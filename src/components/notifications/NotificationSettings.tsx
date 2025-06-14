@@ -44,18 +44,27 @@ const NotificationSettings: React.FC = () => {
       setIsLoading(true);
       console.log('[NotificationSettings] Carregando configurações...');
       
-      const configKeys = Object.keys(config) as (keyof NotificationConfig)[];
-      const promises = configKeys.map(key => 
-        supabase.rpc('get_notification_setting', { setting_key_param: key })
-      );
-      
-      const results = await Promise.all(promises);
+      const { data, error } = await supabase
+        .from('notification_settings')
+        .select('setting_key, setting_value');
+
+      if (error) {
+        console.error('[NotificationSettings] Erro ao carregar:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar as configurações.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Processar dados carregados
       const newConfig = { ...config };
       
-      results.forEach((result, index) => {
-        const key = configKeys[index];
-        if (result.data && result.data !== null) {
-          const value = result.data;
+      if (data) {
+        data.forEach(item => {
+          const key = item.setting_key as keyof NotificationConfig;
+          const value = item.setting_value;
           
           if (key === 'reminder_days_before') {
             (newConfig as any)[key] = Array.isArray(value) ? value.map(v => Number(v)).filter(v => !isNaN(v)) : [3, 5, 7];
@@ -66,16 +75,16 @@ const NotificationSettings: React.FC = () => {
           } else {
             (newConfig as any)[key] = String(value) || config[key];
           }
-        }
-      });
+        });
+      }
       
       setConfig(newConfig);
       console.log('[NotificationSettings] Configurações carregadas:', newConfig);
     } catch (error) {
-      console.error('[NotificationSettings] Erro ao carregar configurações:', error);
+      console.error('[NotificationSettings] Erro inesperado:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível carregar as configurações.",
+        description: "Erro inesperado ao carregar configurações.",
         variant: "destructive",
       });
     } finally {
@@ -83,14 +92,20 @@ const NotificationSettings: React.FC = () => {
     }
   };
 
-  const saveSetting = async (key: string, value: any) => {
+  const updateSetting = async (key: string, value: any) => {
     try {
-      console.log(`[NotificationSettings] Salvando ${key}:`, value);
+      console.log(`[NotificationSettings] Atualizando ${key}:`, value);
       
-      const { error } = await supabase.rpc('update_notification_setting', {
-        setting_key_param: key,
-        new_value: value
-      });
+      // Usar upsert direto na tabela para evitar problemas de função
+      const { error } = await supabase
+        .from('notification_settings')
+        .upsert({
+          setting_key: key,
+          setting_value: value,
+          description: `Configuração para ${key}`
+        }, {
+          onConflict: 'setting_key'
+        });
 
       if (error) {
         console.error(`[NotificationSettings] Erro ao salvar ${key}:`, error);
@@ -109,15 +124,15 @@ const NotificationSettings: React.FC = () => {
       setIsSaving(true);
       console.log('[NotificationSettings] Salvando todas as configurações:', config);
       
-      // Salvar cada configuração individualmente para melhor controle
+      // Salvar cada configuração individualmente
       const savePromises = [
-        saveSetting('monthly_deadline_day', config.monthly_deadline_day),
-        saveSetting('reminder_days_before', config.reminder_days_before),
-        saveSetting('admin_summary_frequency', config.admin_summary_frequency),
-        saveSetting('business_hours_start', config.business_hours_start),
-        saveSetting('business_hours_end', config.business_hours_end),
-        saveSetting('enable_achievement_notifications', config.enable_achievement_notifications),
-        saveSetting('enable_reminder_notifications', config.enable_reminder_notifications),
+        updateSetting('monthly_deadline_day', config.monthly_deadline_day),
+        updateSetting('reminder_days_before', config.reminder_days_before),
+        updateSetting('admin_summary_frequency', config.admin_summary_frequency),
+        updateSetting('business_hours_start', config.business_hours_start),
+        updateSetting('business_hours_end', config.business_hours_end),
+        updateSetting('enable_achievement_notifications', config.enable_achievement_notifications),
+        updateSetting('enable_reminder_notifications', config.enable_reminder_notifications),
       ];
       
       await Promise.all(savePromises);
@@ -127,6 +142,9 @@ const NotificationSettings: React.FC = () => {
         title: "Configurações salvas",
         description: "As configurações de notificação foram atualizadas com sucesso.",
       });
+      
+      // Recarregar as configurações para confirmar que foram salvas
+      await loadSettings();
     } catch (error) {
       console.error('[NotificationSettings] Erro ao salvar configurações:', error);
       toast({
@@ -169,6 +187,17 @@ const NotificationSettings: React.FC = () => {
     }
   };
 
+  const handleDeadlineDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 1 && value <= 31) {
+      console.log('[NotificationSettings] Atualizando dia limite para:', value);
+      setConfig(prev => ({
+        ...prev,
+        monthly_deadline_day: value
+      }));
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -199,11 +228,12 @@ const NotificationSettings: React.FC = () => {
                 min="1"
                 max="31"
                 value={config.monthly_deadline_day}
-                onChange={(e) => setConfig(prev => ({
-                  ...prev,
-                  monthly_deadline_day: parseInt(e.target.value) || 25
-                }))}
+                onChange={handleDeadlineDayChange}
+                placeholder="Digite o dia limite (1-31)"
               />
+              <p className="text-xs text-muted-foreground">
+                Valor atual: {config.monthly_deadline_day}
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="frequency">Frequência de resumos</Label>
