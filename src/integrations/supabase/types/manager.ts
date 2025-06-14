@@ -11,4 +11,5 @@ export interface Manager {
   updated_at?: string;
   user_id?: string;
   user_created?: boolean;
+  avatar_url?: string;
 }

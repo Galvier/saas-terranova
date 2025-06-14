@@ -13,12 +13,29 @@ export const useDashboardMetrics = (
   dateRangeType: DateRangeType,
   viewMode: 'all' | 'favorites'
 ) => {
-  const { isAdmin, userDepartmentId } = useAuth();
+  const { isAdmin, userDepartmentId, isAuthenticated, user } = useAuth();
+  
+  console.log('[useDashboardMetrics] Inicializando hook:', {
+    selectedDepartment,
+    selectedDate: selectedDate.toISOString(),
+    dateRangeType,
+    viewMode,
+    isAdmin,
+    userDepartmentId,
+    isAuthenticated,
+    userId: user?.id
+  });
   
   // Force department selection to user's department if not admin
   const effectiveDepartment = !isAdmin && userDepartmentId 
     ? userDepartmentId 
     : selectedDepartment;
+    
+  console.log('[useDashboardMetrics] Departamento efetivo:', {
+    original: selectedDepartment,
+    effective: effectiveDepartment,
+    reason: !isAdmin && userDepartmentId ? 'override de gestor' : 'seleção original'
+  });
   
   // Use the extracted hooks with the effective department
   const {
@@ -49,13 +66,57 @@ export const useDashboardMetrics = (
   // Save preferences to localStorage
   usePreferences(dateRangeType, viewMode);
   
-  // Aggregate error states
+  // Aggregate error states - mas não considerar erro crítico se pelo menos temos dados básicos
   const hasError = selectionHasError || fetchingHasError;
   const errorMessage = selectionErrorMessage || fetchingErrorMessage;
   const isError = isConfigError || fetchingIsError;
 
+  // Se não está autenticado, ainda está carregando autenticação
+  if (!isAuthenticated) {
+    console.log('[useDashboardMetrics] Usuário não autenticado, aguardando...');
+    return {
+      metrics: [],
+      isLoading: true,
+      isLoadingConfig: false,
+      selectedMetrics: [],
+      hasError: false,
+      errorMessage: null,
+      isError: false,
+      kpiData: {
+        salesTotal: 0,
+        newCustomers: 0,
+        conversionRate: 0,
+        openProjects: 0,
+        hasSalesData: false,
+        hasCustomerData: false,
+        hasConversionData: false,
+        hasProjectData: false
+      },
+      departmentPerformance: [],
+      monthlyRevenue: [],
+      shouldShowCharts: {
+        departmentPerformance: false,
+        monthlyRevenue: false
+      },
+      handleMetricSelectionChange,
+      isFiltered: false,
+      effectiveDepartment
+    };
+  }
+
+  // Enhanced logging for debugging
+  console.log('[useDashboardMetrics] Estado final:', {
+    metricsCount: metrics?.length || 0,
+    isLoading,
+    hasError,
+    errorMessage,
+    isAuthenticated,
+    isConfigError,
+    fetchingIsError
+  });
+
   return {
-    metrics, // This now contains all unfiltered metrics for the selection dialog
+    metrics,
     isLoading,
     isLoadingConfig,
     selectedMetrics,
@@ -67,7 +128,6 @@ export const useDashboardMetrics = (
     monthlyRevenue,
     shouldShowCharts,
     handleMetricSelectionChange,
-    // Add effective department to check if filtering was enforced
     isFiltered: !isAdmin && userDepartmentId !== null,
     effectiveDepartment
   };

@@ -6,24 +6,84 @@ import type { MetricDefinition } from '../types/metric';
 // Function to get metrics by department
 export const getMetricsByDepartment = async (departmentId?: string, date?: string): Promise<CrudResult<MetricDefinition[]>> => {
   try {
-    console.log("Fetching metrics with params - departmentId:", departmentId, "date:", date);
+    console.log("[getMetricsByDepartment] Iniciando requisição:", { 
+      departmentId, 
+      date,
+      effectiveDepartmentId: departmentId === 'all' ? null : departmentId,
+      effectiveDate: date || new Date().toISOString().split('T')[0]
+    });
     
-    // Call the RPC function instead of a direct query
-    const { data, error } = await supabase.rpc('get_metrics_by_department', {
+    // Check current user session
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error("[getMetricsByDepartment] Erro de autenticação:", userError);
+      return formatCrudResult([], userError);
+    }
+    
+    if (!user) {
+      console.error("[getMetricsByDepartment] Usuário não autenticado");
+      return formatCrudResult([], new Error("Usuário não autenticado"));
+    }
+    
+    console.log("[getMetricsByDepartment] Usuário autenticado:", { id: user.id, email: user.email });
+    
+    // Primeiro tentar com a função RPC
+    console.log("[getMetricsByDepartment] Tentando função RPC...");
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_metrics_by_department', {
       department_id_param: departmentId === 'all' ? null : departmentId,
       date_param: date || new Date().toISOString().split('T')[0]
     });
     
-    if (error) {
-      console.error("Error fetching metrics:", error);
-      return formatCrudResult([], error);
+    if (!rpcError && rpcData) {
+      console.log("[getMetricsByDepartment] RPC bem-sucedida:", {
+        count: rpcData?.length || 0,
+        sample: rpcData?.length > 0 ? rpcData[0] : null
+      });
+      return formatCrudResult(rpcData as MetricDefinition[], null);
     }
     
-    console.log("Successfully fetched metrics:", data?.length || 0);
-    return formatCrudResult(data as MetricDefinition[], null);
+    console.warn("[getMetricsByDepartment] RPC falhou, tentando query direta:", rpcError);
+    
+    // Fallback: query direta (mais simples)
+    let query = supabase
+      .from('metrics_definition')
+      .select(`
+        *,
+        department:departments(name)
+      `);
+    
+    // Filtrar por departamento se especificado
+    if (departmentId && departmentId !== 'all') {
+      query = query.eq('department_id', departmentId);
+    }
+    
+    const { data: directData, error: directError } = await query;
+    
+    if (directError) {
+      console.error("[getMetricsByDepartment] Query direta também falhou:", directError);
+      return formatCrudResult([], directError);
+    }
+    
+    // Transformar dados para o formato esperado
+    const transformedData = (directData || []).map(metric => ({
+      ...metric,
+      department_name: metric.department?.name || 'Sem departamento',
+      current: 0, // Placeholder - seria necessário buscar valores separadamente
+      trend: 'neutral' as const,
+      status: 'warning' as const, // Fixed: use valid status value
+      last_value_date: null
+    }));
+    
+    console.log("[getMetricsByDepartment] Query direta bem-sucedida:", {
+      count: transformedData.length,
+      sample: transformedData.length > 0 ? transformedData[0] : null
+    });
+    
+    return formatCrudResult(transformedData as MetricDefinition[], null);
   } catch (error) {
-    console.error('Error in getMetricsByDepartment:', error);
-    return formatCrudResult([], error);
+    console.error('[getMetricsByDepartment] Erro inesperado:', error);
+    return formatCrudResult([], error instanceof Error ? error : new Error(String(error)));
   }
 };
 

@@ -8,33 +8,51 @@ export const useBackupSettings = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSettings = async () => {
+    console.log('[useBackupSettings] === CARREGANDO CONFIGURAÇÕES ===');
     setIsLoading(true);
     setError(null);
     try {
       const data = await getBackupSettings();
+      console.log('[useBackupSettings] Configurações carregadas:', data);
       setSettings(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar configurações');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar configurações';
+      console.error('[useBackupSettings] ERRO ao carregar:', err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
+      console.log('[useBackupSettings] === CARREGAMENTO FINALIZADO ===');
     }
   };
 
   const updateSettings = async (autoBackupEnabled: boolean) => {
+    console.log('[useBackupSettings] === ATUALIZANDO CONFIGURAÇÕES ===');
+    console.log('[useBackupSettings] Nova configuração:', { autoBackupEnabled });
+    console.log('[useBackupSettings] Configuração atual:', settings);
+    
     try {
       const success = await updateBackupSettings(autoBackupEnabled);
+      console.log('[useBackupSettings] Resultado da atualização:', success);
+      
       if (success) {
         setSettings(prev => prev ? {
           ...prev,
           auto_backup_enabled: autoBackupEnabled,
           updated_at: new Date().toISOString()
         } : null);
+        console.log('[useBackupSettings] Estado local atualizado');
         return true;
+      } else {
+        console.error('[useBackupSettings] Falha na atualização - success = false');
+        return false;
       }
-      return false;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar configurações');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar configurações';
+      console.error('[useBackupSettings] ERRO na atualização:', err);
+      setError(errorMessage);
       return false;
+    } finally {
+      console.log('[useBackupSettings] === ATUALIZAÇÃO FINALIZADA ===');
     }
   };
 

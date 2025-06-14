@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client'; 
 import { useToast } from './use-toast';
@@ -10,6 +10,7 @@ interface UseAuthSessionReturn {
   isLoading: boolean;
   error: Error | null;
   refreshUser: () => Promise<void>;
+  markProfileSaved: () => void;
 }
 
 export const useAuthSession = (): UseAuthSessionReturn => {
@@ -18,6 +19,10 @@ export const useAuthSession = (): UseAuthSessionReturn => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const { toast } = useToast();
+  const [recentProfileSavedAt, setRecentProfileSavedAt] = useState<number>(0);
+
+  // Nova função auxiliar para sinalizar profile salvo
+  const markProfileSaved = () => setRecentProfileSavedAt(Date.now());
 
   // Function to refresh user data
   const refreshUser = async (): Promise<void> => {
@@ -25,6 +30,12 @@ export const useAuthSession = (): UseAuthSessionReturn => {
       console.log('[AuthSession] Atualização manual dos dados do usuário solicitada');
       setIsLoading(true);
       
+      // -> Se o usuário acabou de salvar perfil, aguarde para não sobrescrever!
+      if (recentProfileSavedAt && Date.now() - recentProfileSavedAt < 3000) {
+        console.log('[AuthSession] Aguardando para evitar sobrescrita do avatar...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
       // Use getSession() instead of refreshSession() as it's more reliable
       const { data, error: sessionError } = await supabase.auth.getSession();
       
@@ -231,5 +242,5 @@ export const useAuthSession = (): UseAuthSessionReturn => {
     };
   }, [toast]);
 
-  return { user, session, isLoading, error, refreshUser };
+  return { user, session, isLoading, error, refreshUser, markProfileSaved };
 };

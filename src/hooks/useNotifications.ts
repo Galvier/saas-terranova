@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useRealTimeSubscription } from '@/hooks/useRealTimeSubscription';
 
 export interface Notification {
   id: string;
@@ -41,7 +40,6 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      // Converter dados do Supabase para nossa interface
       const typedNotifications: Notification[] = (data || []).map(item => ({
         id: item.id,
         user_id: item.user_id,
@@ -98,62 +96,6 @@ export const useNotifications = () => {
       console.error('Error marking all notifications as read:', err);
     }
   }, []);
-
-  const handleRealtimeUpdate = useCallback((payload: any) => {
-    console.log('Realtime notification update:', payload);
-    
-    switch (payload.eventType) {
-      case 'INSERT':
-        const newNotification: Notification = {
-          id: payload.new.id,
-          user_id: payload.new.user_id,
-          title: payload.new.title,
-          message: payload.new.message,
-          type: payload.new.type as 'info' | 'warning' | 'success' | 'error',
-          is_read: payload.new.is_read,
-          metadata: (typeof payload.new.metadata === 'object' && payload.new.metadata !== null && !Array.isArray(payload.new.metadata)) 
-            ? payload.new.metadata as Record<string, any>
-            : {},
-          created_at: payload.new.created_at,
-          updated_at: payload.new.updated_at
-        };
-        setNotifications(prev => [newNotification, ...prev]);
-        break;
-      case 'UPDATE':
-        const updatedNotification: Notification = {
-          id: payload.new.id,
-          user_id: payload.new.user_id,
-          title: payload.new.title,
-          message: payload.new.message,
-          type: payload.new.type as 'info' | 'warning' | 'success' | 'error',
-          is_read: payload.new.is_read,
-          metadata: (typeof payload.new.metadata === 'object' && payload.new.metadata !== null && !Array.isArray(payload.new.metadata)) 
-            ? payload.new.metadata as Record<string, any>
-            : {},
-          created_at: payload.new.created_at,
-          updated_at: payload.new.updated_at
-        };
-        setNotifications(prev =>
-          prev.map(notification =>
-            notification.id === updatedNotification.id ? updatedNotification : notification
-          )
-        );
-        break;
-      case 'DELETE':
-        setNotifications(prev =>
-          prev.filter(notification => notification.id !== payload.old.id)
-        );
-        break;
-    }
-  }, []);
-
-  useRealTimeSubscription(
-    {
-      table: 'notifications',
-      event: '*'
-    },
-    handleRealtimeUpdate
-  );
 
   useEffect(() => {
     fetchNotifications();

@@ -223,6 +223,7 @@ export type Database = {
       }
       managers: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           department_id: string | null
           email: string
@@ -234,6 +235,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           department_id?: string | null
           email: string
@@ -245,6 +247,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           department_id?: string | null
           email?: string
@@ -479,6 +482,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       notification_templates: {
         Row: {
@@ -917,6 +947,7 @@ export type Database = {
       get_current_user_manager: {
         Args: Record<PropertyKey, never>
         Returns: {
+          avatar_url: string | null
           created_at: string | null
           department_id: string | null
           email: string
@@ -931,6 +962,7 @@ export type Database = {
       get_manager_by_id: {
         Args: { manager_id: string }
         Returns: {
+          avatar_url: string | null
           created_at: string | null
           department_id: string | null
           email: string
@@ -992,6 +1024,10 @@ export type Database = {
           last_value_date: string
         }[]
       }
+      get_notification_setting: {
+        Args: { setting_key_param: string }
+        Returns: Json
+      }
       get_pending_justifications: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1032,6 +1068,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      process_automatic_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       record_metric_value: {
         Args: { metric_id: string; metric_value: number; metric_date?: string }
         Returns: string
@@ -1061,13 +1101,20 @@ export type Database = {
         Returns: string
       }
       save_user_settings: {
-        Args: {
-          p_user_id: string
-          p_theme: string
-          p_density?: string
-          p_animations_enabled?: boolean
-          p_notification_preferences?: Json
-        }
+        Args:
+          | {
+              p_user_id: string
+              p_theme: string
+              p_animations_enabled?: boolean
+              p_notification_preferences?: Json
+            }
+          | {
+              p_user_id: string
+              p_theme: string
+              p_density?: string
+              p_animations_enabled?: boolean
+              p_notification_preferences?: Json
+            }
         Returns: string
       }
       update_manager: {
@@ -1130,6 +1177,10 @@ export type Database = {
               metric_default_period?: string
             }
         Returns: string
+      }
+      update_notification_setting: {
+        Args: { setting_key_param: string; new_value: Json }
+        Returns: boolean
       }
       validate_current_password: {
         Args: { current_password: string }

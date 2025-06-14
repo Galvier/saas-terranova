@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
@@ -8,6 +7,15 @@ interface ProfileData {
   fullName: string;
   displayName: string;
   email: string;
+  avatarUrl?: string;
+}
+
+interface UserMetadataUpdate {
+  full_name: string;
+  display_name: string;
+  name: string;
+  avatar_url?: string;
+  [key: string]: any;
 }
 
 export const useProfileSettings = () => {
@@ -23,34 +31,67 @@ export const useProfileSettings = () => {
         throw new Error('Usuário não encontrado');
       }
 
-      // Update user metadata
+      console.log('[useProfileSettings] === INICIANDO SALVAMENTO ===');
+      console.log('[useProfileSettings] User ID:', user.id);
+      console.log('[useProfileSettings] Dados recebidos:', profileData);
+
+      // Atualiza metadados do usuário do auth
+      const updateData: UserMetadataUpdate = {
+        ...(user.user_metadata || {}),
+        full_name: profileData.fullName,
+        display_name: profileData.displayName,
+        name: profileData.displayName,
+        avatar_url: profileData.avatarUrl,
+      };
+
       const { error: authError } = await supabase.auth.updateUser({
-        data: {
-          full_name: profileData.fullName,
-          display_name: profileData.displayName,
-          name: profileData.displayName
-        }
+        data: updateData
       });
 
-      if (authError) {
-        throw authError;
-      }
+      if (authError) throw authError;
 
-      // Update manager record if exists
-      const { error: managerError } = await supabase
+      // Atualiza registro na tabela 'managers'
+      // Busca manager pelo user_id
+      const { data: existingManager, error: selectManagerErr } = await supabase
         .from('managers')
-        .update({
-          name: profileData.displayName,
-          email: profileData.email
-        })
-        .eq('user_id', user.id);
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      // Note: We don't throw on manager error as the user might not be a manager
-      if (managerError) {
-        console.warn('Manager update failed:', managerError);
+      if (selectManagerErr) {
+        // Tenta criar se erro ou não existe ainda
+        throw selectManagerErr;
       }
 
-      // Refresh user data to get updated metadata
+      if (existingManager && existingManager.id) {
+        // Atualiza se existe
+        const { error: updateError } = await supabase
+          .from('managers')
+          .update({
+            name: profileData.displayName,
+            email: profileData.email,
+            avatar_url: profileData.avatarUrl
+          })
+          .eq('id', existingManager.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Cria novo registro manager se não existir (situação rara)
+        const { error: insertError } = await supabase
+          .from('managers')
+          .insert({
+            name: profileData.displayName,
+            email: profileData.email,
+            avatar_url: profileData.avatarUrl,
+            user_id: user.id,
+            is_active: true
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      // Pequena pausa e refresh do usuário/auth
+      await new Promise(resolve => setTimeout(resolve, 1800));
       await refreshUser();
 
       toast({
@@ -60,7 +101,9 @@ export const useProfileSettings = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Error saving profile:', error);
+      console.error('[useProfileSettings] === ERRO NO SALVAMENTO ===');
+      console.error('[useProfileSettings] Erro detalhado:', error);
+
       toast({
         title: "Erro",
         description: error.message || "Erro ao salvar perfil",

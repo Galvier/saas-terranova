@@ -1,7 +1,6 @@
 
 import { ReactNode, useEffect } from 'react';
 import { useUserSettings } from '@/hooks/useUserSettings';
-import { useAuth } from '@/hooks/useAuth';
 
 interface ThemeProviderProps {
   children: ReactNode;
@@ -9,35 +8,58 @@ interface ThemeProviderProps {
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   const { settings, isLoading } = useUserSettings();
-  const { isAuthenticated } = useAuth();
 
-  // Apply theme whenever settings change or auth state changes
+  // Aplicar tema quando carregado ou quando muda
   useEffect(() => {
     if (isLoading) return;
 
-    // Apply theme
+    console.log('[ThemeProvider] Aplicando tema:', settings.theme);
+    
+    const root = document.documentElement;
+    
+    // Limpar classes existentes
+    root.classList.remove('dark', 'light');
+    
+    // Aplicar novo tema
     if (settings.theme === 'system') {
       const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.classList.remove('dark', 'light');
       if (systemPrefersDark) {
-        document.documentElement.classList.add('dark');
+        root.classList.add('dark');
       } else {
-        document.documentElement.classList.add('light');
+        root.classList.add('light');
       }
     } else {
-      document.documentElement.classList.remove('dark', 'light');
-      document.documentElement.classList.add(settings.theme);
+      root.classList.add(settings.theme);
     }
     
-    // Apply animations
+    // Aplicar animações
     if (!settings.animationsEnabled) {
-      document.documentElement.classList.add('no-animations');
+      root.classList.add('no-animations');
     } else {
-      document.documentElement.classList.remove('no-animations');
+      root.classList.remove('no-animations');
     }
     
-    console.log(`[ThemeProvider] Applied theme: ${settings.theme}, animations: ${settings.animationsEnabled ? 'enabled' : 'disabled'}`);
-  }, [settings, isLoading, isAuthenticated]);
+    console.log('[ThemeProvider] Tema aplicado. Classes atuais:', root.className);
+  }, [settings, isLoading]);
+
+  // Listener para mudanças do sistema
+  useEffect(() => {
+    if (settings.theme !== 'system') return;
+    
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      const root = document.documentElement;
+      root.classList.remove('dark', 'light');
+      if (mediaQuery.matches) {
+        root.classList.add('dark');
+      } else {
+        root.classList.add('light');
+      }
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [settings.theme]);
 
   return <>{children}</>;
 };
