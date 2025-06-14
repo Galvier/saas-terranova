@@ -371,8 +371,8 @@ export const restoreBackupFromDatabase = async (
       return { success: false, error: error.message };
     }
 
-    // Type assertion para o resultado da função RPC
-    const result = data as RestoreBackupResult;
+    // Type assertion mais segura para o resultado da função RPC
+    const result = data as unknown as RestoreBackupResult;
 
     if (!result.success) {
       console.error('[backupService] Falha na restauração:', result.error);
