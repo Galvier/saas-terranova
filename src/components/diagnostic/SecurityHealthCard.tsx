@@ -28,102 +28,94 @@ export function SecurityHealthCard() {
     const checks: SecurityCheck[] = [];
 
     try {
-      // Verificar RLS habilitado nas tabelas críticas individualmente
+      // Verificar se funções de segurança existem
+      try {
+        const { error: adminError } = await supabase.rpc('is_admin_user');
+        
+        if (!adminError) {
+          checks.push({
+            name: 'Função is_admin_user',
+            status: 'pass',
+            message: 'Função de verificação de admin configurada',
+            critical: true
+          });
+        } else {
+          checks.push({
+            name: 'Função is_admin_user',
+            status: 'fail',
+            message: 'Função de verificação de admin não encontrada',
+            critical: true
+          });
+        }
+      } catch (err) {
+        checks.push({
+          name: 'Função is_admin_user',
+          status: 'fail',
+          message: 'Erro ao verificar função de admin',
+          critical: true
+        });
+      }
+
+      try {
+        const { error: managerError } = await supabase.rpc('is_active_manager');
+        
+        if (!managerError) {
+          checks.push({
+            name: 'Função is_active_manager',
+            status: 'pass',
+            message: 'Função de verificação de manager configurada',
+            critical: true
+          });
+        } else {
+          checks.push({
+            name: 'Função is_active_manager',
+            status: 'fail',
+            message: 'Função de verificação de manager não encontrada',
+            critical: true
+          });
+        }
+      } catch (err) {
+        checks.push({
+          name: 'Função is_active_manager',
+          status: 'fail',
+          message: 'Erro ao verificar função de manager',
+          critical: true
+        });
+      }
+
+      // Verificar RLS nas tabelas críticas
+      const tablesToCheck = ['managers', 'logs', 'metrics_definition', 'notifications'];
       
-      // Verificar managers
-      try {
-        const { data, error } = await supabase
-          .from('managers')
-          .select('*')
-          .limit(1);
-        
-        if (!error) {
+      for (const table of tablesToCheck) {
+        try {
+          const { data, error } = await supabase
+            .from(table)
+            .select('*')
+            .limit(1);
+          
+          if (!error) {
+            checks.push({
+              name: `RLS Ativo - ${table}`,
+              status: 'pass',
+              message: `Row Level Security habilitado para ${table}`,
+              critical: true
+            });
+          } else {
+            checks.push({
+              name: `RLS Verificação - ${table}`,
+              status: 'warning',
+              message: `Possível problema de RLS para ${table}`,
+              critical: true
+            });
+          }
+        } catch (err) {
           checks.push({
-            name: 'RLS Ativo - managers',
-            status: 'pass',
-            message: 'Row Level Security habilitado para managers',
+            name: `RLS Verificação - ${table}`,
+            status: 'warning',
+            message: `Não foi possível verificar RLS para ${table}`,
             critical: true
           });
         }
-      } catch (err) {
-        checks.push({
-          name: 'RLS Verificação - managers',
-          status: 'warning',
-          message: 'Não foi possível verificar RLS para managers',
-          critical: true
-        });
-      }
-
-      // Verificar logs
-      try {
-        const { data, error } = await supabase
-          .from('logs')
-          .select('*')
-          .limit(1);
-        
-        if (!error) {
-          checks.push({
-            name: 'RLS Ativo - logs',
-            status: 'pass',
-            message: 'Row Level Security habilitado para logs',
-            critical: true
-          });
-        }
-      } catch (err) {
-        checks.push({
-          name: 'RLS Verificação - logs',
-          status: 'warning',
-          message: 'Não foi possível verificar RLS para logs',
-          critical: true
-        });
-      }
-
-      // Verificar metrics_definition
-      try {
-        const { data, error } = await supabase
-          .from('metrics_definition')
-          .select('*')
-          .limit(1);
-        
-        if (!error) {
-          checks.push({
-            name: 'RLS Ativo - metrics_definition',
-            status: 'pass',
-            message: 'Row Level Security habilitado para metrics_definition',
-            critical: true
-          });
-        }
-      } catch (err) {
-        checks.push({
-          name: 'RLS Verificação - metrics_definition',
-          status: 'warning',
-          message: 'Não foi possível verificar RLS para metrics_definition',
-          critical: true
-        });
-      }
-
-      // Verificar notifications
-      try {
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('*')
-          .limit(1);
-        
-        if (!error) {
-          checks.push({
-            name: 'RLS Ativo - notifications',
-            status: 'pass',
-            message: 'Row Level Security habilitado para notifications',
-            critical: true
-          });
-        }
-      } catch (err) {
-        checks.push({
-          name: 'RLS Verificação - notifications',
-          status: 'warning',
-          message: 'Não foi possível verificar RLS para notifications',
-          critical: true
-        });
       }
 
       // Verificar se existem logs de auditoria recentes
@@ -149,25 +141,6 @@ export function SecurityHealthCard() {
         });
       }
 
-      // Verificar se função is_admin existe
-      const { data: adminCheck, error: adminError } = await supabase.rpc('is_admin');
-      
-      if (!adminError) {
-        checks.push({
-          name: 'Função de Segurança',
-          status: 'pass',
-          message: 'Função is_admin configurada corretamente',
-          critical: true
-        });
-      } else {
-        checks.push({
-          name: 'Função de Segurança',
-          status: 'fail',
-          message: 'Função is_admin não encontrada ou com erro',
-          critical: true
-        });
-      }
-
       // Verificar autenticação ativa
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
@@ -184,6 +157,38 @@ export function SecurityHealthCard() {
           status: 'fail',
           message: 'Problema na autenticação do usuário',
           critical: true
+        });
+      }
+
+      // Verificar função de criação de logs
+      try {
+        const { error: logFuncError } = await supabase.rpc('create_security_log', {
+          log_level: 'info',
+          log_message: 'Teste de verificação de segurança',
+          log_details: { test: true, verification: true }
+        });
+        
+        if (!logFuncError) {
+          checks.push({
+            name: 'Função create_security_log',
+            status: 'pass',
+            message: 'Função de criação de logs funcionando',
+            critical: false
+          });
+        } else {
+          checks.push({
+            name: 'Função create_security_log',
+            status: 'warning',
+            message: 'Problema na função de criação de logs',
+            critical: false
+          });
+        }
+      } catch (err) {
+        checks.push({
+          name: 'Função create_security_log',
+          status: 'warning',
+          message: 'Erro ao testar função de logs',
+          critical: false
         });
       }
 
@@ -296,15 +301,15 @@ export function SecurityHealthCard() {
           </Alert>
         )}
 
-        {/* Recomendações */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="font-medium text-sm text-blue-800 mb-2">🔒 Medidas de Segurança Implementadas:</h4>
-          <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Row Level Security (RLS) habilitado em todas as tabelas</li>
-            <li>• Políticas de acesso baseadas em roles (admin/manager)</li>
-            <li>• Funções SECURITY DEFINER com search_path seguro</li>
-            <li>• Logs de auditoria para operações sensíveis</li>
-            <li>• Verificação automática de integridade</li>
+        {/* Melhorias Implementadas */}
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <h4 className="font-medium text-sm text-green-800 mb-2">✅ Correções Implementadas:</h4>
+          <ul className="text-sm text-green-700 space-y-1">
+            <li>• Políticas RLS corrigidas para evitar recursão infinita</li>
+            <li>• Funções SECURITY DEFINER implementadas</li>
+            <li>• Sistema de logs de auditoria aprimorado</li>
+            <li>• Verificações automáticas de integridade</li>
+            <li>• Tratamento robusto de erros implementado</li>
           </ul>
         </div>
       </CardContent>

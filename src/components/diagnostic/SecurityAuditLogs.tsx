@@ -8,7 +8,6 @@ import { Shield, Download, RefreshCw, AlertCircle, Info, AlertTriangle, Plus } f
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { createLog } from '@/services/logService';
 
 interface AuditLog {
   id: string;
@@ -33,11 +32,11 @@ export function SecurityAuditLogs() {
     try {
       console.log('[SecurityAuditLogs] Buscando logs de segurança...');
       
-      // Buscar logs com filtros mais amplos primeiro
+      // Buscar logs com filtros de segurança
       const { data, error } = await supabase
         .from('logs')
         .select('*')
-        .in('level', ['error', 'warn', 'warning', 'info'])
+        .or('level.eq.error,level.eq.warning,level.eq.warn,message.ilike.%security%,message.ilike.%audit%,message.ilike.%auth%,message.ilike.%login%,message.ilike.%access%,message.ilike.%permission%')
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -47,24 +46,7 @@ export function SecurityAuditLogs() {
       }
 
       console.log('[SecurityAuditLogs] Logs encontrados:', data?.length || 0);
-      
-      // Filtrar logs relacionados à segurança no frontend
-      const securityLogs = (data || []).filter(log => 
-        log.level === 'error' || 
-        log.level === 'warn' || 
-        log.level === 'warning' ||
-        (log.message && (
-          log.message.toLowerCase().includes('security') ||
-          log.message.toLowerCase().includes('audit') ||
-          log.message.toLowerCase().includes('auth') ||
-          log.message.toLowerCase().includes('login') ||
-          log.message.toLowerCase().includes('access') ||
-          log.message.toLowerCase().includes('permission')
-        ))
-      );
-
-      console.log('[SecurityAuditLogs] Logs de segurança filtrados:', securityLogs.length);
-      setLogs(securityLogs);
+      setLogs(data || []);
     } catch (error) {
       console.error('[SecurityAuditLogs] Erro ao buscar logs de segurança:', error);
       toast({
@@ -72,7 +54,7 @@ export function SecurityAuditLogs() {
         description: 'Não foi possível carregar os logs de segurança.',
         variant: 'destructive'
       });
-      setLogs([]); // Define como array vazio em caso de erro
+      setLogs([]);
     } finally {
       setIsLoading(false);
     }
@@ -135,23 +117,22 @@ export function SecurityAuditLogs() {
     try {
       console.log('[SecurityAuditLogs] Criando log de teste de segurança...');
       
-      // Usar apenas o serviço de logs para evitar problemas com RPC
-      const result = await createLog(
-        'info',
-        'Teste de log de segurança gerado pelo usuário',
-        {
+      const { data, error } = await supabase.rpc('create_security_log', {
+        log_level: 'info',
+        log_message: 'Teste de log de segurança gerado pelo usuário',
+        log_details: {
           test: true,
           timestamp: new Date().toISOString(),
           action: 'manual_test',
           source: 'security_audit_logs_component'
         }
-      );
+      });
 
-      if (result.error) {
-        throw new Error(result.error.message || 'Erro ao criar log via serviço');
+      if (error) {
+        throw error;
       }
 
-      console.log('[SecurityAuditLogs] Log criado via serviço:', result.data);
+      console.log('[SecurityAuditLogs] Log criado via RPC:', data);
       
       toast({
         title: 'Log de teste criado',
@@ -186,17 +167,17 @@ export function SecurityAuditLogs() {
       
       for (const logType of logTypes) {
         try {
-          const result = await createLog(
-            logType.level as 'info' | 'warning' | 'error',
-            logType.message,
-            {
+          const { error } = await supabase.rpc('create_security_log', {
+            log_level: logType.level,
+            log_message: logType.message,
+            log_details: {
               ...logType.details,
               timestamp: new Date().toISOString(),
               source: 'security_audit_generator'
             }
-          );
+          });
           
-          if (!result.error) {
+          if (!error) {
             successCount++;
           }
           

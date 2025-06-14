@@ -14,6 +14,7 @@ const getLogLevelClass = (level: string) => {
     case 'error':
       return 'bg-red-100 text-red-800 border-red-200';
     case 'warning':
+    case 'warn':
       return 'bg-amber-100 text-amber-800 border-amber-200';
     case 'info':
       return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -109,11 +110,9 @@ export function LogsCard({
   };
 
   useEffect(() => {
-    // Fetch logs on component mount and when mode or limit changes
     fetchLogs();
   }, [mode, limit]);
 
-  // Error view
   const renderError = () => (
     <div className="flex flex-col items-center justify-center py-8 text-center">
       <AlertTriangle className="h-10 w-10 text-amber-500 mb-4" />
@@ -139,7 +138,6 @@ export function LogsCard({
     </div>
   );
 
-  // Empty state
   const renderEmpty = () => (
     <div className="text-center py-8 text-muted-foreground">
       <p>Nenhum log encontrado</p>
