@@ -13,6 +13,7 @@ const PushNotificationSettings: React.FC = () => {
     isSupported,
     permission,
     isSubscribed,
+    isLoading,
     requestPermission,
     subscribe,
     unsubscribe,
@@ -42,6 +43,25 @@ const PushNotificationSettings: React.FC = () => {
           icon: AlertTriangle,
           iconColor: 'text-yellow-600 dark:text-yellow-400'
         };
+    }
+  };
+
+  const handleSwitchChange = async (checked: boolean) => {
+    console.log('Switch change:', { checked, permission, isSubscribed, isLoading });
+    
+    if (isLoading) {
+      console.log('Already loading, ignoring switch change');
+      return;
+    }
+
+    if (checked) {
+      console.log('Attempting to subscribe...');
+      const success = await subscribe();
+      console.log('Subscribe result:', success);
+    } else {
+      console.log('Attempting to unsubscribe...');
+      const success = await unsubscribe();
+      console.log('Unsubscribe result:', success);
     }
   };
 
@@ -121,14 +141,8 @@ const PushNotificationSettings: React.FC = () => {
           </div>
           <Switch
             checked={isSubscribed}
-            onCheckedChange={async (checked) => {
-              if (checked) {
-                await subscribe();
-              } else {
-                await unsubscribe();
-              }
-            }}
-            disabled={permission === 'denied'}
+            onCheckedChange={handleSwitchChange}
+            disabled={isLoading}
           />
         </div>
 
@@ -143,8 +157,9 @@ const PushNotificationSettings: React.FC = () => {
                   onClick={requestPermission}
                   size="sm"
                   className="ml-2"
+                  disabled={isLoading}
                 >
-                  Permitir
+                  {isLoading ? 'Aguarde...' : 'Permitir'}
                 </Button>
               </div>
             </AlertDescription>
@@ -185,9 +200,10 @@ const PushNotificationSettings: React.FC = () => {
               onClick={sendTestNotification}
               variant="outline"
               className="w-full"
+              disabled={isLoading}
             >
               <TestTube className="h-4 w-4 mr-2" />
-              Enviar Notificação de Teste
+              {isLoading ? 'Enviando...' : 'Enviar Notificação de Teste'}
             </Button>
           </div>
         )}
