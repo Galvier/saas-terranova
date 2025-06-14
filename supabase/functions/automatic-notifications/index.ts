@@ -59,9 +59,9 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log('Configurações:', { monthlyDeadline, reminderDays, currentDay, daysUntilDeadline });
 
-    // 2. Verificar métricas que precisam de lembrete
+    // 2. Verificar métricas que precisam de lembrete POR DEPARTAMENTO
     if (reminderDays.includes(daysUntilDeadline)) {
-      console.log('Verificando métricas pendentes...');
+      console.log('Verificando métricas pendentes por departamento...');
       
       const { data: pendingMetrics, error: metricsError } = await supabase
         .from('metrics_definition')
@@ -75,37 +75,60 @@ serve(async (req: Request): Promise<Response> => {
       if (metricsError) {
         console.error('Erro ao buscar métricas:', metricsError);
       } else if (pendingMetrics && pendingMetrics.length > 0) {
-        for (const metric of pendingMetrics) {
-          // Verificar se já tem valor para este mês
-          const { data: existingValue } = await supabase
-            .from('metrics_values')
-            .select('id')
-            .eq('metrics_definition_id', metric.id)
-            .gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
-            .lt('date', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0])
-            .single();
+        // Agrupar métricas por departamento
+        const metricsByDepartment = pendingMetrics.reduce((acc, metric) => {
+          const deptId = metric.department_id || 'no_department';
+          if (!acc[deptId]) {
+            acc[deptId] = [];
+          }
+          acc[deptId].push(metric);
+          return acc;
+        }, {} as Record<string, any[]>);
 
-          if (!existingValue) {
-            // Buscar gestores do departamento
-            const { data: managers } = await supabase
+        // Processar cada departamento separadamente
+        for (const [departmentId, metrics] of Object.entries(metricsByDepartment)) {
+          const pendingMetricsForDept = [];
+          
+          for (const metric of metrics) {
+            // Verificar se já tem valor para este mês
+            const { data: existingValue } = await supabase
+              .from('metrics_values')
+              .select('id')
+              .eq('metrics_definition_id', metric.id)
+              .gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+              .lt('date', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0])
+              .single();
+
+            if (!existingValue) {
+              pendingMetricsForDept.push(metric);
+            }
+          }
+
+          if (pendingMetricsForDept.length > 0) {
+            // Buscar apenas gestores DESTE departamento específico
+            const { data: departmentManagers } = await supabase
               .from('managers')
-              .select('user_id')
-              .or(`department_id.eq.${metric.department_id},role.eq.admin`)
+              .select('user_id, name')
+              .eq('department_id', departmentId === 'no_department' ? null : departmentId)
               .eq('is_active', true)
               .not('user_id', 'is', null);
 
-            if (managers && managers.length > 0) {
-              for (const manager of managers) {
+            if (departmentManagers && departmentManagers.length > 0) {
+              const departmentName = metrics[0]?.departments?.name || 'Sem Departamento';
+              const metricNames = pendingMetricsForDept.map(m => m.name).join(', ');
+
+              for (const manager of departmentManagers) {
                 await supabase.from('notifications').insert({
                   user_id: manager.user_id,
-                  title: 'Lembrete: Métrica pendente',
-                  message: `A métrica "${metric.name}" do departamento ${metric.departments?.name || 'Sem Departamento'} precisa ser preenchida até o dia ${monthlyDeadline}.`,
+                  title: `Lembrete: ${pendingMetricsForDept.length} métrica(s) pendente(s)`,
+                  message: `As seguintes métricas do departamento ${departmentName} precisam ser preenchidas até o dia ${monthlyDeadline}: ${metricNames}`,
                   type: 'warning',
                   metadata: {
-                    metric_id: metric.id,
-                    department_id: metric.department_id,
+                    department_id: departmentId === 'no_department' ? null : departmentId,
+                    department_name: departmentName,
+                    pending_metrics_count: pendingMetricsForDept.length,
                     deadline_day: monthlyDeadline,
-                    alert_type: 'metric_reminder'
+                    alert_type: 'department_metrics_reminder'
                   }
                 });
                 notificationCount++;
@@ -116,7 +139,7 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // 3. Verificar metas atingidas (SEM CÁLCULOS DE DIVISÃO)
+    // 3. Verificar metas atingidas POR DEPARTAMENTO (para gestores) e RESUMO GERAL (para admins)
     console.log('Verificando metas atingidas...');
     
     const { data: metricsWithValues, error: valuesError } = await supabase
@@ -131,6 +154,9 @@ serve(async (req: Request): Promise<Response> => {
     if (valuesError) {
       console.error('Erro ao buscar métricas com metas:', valuesError);
     } else if (metricsWithValues && metricsWithValues.length > 0) {
+      const achievedMetricsByDepartment = {} as Record<string, any[]>;
+      const unachievedMetricsByDepartment = {} as Record<string, any[]>;
+
       for (const metric of metricsWithValues) {
         // Buscar último valor
         const { data: latestValue } = await supabase
@@ -145,7 +171,7 @@ serve(async (req: Request): Promise<Response> => {
           const currentValue = parseFloat(String(latestValue.value));
           const target = parseFloat(String(metric.target));
           
-          // Verificar se meta foi atingida (sem usar divisão)
+          // Verificar se meta foi atingida
           let metaAtingida = false;
           if (metric.lower_is_better) {
             metaAtingida = currentValue <= target;
@@ -153,54 +179,129 @@ serve(async (req: Request): Promise<Response> => {
             metaAtingida = currentValue >= target;
           }
 
+          const deptId = metric.department_id || 'no_department';
+          const deptName = metric.departments?.name || 'Sem Departamento';
+
           if (metaAtingida) {
-            // Verificar se já enviamos notificação recente
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            
-            const { data: recentNotification } = await supabase
-              .from('notifications')
-              .select('id')
-              .eq('metadata->>metric_id', metric.id)
-              .eq('metadata->>alert_type', 'goal_achieved')
-              .gte('created_at', sevenDaysAgo.toISOString())
-              .single();
+            if (!achievedMetricsByDepartment[deptId]) {
+              achievedMetricsByDepartment[deptId] = [];
+            }
+            achievedMetricsByDepartment[deptId].push({
+              ...metric,
+              current_value: currentValue,
+              department_name: deptName
+            });
+          } else {
+            if (!unachievedMetricsByDepartment[deptId]) {
+              unachievedMetricsByDepartment[deptId] = [];
+            }
+            unachievedMetricsByDepartment[deptId].push({
+              ...metric,
+              current_value: currentValue,
+              department_name: deptName
+            });
+          }
+        }
+      }
 
-            if (!recentNotification) {
-              // Buscar gestores
-              const { data: managers } = await supabase
-                .from('managers')
-                .select('user_id')
-                .or(`department_id.eq.${metric.department_id},role.eq.admin`)
-                .eq('is_active', true)
-                .not('user_id', 'is', null);
+      // Notificar gestores sobre metas atingidas em seus departamentos
+      for (const [departmentId, achievedMetrics] of Object.entries(achievedMetricsByDepartment)) {
+        if (achievedMetrics.length > 0) {
+          // Verificar se já enviamos notificação recente para este departamento
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          
+          const { data: recentNotification } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('metadata->>department_id', departmentId === 'no_department' ? null : departmentId)
+            .eq('metadata->>alert_type', 'department_goals_achieved')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .single();
 
-              if (managers && managers.length > 0) {
-                for (const manager of managers) {
-                  await supabase.from('notifications').insert({
-                    user_id: manager.user_id,
-                    title: 'Parabéns! Meta atingida',
-                    message: `A métrica "${metric.name}" atingiu sua meta. Continue assim!`,
-                    type: 'success',
-                    metadata: {
-                      metric_id: metric.id,
-                      department_id: metric.department_id,
-                      alert_type: 'goal_achieved',
-                      current_value: currentValue,
-                      target_value: target
-                    }
-                  });
-                  notificationCount++;
-                  achievementCount++;
-                }
+          if (!recentNotification) {
+            // Buscar gestores DESTE departamento específico
+            const { data: departmentManagers } = await supabase
+              .from('managers')
+              .select('user_id')
+              .eq('department_id', departmentId === 'no_department' ? null : departmentId)
+              .eq('is_active', true)
+              .not('user_id', 'is', null);
+
+            if (departmentManagers && departmentManagers.length > 0) {
+              const departmentName = achievedMetrics[0].department_name;
+              const metricNames = achievedMetrics.map(m => m.name).join(', ');
+
+              for (const manager of departmentManagers) {
+                await supabase.from('notifications').insert({
+                  user_id: manager.user_id,
+                  title: `Parabéns! ${achievedMetrics.length} meta(s) atingida(s)`,
+                  message: `O departamento ${departmentName} atingiu ${achievedMetrics.length} meta(s): ${metricNames}. Excelente trabalho!`,
+                  type: 'success',
+                  metadata: {
+                    department_id: departmentId === 'no_department' ? null : departmentId,
+                    department_name: departmentName,
+                    achieved_metrics_count: achievedMetrics.length,
+                    alert_type: 'department_goals_achieved'
+                  }
+                });
+                notificationCount++;
+                achievementCount++;
               }
+            }
+          }
+        }
+      }
+
+      // Notificar admins sobre resumo geral de metas NÃO atingidas
+      const totalUnachieved = Object.values(unachievedMetricsByDepartment).reduce((sum, metrics) => sum + metrics.length, 0);
+      
+      if (totalUnachieved > 0) {
+        // Verificar se já enviamos notificação recente de resumo geral
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const { data: recentAdminNotification } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('metadata->>alert_type', 'admin_unachieved_goals_summary')
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .single();
+
+        if (!recentAdminNotification) {
+          const { data: admins } = await supabase
+            .from('managers')
+            .select('user_id')
+            .eq('role', 'admin')
+            .eq('is_active', true)
+            .not('user_id', 'is', null);
+
+          if (admins && admins.length > 0) {
+            // Criar resumo por departamento
+            const departmentSummary = Object.entries(unachievedMetricsByDepartment)
+              .map(([deptId, metrics]) => `${metrics[0].department_name}: ${metrics.length} meta(s)`)
+              .join('; ');
+
+            for (const admin of admins) {
+              await supabase.from('notifications').insert({
+                user_id: admin.user_id,
+                title: `Resumo: ${totalUnachieved} meta(s) não atingida(s)`,
+                message: `Existem ${totalUnachieved} metas não atingidas distribuídas em: ${departmentSummary}. Considere acompanhar mais de perto estes departamentos.`,
+                type: 'warning',
+                metadata: {
+                  total_unachieved: totalUnachieved,
+                  departments_affected: Object.keys(unachievedMetricsByDepartment).length,
+                  alert_type: 'admin_unachieved_goals_summary'
+                }
+              });
+              notificationCount++;
             }
           }
         }
       }
     }
 
-    // 4. Verificar justificativas pendentes
+    // 4. Verificar justificativas pendentes (só para admins)
     console.log('Verificando justificativas pendentes...');
     
     const threeDaysAgo = new Date();
@@ -246,12 +347,13 @@ serve(async (req: Request): Promise<Response> => {
     // Log final
     await supabase.from('logs').insert({
       level: 'info',
-      message: 'Processamento de notificações concluído via edge function',
+      message: 'Processamento de notificações concluído via edge function com filtros por departamento',
       details: {
         notifications_sent: notificationCount,
         achievements_found: achievementCount,
         pending_justifications: pendingCount,
-        processed_at: new Date().toISOString()
+        processed_at: new Date().toISOString(),
+        strategy: 'department_filtered_notifications'
       }
     });
 
@@ -268,7 +370,8 @@ serve(async (req: Request): Promise<Response> => {
         achievements_found: achievementCount,
         pending_justifications: pendingCount,
         processed_at: new Date().toISOString(),
-        status: 'success'
+        status: 'success',
+        strategy: 'department_filtered_notifications'
       },
       timestamp: new Date().toISOString()
     }), {
@@ -291,7 +394,7 @@ serve(async (req: Request): Promise<Response> => {
       
       await supabase.from('logs').insert({
         level: 'error',
-        message: 'Erro na edge function de notificações',
+        message: 'Erro na edge function de notificações com filtros por departamento',
         details: {
           error: error.message,
           stack: error.stack,
