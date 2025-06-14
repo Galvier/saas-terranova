@@ -40,6 +40,14 @@ export interface BackupResult {
   error?: string;
 }
 
+// Tipo para o retorno da função RPC de restauração
+interface RestoreBackupResult {
+  success: boolean;
+  error?: string;
+  restored_tables?: string[];
+  message?: string;
+}
+
 export const getBackupSettings = async (): Promise<BackupSettings | null> => {
   console.log('[backupService] === BUSCANDO CONFIGURAÇÕES DE BACKUP ===');
   
@@ -288,12 +296,12 @@ export const saveBackupToDatabase = async (
       return { success: false, error: historyError.message };
     }
 
-    // Salvar dados do backup
+    // Salvar dados do backup - usando type assertion para Json
     const { data: backupDataRecord, error: backupError } = await supabase
       .from('backup_data')
       .insert({
         backup_history_id: historyData.id,
-        backup_content: backupData,
+        backup_content: backupData as any, // Type assertion para Json
         compressed: false
       })
       .select()
@@ -363,15 +371,18 @@ export const restoreBackupFromDatabase = async (
       return { success: false, error: error.message };
     }
 
-    if (!data.success) {
-      console.error('[backupService] Falha na restauração:', data.error);
-      return { success: false, error: data.error };
+    // Type assertion para o resultado da função RPC
+    const result = data as RestoreBackupResult;
+
+    if (!result.success) {
+      console.error('[backupService] Falha na restauração:', result.error);
+      return { success: false, error: result.error };
     }
 
-    console.log('[backupService] Backup restaurado com SUCESSO:', data);
+    console.log('[backupService] Backup restaurado com SUCESSO:', result);
     return { 
       success: true, 
-      message: `Backup restaurado com sucesso. Tabelas: ${data.restored_tables?.join(', ')}` 
+      message: `Backup restaurado com sucesso. Tabelas: ${result.restored_tables?.join(', ')}` 
     };
   } catch (error) {
     console.error('[backupService] === ERRO GERAL NA RESTAURAÇÃO ===', error);
