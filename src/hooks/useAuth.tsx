@@ -1,4 +1,3 @@
-
 import { createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { Manager } from '@/integrations/supabase/types/manager';
@@ -21,6 +20,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  markProfileSaved: () => void;
 }
 
 // Create a default value for the context
@@ -37,14 +37,15 @@ const defaultAuthContext: AuthContextType = {
   userDepartmentId: null,
   login: async () => false,
   logout: async () => {},
-  refreshUser: async () => {}
+  refreshUser: async () => {},
+  markProfileSaved: () => {}
 };
 
 const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Use separate hooks to manage specific parts of authentication
-  const { user, session, isLoading: isSessionLoading, error: sessionError, refreshUser } = useAuthSession();
+  const { user, session, isLoading: isSessionLoading, error: sessionError, refreshUser, markProfileSaved } = useAuthSession();
   const { manager, userDepartmentId, isAdmin: managerIsAdmin, isLoading: isManagerLoading } = useManagerData(user);
   const { isAuthenticating, login, logout } = useAuthMethods();
 
@@ -126,7 +127,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       userDepartmentId,
       login,
       logout,
-      refreshUser
+      refreshUser,
+      markProfileSaved
     }}>
       {children}
     </AuthContext.Provider>
