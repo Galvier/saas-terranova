@@ -1180,7 +1180,7 @@ export type Database = {
       }
       update_notification_setting: {
         Args: { setting_key_param: string; new_value: Json }
-        Returns: boolean
+        Returns: undefined
       }
       validate_current_password: {
         Args: { current_password: string }
