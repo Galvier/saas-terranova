@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -27,7 +28,7 @@ serve(async (req: Request): Promise<Response> => {
     let notificationCount = 0;
     let achievementCount = 0;
     let pendingCount = 0;
-    let metricsWithoutTargets = 0;
+    let metricsWithoutTargetsCount = 0;
     let overdueMissedCount = 0;
 
     // Log início do processamento
@@ -155,7 +156,7 @@ serve(async (req: Request): Promise<Response> => {
     if (targetsError) {
       console.error('Erro ao buscar métricas sem metas:', targetsError);
     } else if (metricsWithoutTargets && metricsWithoutTargets.length > 0) {
-      metricsWithoutTargets = metricsWithoutTargets.length;
+      metricsWithoutTargetsCount = metricsWithoutTargets.length;
 
       // Verificar se já enviamos notificação recente sobre métricas sem metas
       const sevenDaysAgo = new Date();
@@ -191,11 +192,11 @@ serve(async (req: Request): Promise<Response> => {
           for (const admin of admins) {
             await supabase.from('notifications').insert({
               user_id: admin.user_id,
-              title: `Atenção: ${metricsWithoutTargets} métrica(s) sem meta definida`,
+              title: `Atenção: ${metricsWithoutTargetsCount} métrica(s) sem meta definida`,
               message: `Existem métricas ativas sem metas configuradas: ${summaryText}. Configure as metas para melhor acompanhamento dos resultados.`,
               type: 'warning',
               metadata: {
-                metrics_without_targets_count: metricsWithoutTargets,
+                metrics_without_targets_count: metricsWithoutTargetsCount,
                 departments_affected: Object.keys(departmentSummary).length,
                 alert_type: 'metrics_without_targets'
               }
@@ -351,7 +352,7 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // 3. Verificar metas atingidas POR DEPARTAMENTO (para gestores) e RESUMO GERAL (para admins)
+    // 5. Verificar metas atingidas POR DEPARTAMENTO (para gestores) e RESUMO GERAL (para admins)
     console.log('Verificando metas atingidas...');
     
     const { data: metricsWithValues, error: valuesError } = await supabase
@@ -513,7 +514,7 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // 4. Verificar justificativas pendentes (só para admins)
+    // 6. Verificar justificativas pendentes (só para admins)
     console.log('Verificando justificativas pendentes...');
     
     const threeDaysAgo = new Date();
@@ -564,7 +565,7 @@ serve(async (req: Request): Promise<Response> => {
         notifications_sent: notificationCount,
         achievements_found: achievementCount,
         pending_justifications: pendingCount,
-        metrics_without_targets: metricsWithoutTargets,
+        metrics_without_targets: metricsWithoutTargetsCount,
         overdue_missed_count: overdueMissedCount,
         processed_at: new Date().toISOString(),
         strategy: 'enhanced_department_filtered_notifications'
@@ -575,7 +576,7 @@ serve(async (req: Request): Promise<Response> => {
       notifications_sent: notificationCount,
       achievements_found: achievementCount,
       pending_justifications: pendingCount,
-      metrics_without_targets: metricsWithoutTargets,
+      metrics_without_targets: metricsWithoutTargetsCount,
       overdue_missed_count: overdueMissedCount
     });
 
@@ -585,7 +586,7 @@ serve(async (req: Request): Promise<Response> => {
         notifications_sent: notificationCount,
         achievements_found: achievementCount,
         pending_justifications: pendingCount,
-        metrics_without_targets: metricsWithoutTargets,
+        metrics_without_targets: metricsWithoutTargetsCount,
         overdue_missed_count: overdueMissedCount,
         processed_at: new Date().toISOString(),
         status: 'success',
