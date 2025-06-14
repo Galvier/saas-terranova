@@ -4,10 +4,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Shield, Download, RefreshCw, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { Shield, Download, RefreshCw, AlertCircle, Info, AlertTriangle, Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { createLog } from '@/services/logService';
 
 interface AuditLog {
   id: string;
@@ -134,23 +135,47 @@ export function SecurityAuditLogs() {
     try {
       console.log('[SecurityAuditLogs] Criando log de teste de segurança...');
       
-      const { data, error } = await supabase.rpc('create_security_log', {
-        log_level: 'info',
-        log_message: 'Teste de log de segurança gerado pelo usuário',
-        log_details: {
-          test: true,
-          timestamp: new Date().toISOString(),
-          action: 'manual_test',
-          source: 'security_audit_logs_component'
-        }
-      });
+      // Tentar usar a função RPC primeiro
+      let success = false;
+      try {
+        const { data, error } = await supabase.rpc('create_security_log', {
+          log_level: 'info',
+          log_message: 'Teste de log de segurança gerado pelo usuário',
+          log_details: {
+            test: true,
+            timestamp: new Date().toISOString(),
+            action: 'manual_test',
+            source: 'security_audit_logs_component'
+          }
+        });
 
-      if (error) {
-        console.error('[SecurityAuditLogs] Erro ao criar log de teste:', error);
-        throw error;
+        if (!error) {
+          console.log('[SecurityAuditLogs] Log de teste criado via RPC:', data);
+          success = true;
+        }
+      } catch (rpcError) {
+        console.warn('[SecurityAuditLogs] RPC falhou, tentando método alternativo:', rpcError);
       }
 
-      console.log('[SecurityAuditLogs] Log de teste criado com sucesso:', data);
+      // Se RPC falhou, usar serviço de logs como fallback
+      if (!success) {
+        const result = await createLog(
+          'info',
+          'Teste de log de segurança gerado pelo usuário',
+          {
+            test: true,
+            timestamp: new Date().toISOString(),
+            action: 'manual_test_fallback',
+            source: 'security_audit_logs_component'
+          }
+        );
+
+        if (!result.success) {
+          throw new Error(result.error?.message || 'Erro ao criar log via serviço');
+        }
+
+        console.log('[SecurityAuditLogs] Log criado via serviço:', result.data);
+      }
       
       toast({
         title: 'Log de teste criado',
@@ -164,6 +189,81 @@ export function SecurityAuditLogs() {
       toast({
         title: 'Erro',
         description: 'Não foi possível criar o log de teste.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const generateMultipleSecurityLogs = async () => {
+    try {
+      console.log('[SecurityAuditLogs] Gerando múltiplos logs de segurança...');
+      
+      const logTypes = [
+        { level: 'info', message: 'Login bem-sucedido detectado', details: { action: 'login_success', ip: '192.168.1.100' } },
+        { level: 'warning', message: 'Tentativa de acesso não autorizado', details: { action: 'unauthorized_access', resource: '/admin' } },
+        { level: 'error', message: 'Falha na autenticação', details: { action: 'auth_failure', attempts: 3 } },
+        { level: 'info', message: 'Permissões de usuário alteradas', details: { action: 'permission_change', target_user: 'user123' } },
+        { level: 'warning', message: 'Sessão expirada forçadamente', details: { action: 'session_expired', reason: 'security_policy' } }
+      ];
+
+      let successCount = 0;
+      
+      for (const logType of logTypes) {
+        try {
+          // Tentar RPC primeiro
+          let success = false;
+          try {
+            const { error } = await supabase.rpc('create_security_log', {
+              log_level: logType.level,
+              log_message: logType.message,
+              log_details: {
+                ...logType.details,
+                timestamp: new Date().toISOString(),
+                source: 'security_audit_generator'
+              }
+            });
+            
+            if (!error) success = true;
+          } catch (rpcError) {
+            console.warn('[SecurityAuditLogs] RPC falhou para log tipo:', logType.level);
+          }
+
+          // Fallback para serviço
+          if (!success) {
+            const result = await createLog(
+              logType.level as 'info' | 'warning' | 'error',
+              logType.message,
+              {
+                ...logType.details,
+                timestamp: new Date().toISOString(),
+                source: 'security_audit_generator_fallback'
+              }
+            );
+            
+            if (result.success) success = true;
+          }
+
+          if (success) successCount++;
+          
+          // Pequeno delay entre logs
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.warn('[SecurityAuditLogs] Erro ao criar log individual:', error);
+        }
+      }
+      
+      toast({
+        title: 'Logs gerados',
+        description: `${successCount} logs de auditoria foram criados com sucesso.`
+      });
+      
+      // Recarregar logs
+      fetchSecurityLogs();
+    } catch (error) {
+      console.error('[SecurityAuditLogs] Erro ao gerar múltiplos logs:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao gerar logs de auditoria.',
         variant: 'destructive'
       });
     }
@@ -183,6 +283,14 @@ export function SecurityAuditLogs() {
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={generateMultipleSecurityLogs}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Gerar Logs
+            </Button>
             <Button
               variant="outline"
               size="sm"
