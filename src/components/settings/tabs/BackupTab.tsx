@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Upload, Database, Settings2, Save, Loader2, FileText, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Download, Upload, Database, Settings2, Save, Loader2, FileText, RotateCcw, AlertTriangle, Trash2, Archive } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { testConnection, testTables, testDatabaseWrite } from '@/utils/supabaseDiagnostic';
 import { 
@@ -28,11 +28,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const BackupTab = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isAdvancedOptionsOpen, setIsAdvancedOptionsOpen] = useState(false);
   const navigate = useNavigate();
   const { history, refreshHistory, isLoading: isHistoryLoading } = useBackupHistory();
   const { settings: backupSettings, updateSettings: updateBackupSettings, isLoading: isSettingsLoading } = useBackupSettings();
@@ -235,6 +245,20 @@ const BackupTab = () => {
     }
   };
 
+  const handleClearAllBackups = async () => {
+    toast({
+      title: "Limpeza de backups",
+      description: "Funcionalidade de limpeza será implementada em breve"
+    });
+  };
+
+  const handleExportAllBackups = async () => {
+    toast({
+      title: "Exportação de backups",
+      description: "Funcionalidade de exportação será implementada em breve"
+    });
+  };
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -381,17 +405,53 @@ const BackupTab = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={() => toast({
-                  title: "Configurações avançadas",
-                  description: "Acessando configurações avançadas do sistema"
-                })}
-              >
-                <Settings2 className="mr-2 h-4 w-4" />
-                Opções Avançadas
-              </Button>
+              <Dialog open={isAdvancedOptionsOpen} onOpenChange={setIsAdvancedOptionsOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                  >
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    Opções Avançadas
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Configurações Avançadas</DialogTitle>
+                    <DialogDescription>
+                      Opções avançadas para gerenciamento de backups e manutenção do sistema
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={handleExportAllBackups}
+                        className="w-full justify-start"
+                      >
+                        <Archive className="mr-2 h-4 w-4" />
+                        Exportar Todos os Backups
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        onClick={handleClearAllBackups}
+                        className="w-full justify-start"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Limpar Todos os Backups
+                      </Button>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsAdvancedOptionsOpen(false)}
+                    >
+                      Fechar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </div>
