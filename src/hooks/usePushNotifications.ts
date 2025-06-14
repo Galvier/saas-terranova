@@ -16,21 +16,71 @@ export const usePushNotifications = () => {
     setIsSupported(supported);
     
     if (supported) {
-      setPermission(Notification.permission);
+      // Verificar permissão atual
+      const currentPermission = Notification.permission;
+      setPermission(currentPermission);
+      console.log('Current notification permission:', currentPermission);
+      
+      // Verificar status da inscrição push
       checkSubscriptionStatus();
     }
   }, []);
 
+  // Verificar mudanças na permissão periodicamente
+  useEffect(() => {
+    if (!isSupported) return;
+
+    const checkPermissionChanges = () => {
+      const currentPermission = Notification.permission;
+      if (currentPermission !== permission) {
+        console.log('Permission changed from', permission, 'to', currentPermission);
+        setPermission(currentPermission);
+        if (currentPermission === 'granted') {
+          checkSubscriptionStatus();
+        } else if (currentPermission === 'denied') {
+          setIsSubscribed(false);
+        }
+      }
+    };
+
+    // Verificar mudanças a cada 2 segundos
+    const interval = setInterval(checkPermissionChanges, 2000);
+    
+    // Verificar quando a janela ganha foco (usuário volta para a aba)
+    const handleFocus = () => {
+      checkPermissionChanges();
+      checkSubscriptionStatus();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [permission, isSupported]);
+
   const checkSubscriptionStatus = async () => {
     try {
-      if ('serviceWorker' in navigator) {
+      if ('serviceWorker' in navigator && Notification.permission === 'granted') {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
-        setIsSubscribed(!!subscription);
-        console.log('Push subscription status:', !!subscription);
+        const hasSubscription = !!subscription;
+        
+        console.log('Push subscription check:', {
+          hasSubscription,
+          endpoint: subscription?.endpoint,
+          permission: Notification.permission
+        });
+        
+        setIsSubscribed(hasSubscription);
+      } else {
+        console.log('Cannot check subscription - permission not granted or service worker not available');
+        setIsSubscribed(false);
       }
     } catch (error) {
       console.error('Error checking subscription status:', error);
+      setIsSubscribed(false);
     }
   };
 
@@ -47,13 +97,18 @@ export const usePushNotifications = () => {
     setIsLoading(true);
     try {
       const permission = await notificationService.requestPushPermission();
-      setPermission(Notification.permission);
+      const newPermission = Notification.permission;
+      setPermission(newPermission);
+      
+      console.log('Permission request result:', { permission, newPermission });
       
       if (permission) {
         toast({
           title: 'Permissão concedida! 🎉',
           description: 'Agora você pode ativar as notificações push',
         });
+        // Verificar automaticamente o status da inscrição após conceder permissão
+        setTimeout(checkSubscriptionStatus, 1000);
       } else {
         toast({
           title: 'Permissão negada',
@@ -150,6 +205,7 @@ export const usePushNotifications = () => {
         return unsubscribed;
       }
       
+      setIsSubscribed(false);
       return true;
     } catch (error) {
       console.error('Error unsubscribing from push:', error);
