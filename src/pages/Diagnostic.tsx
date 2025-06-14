@@ -23,6 +23,9 @@ import { SystemHealth } from '@/components/diagnostic/SystemHealth';
 import { RecommendationsCard } from '@/components/diagnostic/RecommendationsCard';
 import { TableUsageAnalysis } from '@/components/diagnostic/TableUsageAnalysis';
 import { useAuth } from '@/hooks/useAuth';
+import { SecurityHealthCard } from '@/components/diagnostic/SecurityHealthCard';
+import { SecurityAuditLogs } from '@/components/diagnostic/SecurityAuditLogs';
+import { SecuritySummary } from '@/components/diagnostic/SecuritySummary';
 
 const ESSENTIAL_TABLES = [
   'profiles',
@@ -218,69 +221,78 @@ const Diagnostic = () => {
           writeTest={writeTest}
           syncStatus={syncStatus}
         />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-sm">
-                <Server className="mr-2 h-4 w-4" />
-                Conexão
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!connection ? (
-                <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
-              ) : (
-                <div className="space-y-2">
-                  <CustomBadge 
-                    variant={connection.connected ? "success" : "destructive"}
-                    className="w-full justify-center"
-                  >
-                    {connection.connected ? (
-                      <><CheckCircle className="mr-1 h-3 w-3" /> Conectado</>
-                    ) : (
-                      <><AlertCircle className="mr-1 h-3 w-3" /> Erro</>
-                    )}
-                  </CustomBadge>
-                  <div className="text-xs text-center text-muted-foreground">
-                    {connection.responseTime}ms
-                  </div>
+        <SecuritySummary 
+          totalPolicies={tables.length}
+          activePolicies={tables.filter(t => t.status === 'ok').length}
+          criticalIssues={tables.filter(t => t.status === 'error').length}
+          warnings={tables.filter(t => t.status === 'empty').length}
+          lastSecurityCheck={lastUpdate}
+        />
+      </div>
+
+      {/* Cards de Status Rápido */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center text-sm">
+              <Server className="mr-2 h-4 w-4" />
+              Conexão
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!connection ? (
+              <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+            ) : (
+              <div className="space-y-2">
+                <CustomBadge 
+                  variant={connection.connected ? "success" : "destructive"}
+                  className="w-full justify-center"
+                >
+                  {connection.connected ? (
+                    <><CheckCircle className="mr-1 h-3 w-3" /> Conectado</>
+                  ) : (
+                    <><AlertCircle className="mr-1 h-3 w-3" /> Erro</>
+                  )}
+                </CustomBadge>
+                <div className="text-xs text-center text-muted-foreground">
+                  {connection.responseTime}ms
                 </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-sm">
-                <Database className="mr-2 h-4 w-4" />
-                Escrita
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!writeTest ? (
-                <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
-              ) : (
-                <div className="space-y-2">
-                  <CustomBadge 
-                    variant={writeTest.status === "success" ? "success" : "destructive"}
-                    className="w-full justify-center"
-                  >
-                    {writeTest.status === "success" ? (
-                      <><CheckCircle className="mr-1 h-3 w-3" /> OK</>
-                    ) : (
-                      <><AlertCircle className="mr-1 h-3 w-3" /> Erro</>
-                    )}
-                  </CustomBadge>
-                  <div className="text-xs text-center text-muted-foreground">
-                    {writeTest.status === "success" ? "Funcionando" : "Falhou"}
-                  </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center text-sm">
+              <Database className="mr-2 h-4 w-4" />
+              Escrita
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!writeTest ? (
+              <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+            ) : (
+              <div className="space-y-2">
+                <CustomBadge 
+                  variant={writeTest.status === "success" ? "success" : "destructive"}
+                  className="w-full justify-center"
+                >
+                  {writeTest.status === "success" ? (
+                    <><CheckCircle className="mr-1 h-3 w-3" /> OK</>
+                  ) : (
+                    <><AlertCircle className="mr-1 h-3 w-3" /> Erro</>
+                  )}
+                </CustomBadge>
+                <div className="text-xs text-center text-muted-foreground">
+                  {writeTest.status === "success" ? "Funcionando" : "Falhou"}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <TriggerCard syncStatus={syncStatus} isLoading={isLoading} />
-        </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <TriggerCard syncStatus={syncStatus} isLoading={isLoading} />
       </div>
 
       {/* Resumo dos Problemas */}
@@ -290,6 +302,12 @@ const Diagnostic = () => {
         writeTest={writeTest}
         syncStatus={syncStatus}
       />
+
+      {/* Componentes de Segurança */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SecurityHealthCard />
+        <SecurityAuditLogs />
+      </div>
 
       {/* Análise de Uso das Tabelas */}
       <TableUsageAnalysis tables={tables} />

@@ -759,6 +759,16 @@ export type Database = {
         }
         Returns: string
       }
+      audit_sensitive_operation: {
+        Args: {
+          operation_type: string
+          table_name: string
+          record_id: string
+          old_values?: Json
+          new_values?: Json
+        }
+        Returns: undefined
+      }
       broadcast_notification_from_template: {
         Args: {
           template_id_param: string
@@ -884,6 +894,10 @@ export type Database = {
           justification_text: string
           action_plan_text: string
         }
+        Returns: string
+      }
+      create_security_log: {
+        Args: { log_level: string; log_message: string; log_details?: Json }
         Returns: string
       }
       delete_manager: {
@@ -1052,6 +1066,10 @@ export type Database = {
           updated_at: string
           user_id: string
         }[]
+      }
+      is_admin: {
+        Args: { user_id_param?: string }
+        Returns: boolean
       }
       mark_all_notifications_as_read: {
         Args: Record<PropertyKey, never>
