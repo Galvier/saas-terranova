@@ -6,22 +6,39 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Upload, Database, Settings2, Save, Loader2, FileText } from 'lucide-react';
+import { Download, Upload, Database, Settings2, Save, Loader2, FileText, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { testConnection, testTables, testDatabaseWrite } from '@/utils/supabaseDiagnostic';
-import { generateBackup, downloadBackup, saveBackupHistory } from '@/services/backupService';
+import { 
+  generateBackup, 
+  downloadBackup, 
+  saveBackupToDatabase, 
+  restoreBackupFromDatabase 
+} from '@/services/backupService';
 import { useBackupHistory } from '@/hooks/useBackupHistory';
 import { useBackupSettings } from '@/hooks/useBackupSettings';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const BackupTab = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const navigate = useNavigate();
   const { history, refreshHistory, isLoading: isHistoryLoading } = useBackupHistory();
   const { settings: backupSettings, updateSettings: updateBackupSettings, isLoading: isSettingsLoading } = useBackupSettings();
   
-  // Handle backup data with real backup generation
-  const handleBackupData = async () => {
+  // Handle backup data - now saves to database and optionally downloads
+  const handleBackupData = async (downloadFile: boolean = false) => {
     setIsLoading(true);
     try {
       toast({
@@ -35,32 +52,28 @@ const BackupTab = () => {
         throw new Error(result.error || 'Erro ao gerar backup');
       }
 
-      // Download the backup file
-      const fileSize = downloadBackup(result.data, result.filename);
-
-      // Save to history
-      const saved = await saveBackupHistory(
-        result.filename,
-        fileSize,
-        result.data.metadata.tables_count,
-        result.data.metadata.total_records
-      );
-
-      if (saved) {
-        // Refresh history
-        refreshHistory();
-
-        toast({
-          title: "Backup concluído",
-          description: `Arquivo ${result.filename} baixado com sucesso. ${result.data.metadata.total_records} registros de ${result.data.metadata.tables_count} tabelas.`
-        });
-      } else {
-        toast({
-          title: "Backup criado",
-          description: `Arquivo ${result.filename} baixado. Não foi possível salvar no histórico (verifique se está logado).`,
-          variant: "destructive"
-        });
+      // Save to database
+      const saveResult = await saveBackupToDatabase(result.data, result.filename);
+      
+      if (!saveResult.success) {
+        throw new Error(saveResult.error || 'Erro ao salvar backup no banco');
       }
+
+      let message = `Backup salvo com sucesso no banco de dados. ${result.data.metadata.total_records} registros de ${result.data.metadata.tables_count} tabelas.`;
+
+      // Optional download
+      if (downloadFile) {
+        downloadBackup(result.data, result.filename);
+        message += ` Arquivo ${result.filename} também foi baixado.`;
+      }
+
+      // Refresh history
+      refreshHistory();
+
+      toast({
+        title: "Backup concluído",
+        description: message
+      });
 
     } catch (error) {
       console.error('Backup error:', error);
@@ -73,15 +86,63 @@ const BackupTab = () => {
       setIsLoading(false);
     }
   };
+
+  // Handle restore from database
+  const handleRestoreBackup = async (backupId: string, backupFilename: string) => {
+    setIsRestoring(true);
+    try {
+      toast({
+        title: "Iniciando restauração",
+        description: `Restaurando dados do backup ${backupFilename}...`
+      });
+
+      const result = await restoreBackupFromDatabase(backupId);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao restaurar backup');
+      }
+
+      toast({
+        title: "Restauração concluída",
+        description: result.message || "Dados restaurados com sucesso. Recarregue a página para ver as alterações.",
+      });
+
+      // Suggest page reload to see changes
+      setTimeout(() => {
+        toast({
+          title: "Atualização recomendada",
+          description: "Recarregue a página para ver todas as alterações aplicadas.",
+          action: (
+            <Button 
+              onClick={() => window.location.reload()}
+              variant="outline"
+              size="sm"
+            >
+              Recarregar
+            </Button>
+          )
+        });
+      }, 2000);
+
+    } catch (error) {
+      console.error('Restore error:', error);
+      toast({
+        title: "Erro na restauração",
+        description: error instanceof Error ? error.message : "Erro desconhecido ao restaurar backup",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRestoring(false);
+    }
+  };
   
-  // Handle data restoration with visual feedback
-  const handleRestoreData = () => {
+  // Handle data restoration with file upload (legacy)
+  const handleRestoreFromFile = () => {
     toast({
       title: "Selecione um arquivo",
       description: "Por favor selecione um arquivo de backup para restaurar"
     });
     
-    // Simulate file selection dialog
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -92,8 +153,8 @@ const BackupTab = () => {
         setTimeout(() => {
           setIsLoading(false);
           toast({
-            title: "Restauração simulada",
-            description: `O arquivo ${file.name} seria restaurado (funcionalidade em desenvolvimento)`
+            title: "Restauração de arquivo",
+            description: `Restauração de arquivos locais será implementada em breve. Use a restauração do histórico para backups salvos no sistema.`
           });
         }, 1000);
       }
@@ -105,7 +166,6 @@ const BackupTab = () => {
   const handleDiagnostic = async () => {
     setIsLoading(true);
     try {
-      // Test connection to Supabase
       const connectionResult = await testConnection();
       
       if (connectionResult.connected) {
@@ -114,7 +174,6 @@ const BackupTab = () => {
           description: `Conexão com o banco de dados estabelecida em ${connectionResult.responseTime}ms`
         });
         
-        // Test database tables
         const tablesResult = await testTables();
         const tablesCount = Object.values(tablesResult).filter(t => t.exists).length;
         
@@ -123,7 +182,6 @@ const BackupTab = () => {
           description: `${tablesCount} tabelas verificadas com sucesso`
         });
         
-        // Test write operation
         const writeResult = await testDatabaseWrite();
         
         if (writeResult.status === 'success') {
@@ -157,12 +215,10 @@ const BackupTab = () => {
     }
   };
   
-  // Navigate to specific pages
   const handleNavigateToDiagnostic = () => {
     navigate('/admin/diagnostico');
   };
   
-  // Handle auto backup toggle
   const handleAutoBackupToggle = async (enabled: boolean) => {
     const success = await updateBackupSettings(enabled);
     if (success) {
@@ -179,7 +235,6 @@ const BackupTab = () => {
     }
   };
 
-  // Format file size for display
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -188,7 +243,6 @@ const BackupTab = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Format date for display
   const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleString('pt-BR');
   };
@@ -198,7 +252,7 @@ const BackupTab = () => {
       <CardHeader>
         <CardTitle>Backup e Restauração</CardTitle>
         <CardDescription>
-          Gerencie backups dos seus dados e configurações
+          Gerencie backups dos seus dados e configurações. Os backups são salvos automaticamente no sistema com limite de 30 backups por usuário.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -207,13 +261,32 @@ const BackupTab = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-md">Backup de Dados</CardTitle>
               <CardDescription>
-                Crie um backup completo dos seus dados
+                Crie um backup completo dos seus dados no sistema
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-2">
               <Button 
                 className="w-full" 
-                onClick={handleBackupData}
+                onClick={() => handleBackupData(false)}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Gerando backup...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar Backup
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => handleBackupData(true)}
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -224,7 +297,7 @@ const BackupTab = () => {
                 ) : (
                   <>
                     <Download className="mr-2 h-4 w-4" />
-                    Gerar Backup
+                    Salvar e Baixar
                   </>
                 )}
               </Button>
@@ -242,7 +315,7 @@ const BackupTab = () => {
               <Button 
                 className="w-full" 
                 variant="outline" 
-                onClick={handleRestoreData}
+                onClick={handleRestoreFromFile}
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -253,7 +326,7 @@ const BackupTab = () => {
                 ) : (
                   <>
                     <Upload className="mr-2 h-4 w-4" />
-                    Restaurar Backup
+                    Restaurar de Arquivo
                   </>
                 )}
               </Button>
@@ -359,22 +432,55 @@ const BackupTab = () => {
               history.map((backup, index) => (
                 <div key={backup.id}>
                   <div className="p-4 flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">{backup.filename}</p>
                       <p className="text-sm text-muted-foreground">
                         {formatDate(backup.created_at)} • {formatFileSize(backup.file_size)} • {backup.tables_count} tabelas • {backup.total_records} registros
                       </p>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => toast({
-                        title: "Backup histórico",
-                        description: "Download de backups históricos em desenvolvimento"
-                      })}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={isRestoring}
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center gap-2">
+                              <AlertTriangle className="h-5 w-5 text-amber-500" />
+                              Confirmar Restauração
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Você tem certeza que deseja restaurar o backup "<strong>{backup.filename}</strong>"?
+                              <br /><br />
+                              <strong>Atenção:</strong> Esta ação irá substituir suas configurações atuais pelos dados do backup selecionado. Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleRestoreBackup(backup.id, backup.filename)}
+                              disabled={isRestoring}
+                              className="bg-amber-500 hover:bg-amber-600"
+                            >
+                              {isRestoring ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Restaurando...
+                                </>
+                              ) : (
+                                'Confirmar Restauração'
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                   {index < history.length - 1 && <Separator />}
                 </div>

@@ -33,6 +33,38 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_data: {
+        Row: {
+          backup_content: Json
+          backup_history_id: string
+          compressed: boolean
+          created_at: string
+          id: string
+        }
+        Insert: {
+          backup_content: Json
+          backup_history_id: string
+          compressed?: boolean
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          backup_content?: Json
+          backup_history_id?: string
+          compressed?: boolean
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_data_backup_history_id_fkey"
+            columns: ["backup_history_id"]
+            isOneToOne: false
+            referencedRelation: "backup_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       backup_history: {
         Row: {
           created_at: string
@@ -1079,6 +1111,10 @@ export type Database = {
       remove_manager_from_department: {
         Args: { department_id_param: string; manager_id_param: string }
         Returns: boolean
+      }
+      restore_backup_data: {
+        Args: { backup_history_id_param: string }
+        Returns: Json
       }
       review_metric_justification: {
         Args: {
