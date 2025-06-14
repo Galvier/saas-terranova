@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -100,16 +101,15 @@ const Login = () => {
     checkConnection();
   }, []);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - SEMPRE para o dashboard
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('[Login] Usuário autenticado, redirecionando...');
+      console.log('[Login] Usuário autenticado, redirecionando para dashboard...');
       
-      // Get the intended destination or default to dashboard
-      const from = location.state?.from || "/dashboard";
-      navigate(from, { replace: true });
+      // Sempre redirecionar para o dashboard principal, não importa o role
+      navigate('/', { replace: true });
     }
-  }, [isAuthenticated, navigate, location.state?.from]);
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,12 +151,17 @@ const Login = () => {
           console.warn('[Login] Falha ao registrar erro de login:', e);
         }
       } else {
+        console.log('[Login] Login bem-sucedido, redirecionando para dashboard');
+        
         // Refresh user data immediately after successful login
         try {
           await refreshUser();
         } catch (refreshError) {
           console.error('[Login] Erro ao atualizar dados do usuário:', refreshError);
         }
+        
+        // Garantir redirecionamento para o dashboard
+        navigate('/', { replace: true });
       }
     } catch (error: any) {
       console.error("[Login] Erro:", error);
