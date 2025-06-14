@@ -31,13 +31,15 @@ const AppLogo = ({ className }: { className?: string }) => {
   }, []);
 
   return (
-    <div className={`flex items-center justify-center gap-3 ${className}`}>
+    <div className={`flex items-center justify-center gap-2 sm:gap-3 ${className}`}>
       <img 
         src={logoSrc} 
         alt="Terranova Logo" 
-        className="h-12 w-auto"
+        className="h-8 w-auto sm:h-10 md:h-12 flex-shrink-0"
       />
-      <span className="font-semibold text-xl text-terranova-blue">Terranova</span>
+      <span className="font-semibold text-base sm:text-lg md:text-xl text-foreground">
+        Terranova
+      </span>
     </div>
   );
 };
