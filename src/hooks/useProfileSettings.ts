@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
@@ -37,46 +36,31 @@ export const useProfileSettings = () => {
       console.log('[useProfileSettings] Dados recebidos:', profileData);
       console.log('[useProfileSettings] Metadados atuais do usuário:', user.user_metadata);
 
-      // Preparar os dados de atualização com TODOS os metadados existentes preservados
       const currentMetadata = user.user_metadata || {};
-      
-      // Garantir que full_name seja uma string vazia em vez de undefined
       const fullName = profileData.fullName || '';
-      
       const updateData: UserMetadataUpdate = {
-        ...currentMetadata, // Preservar todos os metadados existentes
+        ...currentMetadata,
         full_name: fullName,
         display_name: profileData.displayName,
-        name: profileData.displayName, // Manter compatibilidade
+        name: profileData.displayName,
       };
 
-      // Incluir avatar URL se fornecido
       if (profileData.avatarUrl && profileData.avatarUrl.trim() !== '') {
         updateData.avatar_url = profileData.avatarUrl;
-        console.log('[useProfileSettings] Avatar URL incluído:', profileData.avatarUrl);
       } else if (currentMetadata.avatar_url) {
-        // Preservar avatar existente se não houver nova URL
         updateData.avatar_url = currentMetadata.avatar_url;
       }
 
       console.log('[useProfileSettings] Dados COMPLETOS para atualização:', updateData);
 
-      // Fazer update do usuário
       const { data: authData, error: authError } = await supabase.auth.updateUser({
         data: updateData
       });
 
-      if (authError) {
-        console.error('[useProfileSettings] ERRO na atualização:', authError);
-        throw authError;
-      }
+      if (authError) throw authError;
 
-      console.log('[useProfileSettings] Atualização bem-sucedida:', authData?.user?.user_metadata);
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Aguardar um momento para garantir que os dados foram persistidos
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Verificar se os dados foram salvos corretamente
       const { data: { user: verifyUser }, error: verifyError } = await supabase.auth.getUser();
       
       if (!verifyError && verifyUser?.user_metadata) {
@@ -84,8 +68,6 @@ export const useProfileSettings = () => {
         
         console.log('[useProfileSettings] Dados verificados após atualização:', metadata);
         
-        // Verificação mais flexível - se o update foi bem-sucedido, consideramos sucesso
-        // mesmo que a verificação não seja perfeita, pois o avatar pode ter problemas de cache
         const displayNameOk = metadata.display_name === profileData.displayName;
         const fullNameOk = metadata.full_name === fullName || (fullName === '' && !metadata.full_name);
         
@@ -104,7 +86,6 @@ export const useProfileSettings = () => {
         }
       }
 
-      // Atualizar tabela de managers se existir
       console.log('[useProfileSettings] Verificando tabela managers...');
       const { data: managerData, error: managerSelectError } = await supabase
         .from('managers')
@@ -131,9 +112,8 @@ export const useProfileSettings = () => {
         console.log('[useProfileSettings] Nenhum manager encontrado para este usuário');
       }
 
-      // Aguardar e fazer refresh final
-      console.log('[useProfileSettings] Fazendo refresh final do usuário...');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       await refreshUser();
 
       console.log('[useProfileSettings] === SALVAMENTO CONCLUÍDO COM SUCESSO ===');

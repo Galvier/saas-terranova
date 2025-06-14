@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import { useProfileSettings } from '@/hooks/useProfileSettings';
 import { SelfPasswordChangeDialog } from '../SelfPasswordChangeDialog';
 
 const ProfileTab = () => {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, markProfileSaved } = useAuth();
   const { toast } = useToast();
   const { uploadAvatar, isUploading } = useAvatarUpload();
   const { saveProfile, isSaving } = useProfileSettings();
@@ -85,10 +84,8 @@ const ProfileTab = () => {
       setAvatarUrl(pendingAvatarUrl);
       setHasUnsavedChanges(false);
       
-      // Force a manual refresh to ensure UI is updated
-      setTimeout(() => {
-        refreshUser();
-      }, 2000);
+      // Sinaliza profile recém salvo para evitar sobrescrita via refresh
+      if (typeof markProfileSaved === 'function') markProfileSaved();
     }
   };
 
