@@ -28,120 +28,7 @@ export function SecurityHealthCard() {
     const checks: SecurityCheck[] = [];
 
     try {
-      // Verificar se funções de segurança existem
-      try {
-        const { error: adminError } = await supabase.rpc('is_admin_user');
-        
-        if (!adminError) {
-          checks.push({
-            name: 'Função is_admin_user',
-            status: 'pass',
-            message: 'Função de verificação de admin configurada',
-            critical: true
-          });
-        } else {
-          checks.push({
-            name: 'Função is_admin_user',
-            status: 'fail',
-            message: 'Função de verificação de admin não encontrada',
-            critical: true
-          });
-        }
-      } catch (err) {
-        checks.push({
-          name: 'Função is_admin_user',
-          status: 'fail',
-          message: 'Erro ao verificar função de admin',
-          critical: true
-        });
-      }
-
-      try {
-        const { error: managerError } = await supabase.rpc('is_active_manager');
-        
-        if (!managerError) {
-          checks.push({
-            name: 'Função is_active_manager',
-            status: 'pass',
-            message: 'Função de verificação de manager configurada',
-            critical: true
-          });
-        } else {
-          checks.push({
-            name: 'Função is_active_manager',
-            status: 'fail',
-            message: 'Função de verificação de manager não encontrada',
-            critical: true
-          });
-        }
-      } catch (err) {
-        checks.push({
-          name: 'Função is_active_manager',
-          status: 'fail',
-          message: 'Erro ao verificar função de manager',
-          critical: true
-        });
-      }
-
-      // Verificar RLS nas tabelas críticas
-      const tablesToCheck = ['managers', 'logs', 'metrics_definition', 'notifications'];
-      
-      for (const table of tablesToCheck) {
-        try {
-          const { data, error } = await supabase
-            .from(table)
-            .select('*')
-            .limit(1);
-          
-          if (!error) {
-            checks.push({
-              name: `RLS Ativo - ${table}`,
-              status: 'pass',
-              message: `Row Level Security habilitado para ${table}`,
-              critical: true
-            });
-          } else {
-            checks.push({
-              name: `RLS Verificação - ${table}`,
-              status: 'warning',
-              message: `Possível problema de RLS para ${table}`,
-              critical: true
-            });
-          }
-        } catch (err) {
-          checks.push({
-            name: `RLS Verificação - ${table}`,
-            status: 'warning',
-            message: `Não foi possível verificar RLS para ${table}`,
-            critical: true
-          });
-        }
-      }
-
-      // Verificar se existem logs de auditoria recentes
-      const { data: recentLogs, error: logsError } = await supabase
-        .from('logs')
-        .select('*')
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .limit(10);
-
-      if (!logsError && recentLogs && recentLogs.length > 0) {
-        checks.push({
-          name: 'Logs de Auditoria',
-          status: 'pass',
-          message: `${recentLogs.length} logs de auditoria nas últimas 24h`,
-          critical: false
-        });
-      } else {
-        checks.push({
-          name: 'Logs de Auditoria',
-          status: 'warning',
-          message: 'Poucos logs de auditoria recentes',
-          critical: false
-        });
-      }
-
-      // Verificar autenticação ativa
+      // Verificar autenticação ativa primeiro
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (user && !authError) {
@@ -157,6 +44,88 @@ export function SecurityHealthCard() {
           status: 'fail',
           message: 'Problema na autenticação do usuário',
           critical: true
+        });
+      }
+
+      // Verificar acesso às tabelas críticas diretamente
+      const criticalTables = ['managers', 'logs', 'metrics_definition', 'notifications'];
+      
+      for (const tableName of criticalTables) {
+        try {
+          let data, error;
+          
+          // Use type assertion to handle the table names
+          switch (tableName) {
+            case 'managers':
+              ({ data, error } = await supabase.from('managers').select('*').limit(1));
+              break;
+            case 'logs':
+              ({ data, error } = await supabase.from('logs').select('*').limit(1));
+              break;
+            case 'metrics_definition':
+              ({ data, error } = await supabase.from('metrics_definition').select('*').limit(1));
+              break;
+            case 'notifications':
+              ({ data, error } = await supabase.from('notifications').select('*').limit(1));
+              break;
+            default:
+              continue;
+          }
+          
+          if (!error) {
+            checks.push({
+              name: `Acesso à tabela ${tableName}`,
+              status: 'pass',
+              message: `Acesso autorizado à tabela ${tableName}`,
+              critical: true
+            });
+          } else {
+            checks.push({
+              name: `Acesso à tabela ${tableName}`,
+              status: error.code === 'PGRST116' ? 'warning' : 'fail',
+              message: `Problema de acesso à tabela ${tableName}: ${error.message}`,
+              critical: true
+            });
+          }
+        } catch (err) {
+          checks.push({
+            name: `Acesso à tabela ${tableName}`,
+            status: 'fail',
+            message: `Erro ao verificar acesso à tabela ${tableName}`,
+            critical: true
+          });
+        }
+      }
+
+      // Verificar se existem logs de auditoria recentes
+      try {
+        const { data: recentLogs, error: logsError } = await supabase
+          .from('logs')
+          .select('*')
+          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+          .limit(10);
+
+        if (!logsError && recentLogs && recentLogs.length > 0) {
+          checks.push({
+            name: 'Logs de Auditoria',
+            status: 'pass',
+            message: `${recentLogs.length} logs de auditoria nas últimas 24h`,
+            critical: false
+          });
+        } else {
+          checks.push({
+            name: 'Logs de Auditoria',
+            status: 'warning',
+            message: 'Poucos logs de auditoria recentes',
+            critical: false
+          });
+        }
+      } catch (err) {
+        checks.push({
+          name: 'Logs de Auditoria',
+          status: 'warning',
+          message: 'Não foi possível verificar logs de auditoria',
+          critical: false
         });
       }
 
@@ -189,6 +158,39 @@ export function SecurityHealthCard() {
           status: 'warning',
           message: 'Erro ao testar função de logs',
           critical: false
+        });
+      }
+
+      // Verificar se há managers com role de admin
+      try {
+        const { data: adminManagers, error: adminError } = await supabase
+          .from('managers')
+          .select('*')
+          .eq('role', 'admin')
+          .eq('is_active', true)
+          .limit(1);
+
+        if (!adminError && adminManagers && adminManagers.length > 0) {
+          checks.push({
+            name: 'Administradores Ativos',
+            status: 'pass',
+            message: 'Administradores ativos encontrados no sistema',
+            critical: true
+          });
+        } else {
+          checks.push({
+            name: 'Administradores Ativos',
+            status: 'warning',
+            message: 'Nenhum administrador ativo encontrado',
+            critical: true
+          });
+        }
+      } catch (err) {
+        checks.push({
+          name: 'Administradores Ativos',
+          status: 'warning',
+          message: 'Não foi possível verificar administradores',
+          critical: true
         });
       }
 
