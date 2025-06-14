@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useRealTimeSubscription } from '@/hooks/useRealTimeSubscription';
 
 export interface Notification {
   id: string;
@@ -35,6 +36,7 @@ export const useNotifications = () => {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -62,6 +64,63 @@ export const useNotifications = () => {
       setIsLoading(false);
     }
   }, [user]);
+
+  // Callback para atualização em tempo real
+  const handleRealtimeUpdate = useCallback((payload: any) => {
+    console.log('Realtime notification update:', payload);
+
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+
+    if (eventType === 'INSERT' && newRecord) {
+      // Verificar se a notificação é para o usuário atual
+      if (newRecord.user_id === user?.id) {
+        const typedNotification: Notification = {
+          id: newRecord.id,
+          user_id: newRecord.user_id,
+          title: newRecord.title,
+          message: newRecord.message,
+          type: newRecord.type as 'info' | 'warning' | 'success' | 'error',
+          is_read: newRecord.is_read,
+          metadata: (typeof newRecord.metadata === 'object' && newRecord.metadata !== null && !Array.isArray(newRecord.metadata)) 
+            ? newRecord.metadata as Record<string, any>
+            : {},
+          created_at: newRecord.created_at,
+          updated_at: newRecord.updated_at
+        };
+
+        setNotifications(prev => [typedNotification, ...prev.slice(0, 49)]);
+      }
+    } else if (eventType === 'UPDATE' && newRecord) {
+      // Verificar se a notificação é para o usuário atual
+      if (newRecord.user_id === user?.id) {
+        setNotifications(prev =>
+          prev.map(notification =>
+            notification.id === newRecord.id
+              ? {
+                  ...notification,
+                  is_read: newRecord.is_read,
+                  updated_at: newRecord.updated_at
+                }
+              : notification
+          )
+        );
+      }
+    } else if (eventType === 'DELETE' && oldRecord) {
+      setNotifications(prev =>
+        prev.filter(notification => notification.id !== oldRecord.id)
+      );
+    }
+  }, [user?.id]);
+
+  // Configurar subscrição em tempo real
+  useRealTimeSubscription(
+    {
+      table: 'notifications',
+      event: '*',
+      filter: user ? `user_id=eq.${user.id}` : undefined
+    },
+    handleRealtimeUpdate
+  );
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {

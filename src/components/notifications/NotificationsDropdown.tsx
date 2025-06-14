@@ -17,23 +17,28 @@ const NotificationsDropdown: React.FC = () => {
   const { notifications, unreadCount, isLoading, markAsRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
+  // Destacar quando há notificações não lidas
+  const hasUnread = unreadCount > 0;
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
           size="sm"
-          className="relative h-9 w-9 p-0"
+          className={`relative h-9 w-9 p-0 transition-colors ${
+            hasUnread ? 'text-blue-600 hover:text-blue-700' : ''
+          }`}
         >
-          {unreadCount > 0 ? (
-            <BellDot className="h-5 w-5" />
+          {hasUnread ? (
+            <BellDot className={`h-5 w-5 ${hasUnread ? 'animate-pulse' : ''}`} />
           ) : (
             <Bell className="h-5 w-5" />
           )}
-          {unreadCount > 0 && (
+          {hasUnread && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs animate-bounce"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
@@ -48,7 +53,7 @@ const NotificationsDropdown: React.FC = () => {
       >
         <div className="p-3 border-b">
           <h3 className="font-semibold text-sm">Notificações</h3>
-          {unreadCount > 0 && (
+          {hasUnread && (
             <p className="text-xs text-muted-foreground mt-1">
               {unreadCount} {unreadCount === 1 ? 'não lida' : 'não lidas'}
             </p>
@@ -69,17 +74,17 @@ const NotificationsDropdown: React.FC = () => {
               {notifications.slice(0, 10).map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-3 hover:bg-muted/50 cursor-pointer border-l-2 ${
+                  className={`p-3 hover:bg-muted/50 cursor-pointer border-l-2 transition-all ${
                     !notification.is_read 
-                      ? 'bg-blue-50 dark:bg-blue-950/30 border-l-blue-500' 
+                      ? 'bg-blue-50 dark:bg-blue-950/30 border-l-blue-500 shadow-sm' 
                       : 'bg-background border-l-transparent'
-                  } transition-colors`}
+                  }`}
                   onClick={() => !notification.is_read && markAsRead(notification.id)}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <h4 className={`text-sm font-medium truncate ${
-                        !notification.is_read ? 'text-foreground' : 'text-muted-foreground'
+                        !notification.is_read ? 'text-foreground font-semibold' : 'text-muted-foreground'
                       }`}>
                         {notification.title}
                       </h4>
@@ -98,7 +103,7 @@ const NotificationsDropdown: React.FC = () => {
                     
                     {!notification.is_read && (
                       <div className="flex-shrink-0">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                       </div>
                     )}
                   </div>
@@ -107,6 +112,19 @@ const NotificationsDropdown: React.FC = () => {
             </div>
           )}
         </ScrollArea>
+
+        {notifications.length > 0 && (
+          <div className="p-2 border-t">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full text-xs"
+              onClick={() => setIsOpen(false)}
+            >
+              Ver todas as notificações
+            </Button>
+          </div>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
