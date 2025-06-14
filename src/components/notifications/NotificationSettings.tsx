@@ -169,6 +169,17 @@ const NotificationSettings: React.FC = () => {
     }
   };
 
+  const handleDeadlineDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 1 && value <= 31) {
+      console.log('[NotificationSettings] Atualizando dia limite para:', value);
+      setConfig(prev => ({
+        ...prev,
+        monthly_deadline_day: value
+      }));
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -199,11 +210,12 @@ const NotificationSettings: React.FC = () => {
                 min="1"
                 max="31"
                 value={config.monthly_deadline_day}
-                onChange={(e) => setConfig(prev => ({
-                  ...prev,
-                  monthly_deadline_day: parseInt(e.target.value) || 25
-                }))}
+                onChange={handleDeadlineDayChange}
+                placeholder="Digite o dia limite (1-31)"
               />
+              <p className="text-xs text-muted-foreground">
+                Valor atual: {config.monthly_deadline_day}
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="frequency">Frequência de resumos</Label>
