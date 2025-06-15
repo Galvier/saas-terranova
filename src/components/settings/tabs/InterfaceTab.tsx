@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -18,7 +19,7 @@ interface InterfaceTabProps {
   onUpdateSettings: (settings: Partial<UserSettings>) => void;
 }
 
-// Mobile Theme Selection Component
+// Mobile Theme Selection Component - Compact Design
 const MobileThemeSelection = ({ 
   value, 
   onValueChange 
@@ -43,24 +44,24 @@ const MobileThemeSelection = ({
             key={theme.value}
             onClick={() => onValueChange(theme.value as 'light' | 'dark' | 'system')}
             className={cn(
-              "w-full flex items-center justify-between p-4 rounded-lg border-2 transition-all duration-200 min-h-[60px] touch-manipulation",
+              "w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all duration-200 min-h-[48px] touch-manipulation",
               isSelected 
                 ? "border-primary bg-primary/5 shadow-sm" 
                 : "border-border bg-background hover:bg-muted/50"
             )}
           >
             <div className="flex items-center gap-3">
-              <Icon className={cn("h-5 w-5 flex-shrink-0", theme.color)} />
+              <Icon className={cn("h-4 w-4 flex-shrink-0", theme.color)} />
               <span className="text-sm font-medium">{theme.label}</span>
             </div>
             <div className={cn(
-              "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+              "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
               isSelected 
                 ? "border-primary bg-primary" 
                 : "border-muted-foreground"
             )}>
               {isSelected && (
-                <div className="w-2 h-2 rounded-full bg-primary-foreground" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
               )}
             </div>
           </button>
@@ -70,7 +71,7 @@ const MobileThemeSelection = ({
   );
 };
 
-// Mobile Animation Toggle Component
+// Mobile Animation Toggle Component - Compact Design
 const MobileAnimationToggle = ({ 
   checked, 
   onCheckedChange 
@@ -81,27 +82,21 @@ const MobileAnimationToggle = ({
   return (
     <button
       onClick={() => onCheckedChange(!checked)}
-      className="w-full flex items-center justify-between p-4 rounded-lg border transition-all duration-200 min-h-[60px] touch-manipulation hover:bg-muted/50"
+      className="w-full flex items-center justify-between p-3 rounded-lg border transition-all duration-200 min-h-[48px] touch-manipulation hover:bg-muted/50"
     >
-      <div className="flex flex-col items-start gap-1">
+      <div className="flex flex-col items-start gap-0.5">
         <span className="text-sm font-medium">Animações</span>
         <span className="text-xs text-muted-foreground">
           Ativar animações na interface
         </span>
       </div>
-      <div className="flex items-center gap-3">
-        <span className={cn(
-          "text-xs font-medium transition-colors",
-          checked ? "text-primary" : "text-muted-foreground"
-        )}>
-          {checked ? "ON" : "OFF"}
-        </span>
+      <div className="flex items-center flex-shrink-0 ml-3">
         <Checkbox 
           checked={checked}
           onCheckedChange={onCheckedChange}
           className={cn(
-            "h-5 w-5",
-            checked && "bg-primary border-primary"
+            "h-4 w-4",
+            checked && "bg-primary border-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary"
           )}
         />
       </div>

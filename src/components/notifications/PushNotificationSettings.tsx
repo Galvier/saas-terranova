@@ -5,8 +5,58 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
+
+// Mobile Push Toggle Component - Compact Design
+const MobilePushToggle = ({ 
+  isSubscribed, 
+  onToggle,
+  disabled
+}: { 
+  isSubscribed: boolean; 
+  onToggle: (checked: boolean) => void;
+  disabled: boolean;
+}) => {
+  return (
+    <button
+      onClick={() => !disabled && onToggle(!isSubscribed)}
+      disabled={disabled}
+      className="w-full flex items-center justify-between p-3 rounded-lg border transition-all duration-200 min-h-[48px] touch-manipulation hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <div className="flex items-center gap-3">
+        {isSubscribed ? (
+          <Bell className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+        ) : (
+          <BellOff className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        )}
+        <div className="flex flex-col items-start gap-0.5">
+          <span className="text-sm font-medium">Notificações Push</span>
+          <span className="text-xs text-muted-foreground text-left">
+            {isSubscribed 
+              ? 'Recebendo notificações push' 
+              : 'Ative para receber notificações'
+            }
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center flex-shrink-0 ml-3">
+        <Checkbox 
+          checked={isSubscribed}
+          onCheckedChange={onToggle}
+          disabled={disabled}
+          className={cn(
+            "h-4 w-4",
+            isSubscribed && "bg-primary border-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+          )}
+        />
+      </div>
+    </button>
+  );
+};
 
 const PushNotificationSettings: React.FC = () => {
   const {
@@ -19,6 +69,8 @@ const PushNotificationSettings: React.FC = () => {
     unsubscribe,
     sendTestNotification
   } = usePushNotifications();
+  
+  const isMobile = useIsMobile();
 
   const getPermissionStatus = () => {
     switch (permission) {
@@ -121,30 +173,38 @@ const PushNotificationSettings: React.FC = () => {
           </Badge>
         </div>
 
-        {/* Status da inscrição */}
-        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
-          <div className="flex items-center gap-3">
-            {isSubscribed ? (
-              <Bell className="h-5 w-5 text-green-600 dark:text-green-400" />
-            ) : (
-              <BellOff className="h-5 w-5 text-muted-foreground" />
-            )}
-            <div>
-              <h4 className="font-medium">Notificações Push</h4>
-              <p className="text-sm text-muted-foreground">
-                {isSubscribed 
-                  ? 'Ativo - Você receberá notificações push' 
-                  : 'Inativo - Ative para receber notificações push'
-                }
-              </p>
-            </div>
-          </div>
-          <Switch
-            checked={isSubscribed}
-            onCheckedChange={handleSwitchChange}
+        {/* Status da inscrição - Mobile/Desktop Layout */}
+        {isMobile ? (
+          <MobilePushToggle
+            isSubscribed={isSubscribed}
+            onToggle={handleSwitchChange}
             disabled={isLoading}
           />
-        </div>
+        ) : (
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+            <div className="flex items-center gap-3">
+              {isSubscribed ? (
+                <Bell className="h-5 w-5 text-green-600 dark:text-green-400" />
+              ) : (
+                <BellOff className="h-5 w-5 text-muted-foreground" />
+              )}
+              <div>
+                <h4 className="font-medium">Notificações Push</h4>
+                <p className="text-sm text-muted-foreground">
+                  {isSubscribed 
+                    ? 'Ativo - Você receberá notificações push' 
+                    : 'Inativo - Ative para receber notificações push'
+                  }
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={isSubscribed}
+              onCheckedChange={handleSwitchChange}
+              disabled={isLoading}
+            />
+          </div>
+        )}
 
         {/* Alertas e ações baseados no status */}
         {permission === 'default' && (
