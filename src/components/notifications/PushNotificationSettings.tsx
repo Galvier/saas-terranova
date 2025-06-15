@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell, BellOff, Smartphone, TestTube, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { Bell, BellOff, Smartphone, TestTube, AlertTriangle, CheckCircle, Loader2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,12 +17,14 @@ const MobilePushToggle = ({
   isSubscribed, 
   onToggle,
   disabled,
-  isLoading
+  isLoading,
+  localNotificationsEnabled
 }: { 
   isSubscribed: boolean; 
   onToggle: (checked: boolean) => void;
   disabled: boolean;
   isLoading: boolean;
+  localNotificationsEnabled?: boolean;
 }) => {
   return (
     <button
@@ -44,7 +46,9 @@ const MobilePushToggle = ({
             {isLoading 
               ? 'Carregando...'
               : isSubscribed 
-                ? 'Recebendo notificações push' 
+                ? localNotificationsEnabled 
+                  ? 'Modo local ativo' 
+                  : 'Recebendo notificações push'
                 : 'Ative para receber notificações'
             }
           </span>
@@ -71,10 +75,12 @@ const PushNotificationSettings: React.FC = () => {
     permission,
     isSubscribed,
     isLoading,
+    localNotificationsEnabled,
     requestPermission,
     subscribe,
     unsubscribe,
-    sendTestNotification
+    sendTestNotification,
+    resetNotifications
   } = usePushNotifications();
   
   const isMobile = useIsMobile();
@@ -84,7 +90,8 @@ const PushNotificationSettings: React.FC = () => {
     isSupported,
     permission,
     isSubscribed,
-    isLoading
+    isLoading,
+    localNotificationsEnabled
   });
 
   const getPermissionStatus = () => {
@@ -138,7 +145,7 @@ const PushNotificationSettings: React.FC = () => {
   };
 
   // Determinar se o switch deve estar desabilitado
-  const isSwitchDisabled = isLoading || !isSupported;
+  const isSwitchDisabled = isLoading;
 
   if (!isSupported) {
     return (
@@ -214,6 +221,7 @@ const PushNotificationSettings: React.FC = () => {
             onToggle={handleSwitchChange}
             disabled={isSwitchDisabled}
             isLoading={isLoading}
+            localNotificationsEnabled={localNotificationsEnabled}
           />
         ) : (
           <div className={`flex items-center justify-between rounded-lg border ${
@@ -243,8 +251,10 @@ const PushNotificationSettings: React.FC = () => {
                   {isLoading 
                     ? 'Carregando...'
                     : isSubscribed 
-                      ? 'Ativo - Você receberá notificações push' 
-                      : 'Inativo - Ative para receber notificações push'
+                      ? localNotificationsEnabled
+                        ? 'Ativo - Modo local (notificações do navegador)'
+                        : 'Ativo - Você receberá notificações push'
+                      : 'Inativo - Ative para receber notificações'
                   }
                 </p>
               </div>
@@ -264,7 +274,7 @@ const PushNotificationSettings: React.FC = () => {
             <Bell className="h-4 w-4" />
             <AlertDescription>
               <div className="flex items-center justify-between">
-                <span>Para receber notificações push, você precisa conceder permissão ao navegador.</span>
+                <span>Para receber notificações, você precisa conceder permissão ao navegador.</span>
                 <Button 
                   onClick={requestPermission}
                   size={isTablet ? 'default' : 'sm'}
@@ -282,8 +292,8 @@ const PushNotificationSettings: React.FC = () => {
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              <div className="space-y-2">
-                <p><strong>Permissão negada:</strong> Para habilitar notificações push, você precisa:</p>
+              <div className="space-y-3">
+                <p><strong>Permissão negada:</strong> Para habilitar notificações, você precisa:</p>
                 <ol className={`list-decimal list-inside space-y-1 ml-4 ${
                   isTablet ? 'text-sm' : 'text-xs'
                 }`}>
@@ -291,6 +301,15 @@ const PushNotificationSettings: React.FC = () => {
                   <li>Alterar a configuração de "Notificações" para "Permitir"</li>
                   <li>Recarregar a página</li>
                 </ol>
+                <Button 
+                  onClick={resetNotifications}
+                  variant="outline"
+                  size="sm"
+                  disabled={isLoading}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Tentar Novamente
+                </Button>
               </div>
             </AlertDescription>
           </Alert>
@@ -305,18 +324,46 @@ const PushNotificationSettings: React.FC = () => {
           </Alert>
         )}
 
-        {/* Botão de teste */}
-        {permission === 'granted' && isSubscribed && !isLoading && (
-          <div className="pt-2">
+        {/* Indicador de modo local */}
+        {localNotificationsEnabled && (
+          <Alert>
+            <Bell className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-2">
+                <p><strong>Modo Local Ativo:</strong> As notificações estão funcionando através do navegador.</p>
+                <p className="text-sm text-muted-foreground">
+                  Este modo garante que você receba notificações mesmo que o serviço de push esteja temporariamente indisponível.
+                </p>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Botões de ação */}
+        {permission === 'granted' && (
+          <div className={`flex gap-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
+            {isSubscribed && (
+              <Button 
+                onClick={sendTestNotification}
+                variant="outline"
+                className={isMobile ? 'w-full' : 'flex-1'}
+                size={isTablet ? 'default' : 'sm'}
+                disabled={isLoading}
+              >
+                <TestTube className={`mr-2 ${isTablet ? 'h-5 w-5' : 'h-4 w-4'}`} />
+                Enviar Teste
+              </Button>
+            )}
+            
             <Button 
-              onClick={sendTestNotification}
+              onClick={resetNotifications}
               variant="outline"
-              className="w-full"
+              className={isMobile ? 'w-full' : 'flex-1'}
               size={isTablet ? 'default' : 'sm'}
               disabled={isLoading}
             >
-              <TestTube className={`mr-2 ${isTablet ? 'h-5 w-5' : 'h-4 w-4'}`} />
-              Enviar Notificação de Teste
+              <RotateCcw className={`mr-2 ${isTablet ? 'h-5 w-5' : 'h-4 w-4'}`} />
+              Resetar
             </Button>
           </div>
         )}

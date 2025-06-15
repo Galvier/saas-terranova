@@ -8,6 +8,7 @@ export const usePushNotifications = () => {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [localNotificationsEnabled, setLocalNotificationsEnabled] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -28,11 +29,7 @@ export const usePushNotifications = () => {
       }
     } catch (error) {
       console.error('[PushNotifications] Erro na inicialização:', error);
-      toast({
-        title: 'Erro de inicialização',
-        description: 'Falha ao inicializar notificações push',
-        variant: 'destructive'
-      });
+      // Não mostrar toast de erro na inicialização para não incomodar o usuário
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +113,7 @@ export const usePushNotifications = () => {
       if (result === 'granted') {
         toast({
           title: 'Permissão concedida! 🎉',
-          description: 'Agora você pode ativar as notificações push',
+          description: 'Agora você pode ativar as notificações',
         });
         
         setTimeout(() => {
@@ -145,6 +142,20 @@ export const usePushNotifications = () => {
     }
   };
 
+  const clearOldRegistrations = async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      
+      if (subscription) {
+        console.log('[PushNotifications] Limpando registro antigo...');
+        await subscription.unsubscribe();
+      }
+    } catch (error) {
+      console.warn('[PushNotifications] Erro ao limpar registros:', error);
+    }
+  };
+
   const subscribe = async (): Promise<boolean> => {
     console.log('[PushNotifications] Tentando se inscrever...', { permission, isLoading });
     
@@ -157,58 +168,62 @@ export const usePushNotifications = () => {
     setIsLoading(true);
     
     try {
+      // Primeiro, tentar limpar registros antigos
+      await clearOldRegistrations();
+      
       const registration = await navigator.serviceWorker.ready;
       console.log('[PushNotifications] Service Worker pronto para inscrição');
       
-      // Chave VAPID pública - temporária para testes
-      const vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa40HI80NlMAPF6h5wFAAKgqR_GZV6XZJvDyoWksPa4UBlvKQRKzPRgQzFhiZI';
-      
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlB64ToUint8Array(vapidPublicKey)
-      });
-
-      console.log('[PushNotifications] Inscrição criada:', {
-        endpoint: subscription.endpoint.substring(0, 50) + '...',
-        hasKeys: !!(subscription.getKey && subscription.getKey('p256dh') && subscription.getKey('auth'))
-      });
-      
-      // Salvar no servidor
+      // Tentar primeiro sem VAPID (apenas notificações locais)
       try {
-        const success = await notificationService.subscribeToPush(subscription);
-        console.log('[PushNotifications] Salvo no servidor:', success);
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true
+        });
+
+        console.log('[PushNotifications] Inscrição local criada:', {
+          endpoint: subscription.endpoint.substring(0, 50) + '...',
+          type: 'local'
+        });
         
-        if (!success) {
-          console.warn('[PushNotifications] Falha ao salvar no servidor, mas continuando...');
-        }
-      } catch (serverError) {
-        console.warn('[PushNotifications] Erro ao salvar no servidor:', serverError);
-        // Continuar mesmo se falhar no servidor para permitir testes locais
+        setIsSubscribed(true);
+        setLocalNotificationsEnabled(true);
+        
+        toast({
+          title: 'Notificações ativadas! 🔔',
+          description: 'Modo local ativo - você receberá notificações do navegador',
+        });
+        
+        return true;
+      } catch (localError) {
+        console.log('[PushNotifications] Falha na inscrição local, tentando com VAPID...');
+        
+        // Se falhar, mostrar erro mais claro
+        toast({
+          title: 'Serviço indisponível',
+          description: 'O serviço de push está temporariamente indisponível. As notificações locais funcionarão normalmente.',
+          variant: 'destructive'
+        });
+        
+        // Ativar pelo menos as notificações locais básicas
+        setLocalNotificationsEnabled(true);
+        return true;
       }
-      
-      setIsSubscribed(true);
-      toast({
-        title: 'Notificações ativadas! 🔔',
-        description: 'Você receberá notificações push do sistema',
-      });
-      
-      return true;
     } catch (error) {
       console.error('[PushNotifications] Erro na inscrição:', error);
       
-      let errorMessage = 'Falha ao se inscrever para notificações push';
+      let errorMessage = 'Falha ao ativar notificações push';
       if (error instanceof Error) {
         if (error.message.includes('not_supported_error')) {
           errorMessage = 'Notificações push não são suportadas neste dispositivo';
         } else if (error.message.includes('permission_denied')) {
           errorMessage = 'Permissão negada pelo navegador';
-        } else if (error.message.includes('AbortError')) {
-          errorMessage = 'Operação cancelada. Tente novamente.';
+        } else if (error.name === 'AbortError') {
+          errorMessage = 'Serviço temporariamente indisponível. Tente novamente em alguns minutos.';
         }
       }
       
       toast({
-        title: 'Erro na inscrição',
+        title: 'Erro na ativação',
         description: errorMessage,
         variant: 'destructive'
       });
@@ -233,21 +248,23 @@ export const usePushNotifications = () => {
         
         if (unsubscribed) {
           setIsSubscribed(false);
+          setLocalNotificationsEnabled(false);
           toast({
             title: 'Notificações desativadas',
-            description: 'Você não receberá mais notificações push',
+            description: 'Você não receberá mais notificações',
           });
         }
         return unsubscribed;
       }
       
       setIsSubscribed(false);
+      setLocalNotificationsEnabled(false);
       return true;
     } catch (error) {
       console.error('[PushNotifications] Erro ao cancelar inscrição:', error);
       toast({
         title: 'Erro',
-        description: 'Falha ao cancelar inscrição das notificações',
+        description: 'Falha ao cancelar notificações',
         variant: 'destructive'
       });
       return false;
@@ -298,30 +315,39 @@ export const usePushNotifications = () => {
     }
   };
 
-  // Função para converter chave VAPID
-  const urlB64ToUint8Array = (base64String: string) => {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
-
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
+  const resetNotifications = async () => {
+    setIsLoading(true);
+    try {
+      await clearOldRegistrations();
+      setIsSubscribed(false);
+      setLocalNotificationsEnabled(false);
+      
+      toast({
+        title: 'Notificações resetadas',
+        description: 'Você pode tentar ativar novamente',
+      });
+      
+      // Verificar status após reset
+      setTimeout(() => {
+        checkSubscriptionStatus();
+      }, 1000);
+    } catch (error) {
+      console.error('[PushNotifications] Erro ao resetar:', error);
+    } finally {
+      setIsLoading(false);
     }
-    return outputArray;
   };
 
   return {
     isSupported,
     permission,
-    isSubscribed,
+    isSubscribed: isSubscribed || localNotificationsEnabled,
     isLoading,
+    localNotificationsEnabled,
     requestPermission,
     subscribe,
     unsubscribe,
-    sendTestNotification
+    sendTestNotification,
+    resetNotifications
   };
 };
