@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Save, Loader2, Sun, Moon, Globe } from 'lucide-react';
 import { UserSettings } from '@/hooks/useUserSettings';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface InterfaceTabProps {
   settings: UserSettings;
@@ -16,53 +17,55 @@ interface InterfaceTabProps {
 }
 
 const InterfaceTab = ({ settings, isSaving, onSave, onUpdateSettings }: InterfaceTabProps) => {
+  const isMobile = useIsMobile();
+
   return (
-    <Card>
+    <Card className="w-full max-w-full overflow-hidden">
       <CardHeader>
         <CardTitle>Preferências de Interface</CardTitle>
         <CardDescription>
           Personalize a aparência da interface
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 p-4 md:p-6">
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Tema</Label>
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Tema</Label>
             <RadioGroup 
               value={settings.theme} 
               onValueChange={(value: 'light' | 'dark' | 'system') => 
                 onUpdateSettings({ theme: value })} 
-              className="flex flex-wrap gap-4"
+              className={`${isMobile ? 'flex flex-col space-y-3' : 'flex flex-wrap gap-4'}`}
             >
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center ${isMobile ? 'justify-between' : 'space-x-2'} p-2 rounded-lg border ${settings.theme === 'light' ? 'bg-muted/50' : ''}`}>
+                <Label htmlFor="theme-light" className="flex items-center gap-3 cursor-pointer flex-1">
+                  <Sun className="h-5 w-5 text-amber-500" />
+                  <span className="text-sm font-medium">Claro</span>
+                </Label>
                 <RadioGroupItem value="light" id="theme-light" />
-                <Label htmlFor="theme-light" className="flex items-center gap-2">
-                  <Sun className="h-4 w-4" />
-                  <span>Claro</span>
-                </Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center ${isMobile ? 'justify-between' : 'space-x-2'} p-2 rounded-lg border ${settings.theme === 'dark' ? 'bg-muted/50' : ''}`}>
+                <Label htmlFor="theme-dark" className="flex items-center gap-3 cursor-pointer flex-1">
+                  <Moon className="h-5 w-5 text-blue-500" />
+                  <span className="text-sm font-medium">Escuro</span>
+                </Label>
                 <RadioGroupItem value="dark" id="theme-dark" />
-                <Label htmlFor="theme-dark" className="flex items-center gap-2">
-                  <Moon className="h-4 w-4" />
-                  <span>Escuro</span>
-                </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="system" id="theme-system" />
-                <Label htmlFor="theme-system" className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  <span>Sistema</span>
+              <div className={`flex items-center ${isMobile ? 'justify-between' : 'space-x-2'} p-2 rounded-lg border ${settings.theme === 'system' ? 'bg-muted/50' : ''}`}>
+                <Label htmlFor="theme-system" className="flex items-center gap-3 cursor-pointer flex-1">
+                  <Globe className="h-5 w-5 text-green-500" />
+                  <span className="text-sm font-medium">Sistema</span>
                 </Label>
+                <RadioGroupItem value="system" id="theme-system" />
               </div>
             </RadioGroup>
           </div>
         </div>
         
-        <div className="space-y-2">
-          <Label>Animações</Label>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="animations" className="text-sm text-muted-foreground">
+        <div className="space-y-3">
+          <Label className="text-base font-medium">Animações</Label>
+          <div className={`flex items-center ${isMobile ? 'justify-between' : 'justify-between'} p-2 rounded-lg border`}>
+            <Label htmlFor="animations" className="text-sm text-muted-foreground cursor-pointer">
               Ativar animações na interface
             </Label>
             <Switch 
@@ -73,8 +76,8 @@ const InterfaceTab = ({ settings, isSaving, onSave, onUpdateSettings }: Interfac
           </div>
         </div>
       </CardContent>
-      <CardFooter className="border-t bg-muted/50 px-6 py-4">
-        <Button onClick={onSave} disabled={isSaving}>
+      <CardFooter className="border-t bg-muted/50 px-4 md:px-6 py-4">
+        <Button onClick={onSave} disabled={isSaving} className="w-full md:w-auto">
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
