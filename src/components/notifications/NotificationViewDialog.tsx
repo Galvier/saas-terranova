@@ -33,15 +33,6 @@ const NotificationViewDialog: React.FC<NotificationViewDialogProps> = ({
     }
   };
 
-  const getNotificationBadgeVariant = (type: string) => {
-    switch (type) {
-      case 'success': return 'default';
-      case 'warning': return 'secondary';
-      case 'error': return 'destructive';
-      default: return 'outline';
-    }
-  };
-
   const handleMarkAsRead = () => {
     if (onMarkAsRead && !notification.is_read) {
       onMarkAsRead(notification.id);
@@ -62,16 +53,11 @@ const NotificationViewDialog: React.FC<NotificationViewDialogProps> = ({
                 <DialogTitle className="text-lg font-semibold break-words">
                   {notification.title}
                 </DialogTitle>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant={getNotificationBadgeVariant(notification.type) as any}>
-                    {notification.type}
+                {!notification.is_read && (
+                  <Badge variant="default" className="text-xs self-start sm:self-center">
+                    Nova
                   </Badge>
-                  {!notification.is_read && (
-                    <Badge variant="default" className="text-xs">
-                      Nova
-                    </Badge>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>
