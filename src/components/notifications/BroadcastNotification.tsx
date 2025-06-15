@@ -103,16 +103,6 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
     }
   };
 
-  const translateNotificationType = (type: string) => {
-    const typeTranslations: Record<string, string> = {
-      'info': 'Informação',
-      'success': 'Sucesso',
-      'warning': 'Aviso',
-      'error': 'Erro'
-    };
-    return typeTranslations[type] || type;
-  };
-
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'success': return 'bg-green-100 text-green-800';
@@ -131,7 +121,7 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
             Enviar Notificação em Massa
           </CardTitle>
           <CardDescription>
-            Envie notificações para todos os usuários, apenas admins ou um departamento específico
+            Envie notificações personalizadas para todos os usuários, apenas admins ou um departamento específico
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -155,7 +145,7 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
               rows={3}
             />
             <p className="text-xs text-gray-500">
-              💡 Dica: Use <code>{{"{{"}}user_name{{"}}"}}</code> na mensagem para personalizar com o nome do destinatário
+              💡 Dica: Use <code>{`{{user_name}}`}</code> na mensagem para personalizar com o nome do destinatário
             </p>
           </div>
 
