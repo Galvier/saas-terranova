@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -6,9 +5,7 @@ import { CustomBadge } from '@/components/ui/custom-badge';
 import { Plus, Edit, Trash2, FileText, AlertTriangle, ArrowUp, ArrowDown, Minus, ChartBar, Table as TableIcon, Gauge, ChartLine, ChartPie, BarChart3, ChartArea } from 'lucide-react';
 import { MetricDefinition } from '@/integrations/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import { useIsMobile } from '@/hooks/use-mobile';
 import MetricJustificationDialog from './MetricJustificationDialog';
-import MobileMetricsCard from './MobileMetricsCard';
 
 interface MetricsTableProps {
   metrics: MetricDefinition[];
@@ -24,7 +21,6 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   onDelete,
 }) => {
   const { isAdmin, userDepartmentId } = useAuth();
-  const isMobile = useIsMobile();
   const [selectedMetricForJustification, setSelectedMetricForJustification] = useState<MetricDefinition | null>(null);
   const [justificationDate, setJustificationDate] = useState<Date>(new Date());
 
@@ -57,41 +53,6 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     // ou mostrar algum indicador de que a justificativa foi criada
   };
 
-  // Mobile layout
-  if (isMobile) {
-    return (
-      <>
-        <div className="space-y-4">
-          {metrics.map((metric) => {
-            const needsJustif = needsJustification(metric);
-            const canModify = canModifyMetric(metric);
-            
-            return (
-              <MobileMetricsCard
-                key={metric.id}
-                metric={metric}
-                canModify={canModify}
-                needsJustification={needsJustif}
-                onAddValue={() => onAddValue(metric)}
-                onEdit={() => onEdit(metric)}
-                onDelete={() => onDelete(metric)}
-                onJustify={() => handleJustifyClick(metric)}
-              />
-            );
-          })}
-        </div>
-
-        <MetricJustificationDialog
-          metric={selectedMetricForJustification}
-          periodDate={justificationDate}
-          isOpen={!!selectedMetricForJustification}
-          onClose={() => setSelectedMetricForJustification(null)}
-          onSuccess={handleJustificationSuccess}
-        />
-      </>
-    );
-  }
-
   // Função para formatar valores com unidade na posição correta
   const formatValueWithUnit = (value: number | null, unit: string): string => {
     if (value === null || value === undefined) {
@@ -112,7 +73,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   };
 
   // Function to render trend icon
-  const renderT​rendIcon = (metric: MetricDefinition) => {
+  const renderTrendIcon = (metric: MetricDefinition) => {
     if (!metric.current || !metric.target) return <Minus className="h-4 w-4 text-muted-foreground" />;
     
     if (metric.lower_is_better) {
@@ -180,135 +141,132 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     return translations[type] || type;
   };
 
-  // Desktop layout
   return (
     <>
       <div className="rounded-md border overflow-hidden">
-        <div className="table-responsive">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Métrica</TableHead>
-                <TableHead>Setor</TableHead>
-                <TableHead>Meta</TableHead>
-                <TableHead>Atual</TableHead>
-                <TableHead>Tendência</TableHead>
-                <TableHead>Frequência</TableHead>
-                <TableHead>Visualização</TableHead>
-                <TableHead>Última Atualização</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {metrics.map((metric) => {
-                const needsJustif = needsJustification(metric);
-                const canModify = canModifyMetric(metric);
-                
-                return (
-                  <TableRow key={metric.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {metric.name}
-                        {needsJustif && (
-                          <div title="Precisa de justificativa">
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{metric.department_name}</TableCell>
-                    <TableCell>
-                      {formatValueWithUnit(metric.target, metric.unit)}
-                    </TableCell>
-                    <TableCell>
-                      {formatValueWithUnit(metric.current, metric.unit)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center">
-                        {renderTrendIcon(metric)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {translateFrequency(metric.frequency || 'monthly')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center">
-                        {renderVisualizationIcon(metric.visualization_type || 'card')}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {metric.last_value_date ? 
-                        new Date(metric.last_value_date).toLocaleDateString('pt-BR') : 
-                        'Nenhum registro'
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Métrica</TableHead>
+              <TableHead>Setor</TableHead>
+              <TableHead>Meta</TableHead>
+              <TableHead>Atual</TableHead>
+              <TableHead>Tendência</TableHead>
+              <TableHead>Frequência</TableHead>
+              <TableHead>Visualização</TableHead>
+              <TableHead>Última Atualização</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {metrics.map((metric) => {
+              const needsJustif = needsJustification(metric);
+              const canModify = canModifyMetric(metric);
+              
+              return (
+                <TableRow key={metric.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {metric.name}
+                      {needsJustif && (
+                        <div title="Precisa de justificativa">
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>{metric.department_name}</TableCell>
+                  <TableCell>
+                    {formatValueWithUnit(metric.target, metric.unit)}
+                  </TableCell>
+                  <TableCell>
+                    {formatValueWithUnit(metric.current, metric.unit)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center">
+                      {renderTrendIcon(metric)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {translateFrequency(metric.frequency || 'monthly')}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center">
+                      {renderVisualizationIcon(metric.visualization_type || 'card')}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {metric.last_value_date ? 
+                      new Date(metric.last_value_date).toLocaleDateString('pt-BR') : 
+                      'Nenhum registro'
+                    }
+                  </TableCell>
+                  <TableCell>
+                    <CustomBadge 
+                      variant={
+                        metric.status === 'success' ? 'success' : 
+                        metric.status === 'warning' ? 'warning' : 'destructive'
                       }
-                    </TableCell>
-                    <TableCell>
-                      <CustomBadge 
-                        variant={
-                          metric.status === 'success' ? 'success' : 
-                          metric.status === 'warning' ? 'warning' : 'destructive'
-                        }
-                      >
-                        {metric.status === 'success' ? 'Ótimo' : 
-                         metric.status === 'warning' ? 'Atenção' : 'Crítico'}
-                      </CustomBadge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        {needsJustif && canModify && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleJustifyClick(metric)}
-                            title="Justificar métrica"
-                            className="text-amber-600 hover:text-amber-700"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        )}
-                        
-                        {canModify && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onAddValue(metric)}
-                            title="Adicionar valor"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        )}
-                        
-                        {canModify && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onEdit(metric)}
-                            title="Editar"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                        
-                        {canModify && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onDelete(metric)}
-                            title="Excluir"
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                    >
+                      {metric.status === 'success' ? 'Ótimo' : 
+                       metric.status === 'warning' ? 'Atenção' : 'Crítico'}
+                    </CustomBadge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      {needsJustif && canModify && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleJustifyClick(metric)}
+                          title="Justificar métrica"
+                          className="text-amber-600 hover:text-amber-700"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      {canModify && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onAddValue(metric)}
+                          title="Adicionar valor"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      {canModify && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onEdit(metric)}
+                          title="Editar"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      {canModify && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onDelete(metric)}
+                          title="Excluir"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </div>
 
       <MetricJustificationDialog

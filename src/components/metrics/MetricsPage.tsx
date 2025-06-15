@@ -10,11 +10,9 @@ import DateFilter from '@/components/filters/DateFilter';
 import UserProfileIndicator from '@/components/UserProfileIndicator';
 import { EnhancedTabs, EnhancedTabsList, EnhancedTabsTrigger, EnhancedTabsContent } from '@/components/ui/enhanced-tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const MetricsPage = () => {
   const { isAdmin } = useAuth();
-  const isMobile = useIsMobile();
   const { count: pendingJustificationsCount } = usePendingJustifications();
   
   const {
@@ -37,62 +35,58 @@ const MetricsPage = () => {
   if (isAdmin) {
     return (
       <div className="animate-fade-in">
-        <div className="mobile-container">
-          <MetricsHeader 
-            departments={departments}
-            selectedDepartment={selectedDepartment}
-            setSelectedDepartment={setSelectedDepartment}
-            setIsCreateDialogOpen={dialogStates.setIsCreateDialogOpen}
-            isAdmin={isAdmin}
-          />
+        <MetricsHeader 
+          departments={departments}
+          selectedDepartment={selectedDepartment}
+          setSelectedDepartment={setSelectedDepartment}
+          setIsCreateDialogOpen={dialogStates.setIsCreateDialogOpen}
+          isAdmin={isAdmin}
+        />
+        
+        <EnhancedTabs defaultValue="metrics" className="w-full">
+          <EnhancedTabsList className="grid w-full grid-cols-2 mb-6">
+            <EnhancedTabsTrigger value="metrics">Métricas</EnhancedTabsTrigger>
+            <EnhancedTabsTrigger value="justifications" badge={pendingJustificationsCount}>
+              Justificativas
+            </EnhancedTabsTrigger>
+          </EnhancedTabsList>
           
-          <EnhancedTabs defaultValue="metrics" className="w-full">
-            <EnhancedTabsList className={`grid w-full grid-cols-2 mb-6 ${isMobile ? 'mobile-touch' : ''}`}>
-              <EnhancedTabsTrigger value="metrics" className={isMobile ? 'mobile-text' : ''}>
-                Métricas
-              </EnhancedTabsTrigger>
-              <EnhancedTabsTrigger value="justifications" badge={pendingJustificationsCount} className={isMobile ? 'mobile-text' : ''}>
-                Justificativas
-              </EnhancedTabsTrigger>
-            </EnhancedTabsList>
-            
-            <EnhancedTabsContent value="metrics">
-              <div className={`flex ${isMobile ? 'flex-col' : 'flex-wrap'} justify-between items-start gap-4 mb-6`}>
-                <UserProfileIndicator 
-                  selectedDepartment={selectedDepartment}
-                  departmentName={departmentName}
-                />
-                
-                <DateFilter
-                  selectedDate={selectedDate}
-                  onDateChange={setSelectedDate}
-                  dateRangeType={dateRangeType}
-                  onDateRangeTypeChange={setDateRangeType}
-                  className="w-full sm:w-auto"
-                />
-              </div>
+          <EnhancedTabsContent value="metrics">
+            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+              <UserProfileIndicator 
+                selectedDepartment={selectedDepartment}
+                departmentName={departmentName}
+              />
+              
+              <DateFilter
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                dateRangeType={dateRangeType}
+                onDateRangeTypeChange={setDateRangeType}
+                className="w-full sm:w-auto"
+              />
+            </div>
 
-              {isLoading ? (
-                <div className="text-center py-8 mobile-text">Carregando métricas...</div>
-              ) : metrics.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground mobile-card">
-                  <p className="mobile-text">Nenhuma métrica encontrada. Crie uma nova métrica para começar.</p>
-                </div>
-              ) : (
-                <MetricsTable 
-                  metrics={metrics}
-                  onAddValue={handleMetricActions.handleAddValueClick}
-                  onEdit={handleMetricActions.handleEditClick}
-                  onDelete={handleMetricActions.handleDeleteClick}
-                />
-              )}
-            </EnhancedTabsContent>
-            
-            <EnhancedTabsContent value="justifications">
-              <JustificationsAdminPanel />
-            </EnhancedTabsContent>
-          </EnhancedTabs>
-        </div>
+            {isLoading ? (
+              <div className="text-center py-8">Carregando métricas...</div>
+            ) : metrics.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma métrica encontrada. Crie uma nova métrica para começar.
+              </div>
+            ) : (
+              <MetricsTable 
+                metrics={metrics}
+                onAddValue={handleMetricActions.handleAddValueClick}
+                onEdit={handleMetricActions.handleEditClick}
+                onDelete={handleMetricActions.handleDeleteClick}
+              />
+            )}
+          </EnhancedTabsContent>
+          
+          <EnhancedTabsContent value="justifications">
+            <JustificationsAdminPanel />
+          </EnhancedTabsContent>
+        </EnhancedTabs>
 
         <MetricsDialogs 
           departments={departments}
@@ -117,45 +111,43 @@ const MetricsPage = () => {
   // Para gestores (não admin), mostrar apenas a aba de métricas
   return (
     <div className="animate-fade-in">
-      <div className="mobile-container">
-        <MetricsHeader 
-          departments={departments}
+      <MetricsHeader 
+        departments={departments}
+        selectedDepartment={selectedDepartment}
+        setSelectedDepartment={setSelectedDepartment}
+        setIsCreateDialogOpen={dialogStates.setIsCreateDialogOpen}
+        isAdmin={isAdmin}
+      />
+      
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+        <UserProfileIndicator 
           selectedDepartment={selectedDepartment}
-          setSelectedDepartment={setSelectedDepartment}
-          setIsCreateDialogOpen={dialogStates.setIsCreateDialogOpen}
-          isAdmin={isAdmin}
+          departmentName={departmentName}
         />
         
-        <div className={`flex ${isMobile ? 'flex-col' : 'flex-wrap'} justify-between items-start gap-4 mb-6`}>
-          <UserProfileIndicator 
-            selectedDepartment={selectedDepartment}
-            departmentName={departmentName}
-          />
-          
-          <DateFilter
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            dateRangeType={dateRangeType}
-            onDateRangeTypeChange={setDateRangeType}
-            className="w-full sm:w-auto"
-          />
-        </div>
-
-        {isLoading ? (
-          <div className="text-center py-8 mobile-text">Carregando métricas...</div>
-        ) : metrics.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground mobile-card">
-            <p className="mobile-text">Nenhuma métrica encontrada. Crie uma nova métrica para começar.</p>
-          </div>
-        ) : (
-          <MetricsTable 
-            metrics={metrics}
-            onAddValue={handleMetricActions.handleAddValueClick}
-            onEdit={handleMetricActions.handleEditClick}
-            onDelete={handleMetricActions.handleDeleteClick}
-          />
-        )}
+        <DateFilter
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          dateRangeType={dateRangeType}
+          onDateRangeTypeChange={setDateRangeType}
+          className="w-full sm:w-auto"
+        />
       </div>
+
+      {isLoading ? (
+        <div className="text-center py-8">Carregando métricas...</div>
+      ) : metrics.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          Nenhuma métrica encontrada. Crie uma nova métrica para começar.
+        </div>
+      ) : (
+        <MetricsTable 
+          metrics={metrics}
+          onAddValue={handleMetricActions.handleAddValueClick}
+          onEdit={handleMetricActions.handleEditClick}
+          onDelete={handleMetricActions.handleDeleteClick}
+        />
+      )}
 
       <MetricsDialogs 
         departments={departments}

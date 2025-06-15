@@ -9,63 +9,59 @@ import IntegrationsTab from '@/components/settings/tabs/IntegrationsTab';
 import BackupTab from '@/components/settings/tabs/BackupTab';
 import PageHeader from '@/components/PageHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useUserSettings } from '@/hooks/useUserSettings';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const isMobile = useIsMobile();
-  const { settings, isLoading, isSaving, updateSettings } = useUserSettings();
 
   if (isMobile) {
     return (
-      <div className="animate-fade-in">
-        <div className="mobile-container">
-          <PageHeader 
-            title="Configurações" 
-            subtitle="Gerencie suas preferências e configurações do sistema"
-          />
+      <div className="animate-fade-in mobile-container">
+        <PageHeader 
+          title="Configurações" 
+          subtitle="Gerencie suas preferências e configurações do sistema"
+        />
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 mb-6">
+            <TabsTrigger value="profile" className="mobile-text">Perfil</TabsTrigger>
+            <TabsTrigger value="notifications" className="mobile-text">Notificações</TabsTrigger>
+            <TabsTrigger value="interface" className="mobile-text hidden sm:block">Interface</TabsTrigger>
+            <TabsTrigger value="integrations" className="mobile-text hidden sm:block">Integrações</TabsTrigger>
+            <TabsTrigger value="backup" className="mobile-text hidden sm:block">Backup</TabsTrigger>
+          </TabsList>
           
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 mb-6">
-              <TabsTrigger value="profile" className="mobile-text">Perfil</TabsTrigger>
-              <TabsTrigger value="notifications" className="mobile-text">Notificações</TabsTrigger>
-              <TabsTrigger value="interface" className="mobile-text hidden sm:block">Interface</TabsTrigger>
-              <TabsTrigger value="integrations" className="mobile-text hidden sm:block">Integrações</TabsTrigger>
-              <TabsTrigger value="backup" className="mobile-text hidden sm:block">Backup</TabsTrigger>
-            </TabsList>
+          <div className="mobile-card">
+            <TabsContent value="profile" className="mt-0">
+              <ProfileTab />
+            </TabsContent>
             
-            <div className="mobile-card">
-              <TabsContent value="profile" className="mt-0">
-                <ProfileTab />
-              </TabsContent>
-              
-              <TabsContent value="notifications" className="mt-0">
-                <NotificationsTab 
-                  settings={settings}
-                  isLoading={isLoading}
-                  onUpdateSettings={updateSettings}
-                />
-              </TabsContent>
-              
-              <TabsContent value="interface" className="mt-0">
-                <InterfaceTab 
-                  settings={settings}
-                  isSaving={isSaving}
-                  onSave={updateSettings}
-                  onUpdateSettings={updateSettings}
-                />
-              </TabsContent>
-              
-              <TabsContent value="integrations" className="mt-0">
-                <IntegrationsTab />
-              </TabsContent>
-              
-              <TabsContent value="backup" className="mt-0">
-                <BackupTab />
-              </TabsContent>
-            </div>
-          </Tabs>
-        </div>
+            <TabsContent value="notifications" className="mt-0">
+              <NotificationsTab 
+                settings={{}}
+                isLoading={false}
+                onUpdateSettings={() => {}}
+              />
+            </TabsContent>
+            
+            <TabsContent value="interface" className="mt-0">
+              <InterfaceTab 
+                settings={{}}
+                isSaving={false}
+                onSave={() => {}}
+                onUpdateSettings={() => {}}
+              />
+            </TabsContent>
+            
+            <TabsContent value="integrations" className="mt-0">
+              <IntegrationsTab />
+            </TabsContent>
+            
+            <TabsContent value="backup" className="mt-0">
+              <BackupTab />
+            </TabsContent>
+          </div>
+        </Tabs>
       </div>
     );
   }
@@ -90,18 +86,18 @@ const Settings = () => {
             
             <TabsContent value="notifications">
               <NotificationsTab 
-                settings={settings}
-                isLoading={isLoading}
-                onUpdateSettings={updateSettings}
+                settings={{}}
+                isLoading={false}
+                onUpdateSettings={() => {}}
               />
             </TabsContent>
             
             <TabsContent value="interface">
               <InterfaceTab 
-                settings={settings}
-                isSaving={isSaving}
-                onSave={updateSettings}
-                onUpdateSettings={updateSettings}
+                settings={{}}
+                isSaving={false}
+                onSave={() => {}}
+                onUpdateSettings={() => {}}
               />
             </TabsContent>
             
