@@ -41,8 +41,12 @@ serve(async (req) => {
     const currentTime = now.toTimeString().split(' ')[0].substring(0, 5) // HH:MM
     const currentDay = now.getDay() // 0-6
     const currentDate = now.getDate() // 1-31
+    const currentHour = now.getHours()
 
-    console.log(`Checking scheduled notifications at ${currentTime}`)
+    console.log(`Checking scheduled notifications at ${currentTime}, hour: ${currentHour}`)
+
+    // Executar notificações automáticas em horários específicos
+    await executeAutomaticNotifications(supabaseClient, currentHour);
 
     // Buscar notificações agendadas que devem ser enviadas
     const { data: scheduledNotifications, error: scheduleError } = await supabaseClient
@@ -158,11 +162,6 @@ serve(async (req) => {
       }
     }
 
-    // Verificar métricas em atraso (executar apenas uma vez por dia às 09:00)
-    if (currentTime === '09:00') {
-      await checkOverdueMetrics(supabaseClient)
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
@@ -186,6 +185,28 @@ serve(async (req) => {
     )
   }
 })
+
+// Executar notificações automáticas em horários específicos
+async function executeAutomaticNotifications(supabaseClient: any, currentHour: number) {
+  // Executar às 9h, 14h e 18h para cobrir diferentes frequências
+  const executionHours = [9, 14, 18];
+  
+  if (executionHours.includes(currentHour)) {
+    console.log(`Executing automatic notifications at hour ${currentHour}`);
+    
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('automatic-notifications');
+      
+      if (error) {
+        console.error('Error executing automatic notifications:', error);
+      } else {
+        console.log('Automatic notifications executed successfully:', data);
+      }
+    } catch (error) {
+      console.error('Exception executing automatic notifications:', error);
+    }
+  }
+}
 
 async function checkOverdueMetrics(supabaseClient: any) {
   try {

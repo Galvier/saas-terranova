@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CreateNotificationParams {
@@ -35,6 +34,14 @@ export interface BroadcastParams {
   targetType: 'all' | 'admins' | 'department';
   departmentId?: string;
   variables?: Record<string, any>;
+}
+
+export interface FrequencyConfig {
+  daily?: { reminder_hour: number; };
+  weekly?: { reminder_day: number; reminder_hour: number; };
+  monthly?: { deadline_day: number; reminder_days: number[]; };
+  quarterly?: { reminder_days_before: number[]; };
+  yearly?: { reminder_days_before: number[]; };
 }
 
 export const notificationService = {
@@ -143,7 +150,6 @@ export const notificationService = {
     }
   },
 
-  // Mantém método SQL como fallback
   async broadcastFromTemplate(params: BroadcastParams): Promise<number | null> {
     try {
       console.log('Broadcasting notification with params:', params);
@@ -188,5 +194,82 @@ export const notificationService = {
       console.error('Error broadcasting notification:', error);
       throw error;
     }
+  },
+
+  async getFrequencyConfigs(): Promise<FrequencyConfig> {
+    try {
+      console.log('Fetching frequency configurations...');
+      const { data, error } = await supabase
+        .from('notification_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', [
+          'daily_reminder_config',
+          'weekly_reminder_config',
+          'monthly_reminder_config',
+          'quarterly_reminder_config',
+          'yearly_reminder_config'
+        ]);
+
+      if (error) {
+        console.error('Error fetching frequency configs:', error);
+        return this.getDefaultFrequencyConfigs();
+      }
+
+      const configs: FrequencyConfig = {};
+      if (data) {
+        for (const setting of data) {
+          const key = setting.setting_key.replace('_reminder_config', '') as keyof FrequencyConfig;
+          configs[key] = setting.setting_value as any;
+        }
+      }
+
+      // Preencher com valores padrão se necessário
+      return { ...this.getDefaultFrequencyConfigs(), ...configs };
+    } catch (error) {
+      console.error('Error fetching frequency configs:', error);
+      return this.getDefaultFrequencyConfigs();
+    }
+  },
+
+  async updateFrequencyConfig(frequency: keyof FrequencyConfig, config: any): Promise<boolean> {
+    try {
+      console.log('Updating frequency config:', frequency, config);
+      const { error } = await supabase.rpc('update_notification_setting', {
+        setting_key_param: `${frequency}_reminder_config`,
+        new_value: config
+      });
+
+      if (error) {
+        console.error('Error updating frequency config:', error);
+        throw error;
+      }
+
+      console.log('Frequency config updated successfully');
+      return true;
+    } catch (error) {
+      console.error('Error updating frequency config:', error);
+      return false;
+    }
+  },
+
+  getDefaultFrequencyConfigs(): FrequencyConfig {
+    return {
+      daily: { reminder_hour: 18 }, // 6 PM
+      weekly: { reminder_day: 1, reminder_hour: 9 }, // Segunda-feira 9 AM
+      monthly: { deadline_day: 25, reminder_days: [3, 5, 7] },
+      quarterly: { reminder_days_before: [7, 15, 30] },
+      yearly: { reminder_days_before: [15, 30, 60] }
+    };
+  },
+
+  translateFrequency(frequency: string): string {
+    const translations: Record<string, string> = {
+      'daily': 'Diária',
+      'weekly': 'Semanal',
+      'monthly': 'Mensal',
+      'quarterly': 'Trimestral',
+      'yearly': 'Anual'
+    };
+    return translations[frequency] || frequency;
   }
 };
