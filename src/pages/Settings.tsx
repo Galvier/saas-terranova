@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2 } from 'lucide-react';
+import { Loader2, User, Settings2, Bell, Database } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Import refactored components
 import SettingsSidebar from '@/components/settings/SettingsSidebar';
@@ -19,12 +20,11 @@ const Settings = () => {
   const { settings, isLoading: isSettingsLoading, isSaving, updateSettings } = useUserSettings();
   const { isLoading: isAuthLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
+  const isMobile = useIsMobile();
   
   // Handle tab changes from sidebar
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
-    // Find and click the tab trigger to ensure proper tab activation
-    document.getElementById(`${tabId}-tab`)?.click();
   };
   
   // Handle saving interface settings
@@ -79,60 +79,110 @@ const Settings = () => {
   }
   
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="animate-fade-in space-y-4 md:space-y-6 w-full min-w-0">
       <PageHeader 
         title="Configurações do Sistema" 
         subtitle="Personalize suas preferências e configurações do sistema" 
       />
       
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-[240px] shrink-0">
-          <SettingsSidebar 
-            onTabChange={handleTabChange} 
-            activeTab={activeTab}
-          />
-        </div>
-        
-        <div className="flex-1">
+      {isMobile ? (
+        // Mobile: apenas tabs horizontais
+        <div className="w-full min-w-0">
           <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-6 w-full overflow-x-auto justify-start">
-              <TabsTrigger value="profile" id="profile-tab">Perfil</TabsTrigger>
-              <TabsTrigger value="interface" id="interface-tab">Interface</TabsTrigger>
-              <TabsTrigger value="notifications" id="notifications-tab">Notificações</TabsTrigger>
-              <TabsTrigger value="system" id="system-tab">Sistema</TabsTrigger>
+            <TabsList className="mb-4 w-full grid grid-cols-2 h-auto p-1">
+              <TabsTrigger value="profile" className="flex items-center gap-1 py-2 px-2 text-xs">
+                <User className="h-3 w-3" />
+                <span className="hidden xs:inline">Perfil</span>
+              </TabsTrigger>
+              <TabsTrigger value="interface" className="flex items-center gap-1 py-2 px-2 text-xs">
+                <Settings2 className="h-3 w-3" />
+                <span className="hidden xs:inline">Interface</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex items-center gap-1 py-2 px-2 text-xs">
+                <Bell className="h-3 w-3" />
+                <span className="hidden xs:inline">Notificações</span>
+              </TabsTrigger>
+              <TabsTrigger value="system" className="flex items-center gap-1 py-2 px-2 text-xs">
+                <Database className="h-3 w-3" />
+                <span className="hidden xs:inline">Sistema</span>
+              </TabsTrigger>
             </TabsList>
             
-            {/* Profile Settings */}
-            <TabsContent value="profile">
-              <ProfileTab />
-            </TabsContent>
-            
-            {/* Interface Settings */}
-            <TabsContent value="interface">
-              <InterfaceTab 
-                settings={settings} 
-                isSaving={isSaving} 
-                onSave={handleSaveInterfaceSettings}
-                onUpdateSettings={updateSettings}
-              />
-            </TabsContent>
-            
-            {/* Notifications Settings */}
-            <TabsContent value="notifications">
-              <NotificationsTab 
-                settings={settings} 
-                isLoading={isSaving}
-                onUpdateSettings={updateSettings}
-              />
-            </TabsContent>
-            
-            {/* System Settings */}
-            <TabsContent value="system">
-              <BackupTab />
-            </TabsContent>
+            <div className="w-full min-w-0">
+              <TabsContent value="profile" className="mt-0">
+                <ProfileTab />
+              </TabsContent>
+              
+              <TabsContent value="interface" className="mt-0">
+                <InterfaceTab 
+                  settings={settings} 
+                  isSaving={isSaving} 
+                  onSave={handleSaveInterfaceSettings}
+                  onUpdateSettings={updateSettings}
+                />
+              </TabsContent>
+              
+              <TabsContent value="notifications" className="mt-0">
+                <NotificationsTab 
+                  settings={settings} 
+                  isLoading={isSaving}
+                  onUpdateSettings={updateSettings}
+                />
+              </TabsContent>
+              
+              <TabsContent value="system" className="mt-0">
+                <BackupTab />
+              </TabsContent>
+            </div>
           </Tabs>
         </div>
-      </div>
+      ) : (
+        // Desktop: sidebar + tabs
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="w-full md:w-[240px] shrink-0">
+            <SettingsSidebar 
+              onTabChange={handleTabChange} 
+              activeTab={activeTab}
+            />
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="mb-6 w-full overflow-x-auto justify-start">
+                <TabsTrigger value="profile" id="profile-tab">Perfil</TabsTrigger>
+                <TabsTrigger value="interface" id="interface-tab">Interface</TabsTrigger>
+                <TabsTrigger value="notifications" id="notifications-tab">Notificações</TabsTrigger>
+                <TabsTrigger value="system" id="system-tab">Sistema</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="profile">
+                <ProfileTab />
+              </TabsContent>
+              
+              <TabsContent value="interface">
+                <InterfaceTab 
+                  settings={settings} 
+                  isSaving={isSaving} 
+                  onSave={handleSaveInterfaceSettings}
+                  onUpdateSettings={updateSettings}
+                />
+              </TabsContent>
+              
+              <TabsContent value="notifications">
+                <NotificationsTab 
+                  settings={settings} 
+                  isLoading={isSaving}
+                  onUpdateSettings={updateSettings}
+                />
+              </TabsContent>
+              
+              <TabsContent value="system">
+                <BackupTab />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
