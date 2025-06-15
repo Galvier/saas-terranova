@@ -8,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAuth } from '@/hooks/useAuth';
-import { Bell, Check, CheckCheck, Filter, Calendar, Tag } from 'lucide-react';
+import { Bell, Check, CheckCheck, Filter, Calendar, Tag, History, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import NotificationSettings from '@/components/notifications/NotificationSettings';
+import NotificationsDialog from '@/components/notifications/NotificationsDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Notifications: React.FC = () => {
@@ -21,6 +22,7 @@ const Notifications: React.FC = () => {
   const { toast } = useToast();
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const isMobile = useIsMobile();
 
   // Verificar se o usuário é admin
@@ -114,10 +116,22 @@ const Notifications: React.FC = () => {
             <Card>
               <CardHeader>
                 <div className="flex flex-col gap-4">
-                  <CardTitle className="flex items-center gap-2">
-                    <Filter className="h-5 w-5" />
-                    Filtros
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Filter className="h-5 w-5" />
+                      Filtros
+                    </CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowHistoryDialog(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <History className="h-4 w-4" />
+                      Ver Histórico Completo
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </div>
                   {unreadCount > 0 && (
                     <div className="flex justify-center sm:justify-end">
                       <Button 
@@ -257,6 +271,11 @@ const Notifications: React.FC = () => {
           )}
         </Tabs>
       </div>
+
+      <NotificationsDialog 
+        open={showHistoryDialog} 
+        onOpenChange={setShowHistoryDialog} 
+      />
     </div>
   );
 };
