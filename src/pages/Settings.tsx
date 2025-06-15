@@ -79,36 +79,48 @@ const Settings = () => {
   }
   
   return (
-    <div className="animate-fade-in space-y-4 md:space-y-6 w-full min-w-0">
+    <div className="animate-fade-in space-y-4 md:space-y-6 w-full min-w-0 max-w-full overflow-x-hidden">
       <PageHeader 
         title="Configurações do Sistema" 
         subtitle="Personalize suas preferências e configurações do sistema" 
       />
       
       {isMobile ? (
-        // Mobile: apenas tabs horizontais
-        <div className="w-full min-w-0">
+        // Mobile: tabs responsivas em grid 2x2
+        <div className="w-full min-w-0 max-w-full">
           <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-4 w-full grid grid-cols-2 h-auto p-1">
-              <TabsTrigger value="profile" className="flex items-center gap-1 py-2 px-2 text-xs">
-                <User className="h-3 w-3" />
-                <span className="hidden xs:inline">Perfil</span>
+            <TabsList className="mb-4 w-full grid grid-cols-2 gap-1 h-auto p-1 bg-muted rounded-md">
+              <TabsTrigger 
+                value="profile" 
+                className="flex flex-col items-center gap-1 py-3 px-2 text-xs rounded-sm min-h-[60px] data-[state=active]:bg-background"
+              >
+                <User className="h-4 w-4" />
+                <span>Perfil</span>
               </TabsTrigger>
-              <TabsTrigger value="interface" className="flex items-center gap-1 py-2 px-2 text-xs">
-                <Settings2 className="h-3 w-3" />
-                <span className="hidden xs:inline">Interface</span>
+              <TabsTrigger 
+                value="interface" 
+                className="flex flex-col items-center gap-1 py-3 px-2 text-xs rounded-sm min-h-[60px] data-[state=active]:bg-background"
+              >
+                <Settings2 className="h-4 w-4" />
+                <span>Interface</span>
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-1 py-2 px-2 text-xs">
-                <Bell className="h-3 w-3" />
-                <span className="hidden xs:inline">Notificações</span>
+              <TabsTrigger 
+                value="notifications" 
+                className="flex flex-col items-center gap-1 py-3 px-2 text-xs rounded-sm min-h-[60px] data-[state=active]:bg-background"
+              >
+                <Bell className="h-4 w-4" />
+                <span>Notificações</span>
               </TabsTrigger>
-              <TabsTrigger value="system" className="flex items-center gap-1 py-2 px-2 text-xs">
-                <Database className="h-3 w-3" />
-                <span className="hidden xs:inline">Sistema</span>
+              <TabsTrigger 
+                value="system" 
+                className="flex flex-col items-center gap-1 py-3 px-2 text-xs rounded-sm min-h-[60px] data-[state=active]:bg-background"
+              >
+                <Database className="h-4 w-4" />
+                <span>Sistema</span>
               </TabsTrigger>
             </TabsList>
             
-            <div className="w-full min-w-0">
+            <div className="w-full min-w-0 max-w-full">
               <TabsContent value="profile" className="mt-0">
                 <ProfileTab />
               </TabsContent>
