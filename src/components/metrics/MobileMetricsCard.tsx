@@ -43,22 +43,22 @@ const MobileMetricsCard: React.FC<MobileMetricsCardProps> = ({
 
   // Function to render trend icon
   const renderTrendIcon = () => {
-    if (!metric.current || !metric.target) return <Minus className="h-4 w-4 text-muted-foreground" />;
+    if (!metric.current || !metric.target) return <Minus className="h-3 w-3 text-muted-foreground" />;
     
     if (metric.lower_is_better) {
       if (metric.current < metric.target) {
-        return <ArrowUp className="h-4 w-4 text-green-500" />;
+        return <ArrowUp className="h-3 w-3 text-green-500" />;
       } else if (metric.current > metric.target) {
-        return <ArrowDown className="h-4 w-4 text-red-500" />;
+        return <ArrowDown className="h-3 w-3 text-red-500" />;
       }
     } else {
       if (metric.current > metric.target) {
-        return <ArrowUp className="h-4 w-4 text-green-500" />;
+        return <ArrowUp className="h-3 w-3 text-green-500" />;
       } else if (metric.current < metric.target) {
-        return <ArrowDown className="h-4 w-4 text-red-500" />;
+        return <ArrowDown className="h-3 w-3 text-red-500" />;
       }
     }
-    return <Minus className="h-4 w-4 text-muted-foreground" />;
+    return <Minus className="h-3 w-3 text-muted-foreground" />;
   };
 
   // Function to translate frequency
@@ -74,115 +74,115 @@ const MobileMetricsCard: React.FC<MobileMetricsCardProps> = ({
   };
 
   return (
-    <Card className="mobile-card">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
+    <Card className="mobile-card shadow-sm">
+      <CardHeader className="pb-2 px-3 pt-3">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-base font-medium line-clamp-2 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium line-clamp-2 flex items-center gap-1.5">
               {metric.name}
               {needsJustification && (
-                <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                <AlertTriangle className="h-3 w-3 text-amber-500 flex-shrink-0" />
               )}
             </CardTitle>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-              <Building2 className="h-3 w-3" />
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+              <Building2 className="h-2.5 w-2.5" />
               <span className="truncate">{metric.department_name}</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center">
             {renderTrendIcon()}
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="pt-0 space-y-4">
-        {/* Valores principais */}
-        <div className="grid grid-cols-2 gap-4">
+      <CardContent className="pt-0 px-3 pb-3 space-y-2">
+        {/* Valores principais em layout mais compacto */}
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-xs text-muted-foreground">Meta</p>
-            <p className="font-semibold text-sm">
+            <p className="text-xs text-muted-foreground mb-0.5">Meta</p>
+            <p className="font-medium text-sm">
               {formatValueWithUnit(metric.target, metric.unit)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Atual</p>
-            <p className="font-semibold text-sm">
+            <p className="text-xs text-muted-foreground mb-0.5">Atual</p>
+            <p className="font-medium text-sm">
               {formatValueWithUnit(metric.current, metric.unit)}
             </p>
           </div>
         </div>
 
-        {/* Informações adicionais */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        {/* Informações adicionais em uma linha */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
           <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
+            <Clock className="h-2.5 w-2.5" />
             <span>{translateFrequency(metric.frequency || 'monthly')}</span>
           </div>
           <div>
             {metric.last_value_date ? 
-              new Date(metric.last_value_date).toLocaleDateString('pt-BR') : 
+              new Date(metric.last_value_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 
               'Sem dados'
             }
           </div>
         </div>
 
-        {/* Status */}
-        <div className="flex items-center justify-between">
+        {/* Status e ações em uma linha */}
+        <div className="flex items-center justify-between pt-1">
           <CustomBadge 
             variant={
               metric.status === 'success' ? 'success' : 
               metric.status === 'warning' ? 'warning' : 'destructive'
             }
+            className="text-xs px-2 py-0.5"
           >
             {metric.status === 'success' ? 'Ótimo' : 
              metric.status === 'warning' ? 'Atenção' : 'Crítico'}
           </CustomBadge>
-        </div>
 
-        {/* Ações */}
-        {canModify && (
-          <div className="flex gap-2 pt-2 border-t">
-            {needsJustification && (
+          {/* Ações compactas */}
+          {canModify && (
+            <div className="flex gap-1">
+              {needsJustification && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onJustify}
+                  className="h-7 px-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                >
+                  <FileText className="h-3 w-3" />
+                </Button>
+              )}
+              
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={onJustify}
-                className="flex-1 text-amber-600 border-amber-200 hover:bg-amber-50"
+                onClick={onAddValue}
+                className="h-7 px-2"
               >
-                <FileText className="h-4 w-4 mr-1" />
-                Justificar
+                <Plus className="h-3 w-3" />
               </Button>
-            )}
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onAddValue}
-              className="flex-1"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Valor
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onEdit}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onDelete}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onEdit}
+                className="h-7 px-2"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onDelete}
+                className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
