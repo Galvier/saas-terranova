@@ -108,53 +108,54 @@ const Departments = () => {
   };
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <PageHeader
-        title="Setores"
-        subtitle={isAdmin ? "Gerencie os setores da sua organização" : "Visualize os setores da organização"}
-        actionButton={
-          isAdmin ? (
-            <Button onClick={handleCreateDepartment}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Novo Setor
-            </Button>
-          ) : undefined
-        }
-      />
+    <div className="animate-fade-in">
+      <div className="mobile-container space-y-6">
+        <PageHeader
+          title="Setores"
+          subtitle={isAdmin ? "Gerencie os setores da sua organização" : "Visualize os setores da organização"}
+          actionButton={
+            isAdmin ? (
+              <Button onClick={handleCreateDepartment} className="mobile-touch">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Novo Setor
+              </Button>
+            ) : undefined
+          }
+        />
 
-      {!isAdmin && (
-        <div className="mb-4 p-4 border border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 rounded-md">
-          <p className="text-sm text-blue-700 dark:text-blue-400">
-            <strong>Visualização somente leitura:</strong> Como gestor, você pode visualizar os setores mas não pode realizar edições, criações ou exclusões. Entre em contato com um administrador para alterações.
-          </p>
-        </div>
-      )}
+        {!isAdmin && (
+          <div className="mb-4 p-4 border border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 rounded-md mobile-card">
+            <p className="text-sm text-blue-700 dark:text-blue-400 mobile-text">
+              <strong>Visualização somente leitura:</strong> Como gestor, você pode visualizar os setores mas não pode realizar edições, criações ou exclusões. Entre em contato com um administrador para alterações.
+            </p>
+          </div>
+        )}
 
-      <DepartmentsTable
-        departments={departments}
-        onEdit={handleEditDepartment}
-        onDelete={handleDeleteDepartment}
-        isAdmin={isAdmin}
-      />
+        <DepartmentsTable
+          departments={departments}
+          onEdit={handleEditDepartment}
+          onDelete={handleDeleteDepartment}
+        />
 
-      {isAdmin && (
-        <>
-          <DepartmentEditDialog
-            department={editingDepartment}
-            isOpen={isEditDialogOpen}
-            onOpenChange={setIsEditDialogOpen}
-            onSuccess={handleDialogSuccess}
-          />
+        {isAdmin && (
+          <>
+            <DepartmentEditDialog
+              department={editingDepartment}
+              isOpen={isEditDialogOpen}
+              onOpenChange={setIsEditDialogOpen}
+              onSuccess={handleDialogSuccess}
+            />
 
-          <DeleteDepartmentDialog
-            department={deletingDepartment}
-            isOpen={isDeleteDialogOpen}
-            onOpenChange={setIsDeleteDialogOpen}
-            onConfirm={confirmDelete}
-            isDeleting={isDeleting}
-          />
-        </>
-      )}
+            <DeleteDepartmentDialog
+              department={deletingDepartment}
+              isOpen={isDeleteDialogOpen}
+              onOpenChange={setIsDeleteDialogOpen}
+              onConfirm={confirmDelete}
+              isDeleting={isDeleting}
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 };
