@@ -19,6 +19,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Department } from '@/integrations/supabase';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileDepartmentCard from './MobileDepartmentCard';
 
 interface DepartmentsTableProps {
   departments: Department[];
@@ -33,6 +35,8 @@ const DepartmentsTable: React.FC<DepartmentsTableProps> = ({
   onDelete,
   isAdmin = false,
 }) => {
+  const isMobile = useIsMobile();
+
   console.log('[DepartmentsTable] Rendering with isAdmin:', isAdmin);
 
   const renderManagers = (department: Department) => {
@@ -54,6 +58,29 @@ const DepartmentsTable: React.FC<DepartmentsTableProps> = ({
     );
   };
 
+  // Renderização condicional baseada no tamanho da tela
+  if (isMobile) {
+    return (
+      <div className="mobile-grid space-y-4">
+        {departments.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Nenhum setor encontrado.</p>
+          </div>
+        ) : (
+          departments.map((department) => (
+            <MobileDepartmentCard
+              key={department.id}
+              department={department}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))
+        )}
+      </div>
+    );
+  }
+
+  // Renderização desktop (tabela completa)
   return (
     <div className="w-full">
       <div className="rounded-md border bg-card">
