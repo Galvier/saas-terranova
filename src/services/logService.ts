@@ -20,26 +20,52 @@ export const createLog = async (
   try {
     console.log(`[LogService] Criando log: ${level} - ${message}`);
     
-    const logData = {
-      level,
-      message,
-      details,
-      user_id
-    };
-    
-    const { data, error } = await supabase
-      .from('logs')
-      .insert([logData])
-      .select()
-      .single();
+    // Usar a função RPC create_security_log para criação segura
+    const { data, error } = await supabase.rpc('create_security_log', {
+      log_level: level,
+      log_message: message,
+      log_details: details || {}
+    });
 
     if (error) {
-      console.error('[LogService] Erro ao criar log:', error);
-      return formatCrudResult(null, error);
+      console.error('[LogService] Erro ao criar log via RPC:', error);
+      
+      // Fallback: tentar inserção direta
+      const { data: directData, error: directError } = await supabase
+        .from('logs')
+        .insert([{
+          level,
+          message,
+          details,
+          user_id
+        }])
+        .select()
+        .single();
+
+      if (directError) {
+        console.error('[LogService] Erro na inserção direta:', directError);
+        return formatCrudResult(null, directError);
+      }
+      
+      console.log('[LogService] Log criado via inserção direta:', directData?.id);
+      return formatCrudResult(directData as LogEntry, null);
     }
     
-    console.log('[LogService] Log criado com sucesso:', data?.id);
-    return formatCrudResult(data as LogEntry, null);
+    // Se RPC funcionou, buscar o log criado
+    const { data: createdLog, error: fetchError } = await supabase
+      .from('logs')
+      .select('*')
+      .eq('id', data)
+      .single();
+    
+    if (fetchError) {
+      console.error('[LogService] Erro ao buscar log criado:', fetchError);
+      // Retornar sucesso mesmo sem os dados completos
+      return formatCrudResult({ id: data } as LogEntry, null);
+    }
+    
+    console.log('[LogService] Log criado com sucesso via RPC:', data);
+    return formatCrudResult(createdLog as LogEntry, null);
   } catch (error) {
     console.error('[LogService] Erro inesperado ao criar log:', error);
     return formatCrudResult(null, error instanceof Error ? error : new Error(String(error)));
@@ -76,7 +102,7 @@ export const getAuthSyncLogs = async (limit: number = 10): Promise<CrudResult<Lo
     const { data, error } = await supabase
       .from('logs')
       .select('*')
-      .or('message.ilike.%sync%,message.ilike.%auth%')
+      .or('message.ilike.%sync%,message.ilike.%auth%,message.ilike.%manager%')
       .order('created_at', { ascending: false })
       .limit(limit);
 

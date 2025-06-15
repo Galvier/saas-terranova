@@ -1,0 +1,144 @@
+
+/* Aprimoramentos específicos para mobile */
+
+/* Melhor toque em dispositivos móveis */
+@media (max-width: 768px) {
+  /* Garantir que elementos interativos tenham tamanho mínimo adequado */
+  .sidebar-menu-item {
+    min-height: 48px;
+  }
+  
+  /* Melhor espaçamento para toque */
+  .sidebar-menu-button {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  
+  /* Avatar otimizado para mobile */
+  .mobile-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  
+  /* Header fixo otimizado */
+  .mobile-header {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  }
+  
+  /* Sidebar overlay em mobile */
+  .sidebar-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  
+  /* Melhor transição para sidebar mobile */
+  .sidebar-mobile {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Otimização de toque */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Melhor contraste em telas pequenas */
+  .mobile-text {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  
+  /* Padding seguro para notch/dynamic island */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Menu hambúrguer otimizado */
+  .hamburger-menu {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Scroll suave em mobile */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Landscape específico para mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .landscape-header {
+    height: 48px;
+  }
+  
+  .landscape-content {
+    height: calc(100vh - 48px);
+  }
+}
+
+/* Otimizações para telas muito pequenas */
+@media (max-width: 360px) {
+  .sidebar-content {
+    padding: 8px;
+  }
+  
+  .sidebar-menu-item {
+    margin-bottom: 4px;
+  }
+  
+  .mobile-avatar {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .mobile-text-sm {
+    font-size: 14px;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .sidebar-icon {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Dark mode específico para mobile */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+  .mobile-header {
+    background: rgba(0, 0, 0, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .sidebar-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Animações reduzidas para usuários que preferem */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-mobile {
+    transition: none;
+  }
+  
+  .mobile-scroll {
+    scroll-behavior: auto;
+  }
+}

@@ -33,6 +33,38 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_data: {
+        Row: {
+          backup_content: Json
+          backup_history_id: string
+          compressed: boolean
+          created_at: string
+          id: string
+        }
+        Insert: {
+          backup_content: Json
+          backup_history_id: string
+          compressed?: boolean
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          backup_content?: Json
+          backup_history_id?: string
+          compressed?: boolean
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_data_backup_history_id_fkey"
+            columns: ["backup_history_id"]
+            isOneToOne: false
+            referencedRelation: "backup_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       backup_history: {
         Row: {
           created_at: string
@@ -350,41 +382,6 @@ export type Database = {
             columns: ["metric_definition_id"]
             isOneToOne: false
             referencedRelation: "metrics_definition"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      metrics: {
-        Row: {
-          created_at: string | null
-          date: string
-          department_id: string | null
-          id: string
-          name: string
-          value: number
-        }
-        Insert: {
-          created_at?: string | null
-          date: string
-          department_id?: string | null
-          id?: string
-          name: string
-          value: number
-        }
-        Update: {
-          created_at?: string | null
-          date?: string
-          department_id?: string | null
-          id?: string
-          name?: string
-          value?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "metrics_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
         ]
@@ -762,6 +759,16 @@ export type Database = {
         }
         Returns: string
       }
+      audit_sensitive_operation: {
+        Args: {
+          operation_type: string
+          table_name: string
+          record_id: string
+          old_values?: Json
+          new_values?: Json
+        }
+        Returns: undefined
+      }
       broadcast_notification_from_template: {
         Args: {
           template_id_param: string
@@ -887,6 +894,10 @@ export type Database = {
           justification_text: string
           action_plan_text: string
         }
+        Returns: string
+      }
+      create_security_log: {
+        Args: { log_level: string; log_message: string; log_details?: Json }
         Returns: string
       }
       delete_manager: {
@@ -1056,6 +1067,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      is_active_manager: {
+        Args: { user_id_param?: string }
+        Returns: boolean
+      }
+      is_admin: {
+        Args: { user_id_param?: string }
+        Returns: boolean
+      }
+      is_admin_user: {
+        Args: { user_id_param?: string }
+        Returns: boolean
+      }
       mark_all_notifications_as_read: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -1079,6 +1102,10 @@ export type Database = {
       remove_manager_from_department: {
         Args: { department_id_param: string; manager_id_param: string }
         Returns: boolean
+      }
+      restore_backup_data: {
+        Args: { backup_history_id_param: string }
+        Returns: Json
       }
       review_metric_justification: {
         Args: {

@@ -5,7 +5,9 @@ import { CustomBadge } from '@/components/ui/custom-badge';
 import { Plus, Edit, Trash2, FileText, AlertTriangle, ArrowUp, ArrowDown, Minus, ChartBar, Table as TableIcon, Gauge, ChartLine, ChartPie, BarChart3, ChartArea } from 'lucide-react';
 import { MetricDefinition } from '@/integrations/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import MetricJustificationDialog from './MetricJustificationDialog';
+import MobileMetricsCard from './MobileMetricsCard';
 
 interface MetricsTableProps {
   metrics: MetricDefinition[];
@@ -21,6 +23,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   onDelete,
 }) => {
   const { isAdmin, userDepartmentId } = useAuth();
+  const isMobile = useIsMobile();
   const [selectedMetricForJustification, setSelectedMetricForJustification] = useState<MetricDefinition | null>(null);
   const [justificationDate, setJustificationDate] = useState<Date>(new Date());
 
@@ -141,6 +144,35 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
     return translations[type] || type;
   };
 
+  // Renderização condicional baseada no tamanho da tela
+  if (isMobile) {
+    return (
+      <>
+        <div className="mobile-grid space-y-4">
+          {metrics.map((metric) => (
+            <MobileMetricsCard
+              key={metric.id}
+              metric={metric}
+              onAddValue={onAddValue}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onJustify={handleJustifyClick}
+            />
+          ))}
+        </div>
+
+        <MetricJustificationDialog
+          metric={selectedMetricForJustification}
+          periodDate={justificationDate}
+          isOpen={!!selectedMetricForJustification}
+          onClose={() => setSelectedMetricForJustification(null)}
+          onSuccess={handleJustificationSuccess}
+        />
+      </>
+    );
+  }
+
+  // Renderização desktop (tabela completa)
   return (
     <>
       <div className="rounded-md border overflow-hidden">

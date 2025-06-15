@@ -40,7 +40,9 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/first-access" element={<FirstAccess />} />
               <Route path="/" element={<AppLayout />}>
+                {/* Rota principal sempre aponta para Dashboard */}
                 <Route index element={<Dashboard />} />
+                <Route path="dashboard" element={<Dashboard />} />
                 <Route path="metrics" element={<Metrics />} />
                 <Route path="departments" element={<Departments />} />
                 <Route path="managers" element={<Managers />} />
@@ -48,7 +50,7 @@ function App() {
                 <Route path="managers/update/:id" element={<ManagersUpdate />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="notifications" element={<Notifications />} />
-                <Route path="diagnostic" element={<Diagnostic />} />
+                <Route path="diagnostico" element={<Diagnostic />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

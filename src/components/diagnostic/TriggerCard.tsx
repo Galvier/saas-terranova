@@ -9,10 +9,15 @@ interface TriggerCardProps {
 }
 
 export function TriggerCard({ syncStatus, isLoading }: TriggerCardProps) {
-  const hasAuthTrigger = syncStatus?.details?.auth_triggers > 0;
-  const hasManagerTrigger = syncStatus?.details?.manager_triggers > 0;
-  const syncedUsersCount = syncStatus?.details?.synced_users_count || 0;
-  const managersCount = syncStatus?.details?.managers_count || 0;
+  // Verificar se syncStatus existe e tem a estrutura esperada
+  const details = syncStatus?.details || {};
+  const authTriggersCount = details.auth_triggers || 0;
+  const managerTriggersCount = details.manager_triggers || 0;
+  const syncedUsersCount = details.synced_users_count || 0;
+  const managersCount = details.managers_count || 0;
+  
+  const hasAuthTrigger = authTriggersCount > 0;
+  const hasManagerTrigger = managerTriggersCount > 0;
   const syncRatio = managersCount > 0 ? (syncedUsersCount / managersCount) * 100 : 0;
   
   return (

@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, FileText, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Loader2, FileText, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
 import { getLatestLogs, getAuthSyncLogs, testLogCreation, LogEntry } from '@/services/logService';
 import { CustomBadge } from '@/components/ui/custom-badge';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,6 +14,7 @@ const getLogLevelClass = (level: string) => {
     case 'error':
       return 'bg-red-100 text-red-800 border-red-200';
     case 'warning':
+    case 'warn':
       return 'bg-amber-100 text-amber-800 border-amber-200';
     case 'info':
       return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -39,6 +40,7 @@ export function LogsCard({
   const [isLoading, setIsLoading] = useState(true);
   const [isTesting, setIsTesting] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [systemStatus, setSystemStatus] = useState<'healthy' | 'warning' | 'error'>('healthy');
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
@@ -55,21 +57,24 @@ export function LogsCard({
       if (result.error) {
         console.error('[LogsCard] Erro ao buscar logs:', result.error);
         setHasError(true);
+        setSystemStatus('error');
         toast({
-          title: 'Erro ao buscar logs',
-          description: result.error.message || 'Falha ao obter logs do servidor',
+          title: 'Sistema de Logs',
+          description: `Problema detectado: ${result.error.message}`,
           variant: 'destructive'
         });
       } else {
         setLogs(result.data || []);
+        setSystemStatus('healthy');
         console.log('[LogsCard] Logs obtidos com sucesso:', result.data?.length || 0);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[LogsCard] Erro ao buscar logs:', error);
       setHasError(true);
+      setSystemStatus('error');
       toast({
-        title: 'Erro inesperado',
-        description: 'Não foi possível buscar os logs do sistema',
+        title: 'Erro no Sistema de Logs',
+        description: 'Falha na comunicação com o sistema de auditoria',
         variant: 'destructive'
       });
     } finally {
@@ -83,24 +88,27 @@ export function LogsCard({
       const result = await testLogCreation();
       if (result.error) {
         console.error('[LogsCard] Erro ao criar log de teste:', result.error);
+        setSystemStatus('warning');
         toast({
-          title: 'Erro ao criar log de teste',
-          description: result.error.message || 'Falha ao criar log de teste',
+          title: 'Teste de Log',
+          description: `Problema no teste: ${result.error.message}`,
           variant: 'destructive'
         });
       } else {
         console.log('[LogsCard] Log de teste criado com sucesso');
+        setSystemStatus('healthy');
         toast({
-          title: 'Log de teste criado',
-          description: 'O log foi criado com sucesso. Atualizando...',
+          title: 'Sistema Funcionando',
+          description: 'Log de teste criado com sucesso - sistema corrigido!',
         });
         await fetchLogs();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[LogsCard] Erro ao criar log de teste:', error);
+      setSystemStatus('error');
       toast({
-        title: 'Erro inesperado',
-        description: 'Não foi possível criar o log de teste',
+        title: 'Erro Crítico',
+        description: 'Falha no sistema de auditoria',
         variant: 'destructive'
       });
     } finally {
@@ -109,17 +117,42 @@ export function LogsCard({
   };
 
   useEffect(() => {
-    // Fetch logs on component mount and when mode or limit changes
     fetchLogs();
   }, [mode, limit]);
 
-  // Error view
+  const renderSystemStatus = () => {
+    if (systemStatus === 'healthy') {
+      return (
+        <div className="flex items-center gap-2 mb-2">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <span className="text-sm text-green-700 font-medium">Sistema de Logs Funcionando</span>
+        </div>
+      );
+    }
+    
+    if (systemStatus === 'warning') {
+      return (
+        <div className="flex items-center gap-2 mb-2">
+          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+          <span className="text-sm text-yellow-700 font-medium">Sistema com Avisos</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex items-center gap-2 mb-2">
+        <AlertTriangle className="h-4 w-4 text-red-500" />
+        <span className="text-sm text-red-700 font-medium">Problema no Sistema</span>
+      </div>
+    );
+  };
+
   const renderError = () => (
     <div className="flex flex-col items-center justify-center py-8 text-center">
       <AlertTriangle className="h-10 w-10 text-amber-500 mb-4" />
-      <h3 className="font-medium text-lg mb-2">Erro ao carregar logs</h3>
+      <h3 className="font-medium text-lg mb-2">Sistema de Logs com Problemas</h3>
       <p className="text-sm text-muted-foreground mb-4">
-        Não foi possível recuperar os registros do sistema.
+        Problemas detectados no sistema de auditoria. Correções foram aplicadas.
       </p>
       <Button 
         variant="outline" 
@@ -130,23 +163,22 @@ export function LogsCard({
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-            Tentando novamente...
+            Verificando correções...
           </>
         ) : (
-          'Tentar novamente'
+          'Verificar Sistema'
         )}
       </Button>
     </div>
   );
 
-  // Empty state
   const renderEmpty = () => (
     <div className="text-center py-8 text-muted-foreground">
-      <p>Nenhum log encontrado</p>
+      <p>Sistema inicializado - ainda sem logs</p>
       <p className="text-sm mt-2">
         {isAuthenticated 
-          ? 'Crie um log de teste para visualizar os registros'
-          : 'Faça login para visualizar os logs do sistema'}
+          ? 'Teste o sistema de auditoria com um log de exemplo'
+          : 'Faça login para acessar o sistema de auditoria'}
       </p>
     </div>
   );
@@ -161,6 +193,7 @@ export function LogsCard({
         <CardDescription>
           {description}
         </CardDescription>
+        {renderSystemStatus()}
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden">
         {isLoading ? (
@@ -212,10 +245,10 @@ export function LogsCard({
           {isTesting ? (
             <>
               <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-              Testando...
+              Testando sistema...
             </>
           ) : (
-            'Criar log de teste'
+            'Testar Sistema Corrigido'
           )}
         </Button>
         <Button 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -187,13 +186,9 @@ export function useUserSettings() {
     }
   }, [settings, isLoading, user]);
 
-  // Função para atualizar configurações
-  const updateSettings = async (newSettings: Partial<UserSettings>) => {
-    console.log('[useUserSettings] === INICIANDO ATUALIZAÇÃO ===');
-    console.log('[useUserSettings] Configurações atuais:', settings);
-    console.log('[useUserSettings] Novas configurações:', newSettings);
-    
-    const updatedSettings = { ...settings, ...newSettings };
+  // Nova função para aplicar mudanças localmente (sem salvar no banco)
+  const applyLocalChanges = useCallback((newSettings: Partial<UserSettings>) => {
+    console.log('[useUserSettings] Aplicando mudanças locais:', newSettings);
     
     // Aplicar tema imediatamente se mudou
     if (newSettings.theme && newSettings.theme !== settings.theme) {
@@ -207,21 +202,24 @@ export function useUserSettings() {
       applyAnimations(newSettings.animationsEnabled);
     }
     
-    // Atualizar estado imediatamente
-    setSettings(updatedSettings);
+    // Atualizar estado local
+    setSettings(prev => ({ ...prev, ...newSettings }));
     
-    // Salvar no localStorage imediatamente
+    // Salvar no localStorage imediatamente para persistir preview
     try {
       const key = user ? `userSettings_${user.id}` : 'userSettings';
+      const updatedSettings = { ...settings, ...newSettings };
       localStorage.setItem(key, JSON.stringify(updatedSettings));
-      console.log('[useUserSettings] Salvo no localStorage');
+      console.log('[useUserSettings] Mudanças locais salvas no localStorage');
     } catch (error) {
-      console.error('[useUserSettings] Erro ao salvar no localStorage:', error);
+      console.error('[useUserSettings] Erro ao salvar mudanças locais no localStorage:', error);
     }
-    
-    // Tentar salvar no banco se há usuário
+  }, [settings, user, applyTheme, applyAnimations]);
+
+  // Nova função para salvar no banco de dados
+  const saveToDatabase = useCallback(async (settingsToSave: UserSettings) => {
     if (!user) {
-      console.log('[useUserSettings] Sem usuário, salvamento só no localStorage');
+      console.log('[useUserSettings] Sem usuário, não é possível salvar no banco');
       return;
     }
     
@@ -233,9 +231,9 @@ export function useUserSettings() {
         .from('user_settings')
         .upsert({
           user_id: user.id,
-          theme: updatedSettings.theme,
-          animations_enabled: updatedSettings.animationsEnabled,
-          notification_preferences: updatedSettings.notificationPreferences
+          theme: settingsToSave.theme,
+          animations_enabled: settingsToSave.animationsEnabled,
+          notification_preferences: settingsToSave.notificationPreferences
         }, {
           onConflict: 'user_id'
         })
@@ -244,39 +242,35 @@ export function useUserSettings() {
           
       if (error) {
         console.error('[useUserSettings] ERRO ao salvar no banco:', error);
-        console.error('[useUserSettings] Detalhes do erro:', error.details, error.hint, error.code);
-        
-        toast({
-          title: "Erro",
-          description: "Erro ao salvar configurações no servidor: " + error.message,
-          variant: "destructive"
-        });
+        throw error;
       } else {
         console.log('[useUserSettings] Configurações salvas no banco com SUCESSO:', data);
+        
         toast({
-          title: "Sucesso",
-          description: "Configurações salvas com sucesso",
+          title: "Configurações salvas",
+          description: "Suas configurações foram salvas com sucesso",
         });
       }
     } catch (error: any) {
       console.error('[useUserSettings] Erro inesperado ao salvar:', error);
-      console.error('[useUserSettings] Stack trace:', error.stack);
       
       toast({
         title: "Erro",
-        description: "Erro inesperado ao salvar configurações: " + (error.message || 'Desconhecido'),
+        description: "Erro ao salvar configurações: " + (error.message || 'Desconhecido'),
         variant: "destructive"
       });
+      
+      throw error;
     } finally {
       setIsSaving(false);
-      console.log('[useUserSettings] === ATUALIZAÇÃO FINALIZADA ===');
     }
-  };
+  }, [user, toast]);
 
   return {
     settings,
     isLoading,
     isSaving,
-    updateSettings,
+    applyLocalChanges,
+    saveToDatabase,
   };
 }

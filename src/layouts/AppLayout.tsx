@@ -6,10 +6,12 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { AppSidebar } from '@/components/AppSidebar';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 import AuthGuard from '@/components/auth/AuthGuard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const AppLayout = () => {
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     setIsLoading(true);
@@ -22,18 +24,23 @@ const AppLayout = () => {
   
   return (
     <AuthGuard>
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
+      <SidebarProvider defaultOpen={!isMobile}>
+        <div className="min-h-screen flex w-full overflow-x-hidden">
           <AppSidebar />
-          <SidebarInset className="flex-1">
-            <header className="flex h-14 md:h-16 shrink-0 items-center justify-between gap-2 px-4 md:px-6 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <SidebarTrigger className="-ml-1 h-10 w-10 md:h-8 md:w-8" />
+          <SidebarInset className="flex-1 w-full min-w-0 max-w-full">
+            <header className="flex h-14 md:h-16 shrink-0 items-center justify-between gap-2 px-3 md:px-6 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+              <div className="flex items-center gap-2 min-w-0">
+                <SidebarTrigger className="-ml-1 h-10 w-10 md:h-8 md:w-8 flex-shrink-0" />
+                <div className="md:hidden truncate">
+                  <h1 className="text-lg font-semibold text-foreground">Terranova</h1>
+                </div>
+              </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <NotificationsDropdown />
               </div>
             </header>
-            <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 relative">
+            <main className="flex-1 overflow-auto p-2 md:p-6 lg:p-8 relative safe-area-inset w-full min-w-0 max-w-full">
               {isLoading ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 transition-opacity duration-300">
                   <div className="flex flex-col items-center gap-3">
@@ -42,7 +49,7 @@ const AppLayout = () => {
                   </div>
                 </div>
               ) : (
-                <div className="animate-fade-in">
+                <div className="animate-fade-in w-full min-w-0 max-w-full">
                   <Outlet />
                 </div>
               )}

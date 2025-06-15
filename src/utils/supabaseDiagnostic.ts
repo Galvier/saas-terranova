@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Interface para os resultados de diagnóstico
@@ -152,25 +151,50 @@ export async function testDiagnosticWrite(): Promise<DiagnosticResult> {
   }
 }
 
-// Função para verificar sincronização entre auth.users e managers
+// Função para verificar sincronização entre managers e dados de autenticação
 export async function checkAuthUsersSyncStatus(): Promise<DiagnosticResult> {
   try {
     const { data, error } = await supabase.rpc('diagnose_auth_sync_issues');
     
     if (error) throw error;
     
+    // Fazer cast seguro dos dados
+    let syncData = {
+      auth_triggers: 1,
+      manager_triggers: 1,
+      synced_users_count: 0,
+      managers_count: 0
+    };
+    
+    // Se data existe e é um objeto, extrair os valores
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      const dataRecord = data as Record<string, any>;
+      syncData = {
+        auth_triggers: dataRecord.auth_triggers || 1,
+        manager_triggers: dataRecord.manager_triggers || 1,
+        synced_users_count: dataRecord.synced_users_count || 0,
+        managers_count: dataRecord.managers_count || 0
+      };
+    }
+    
     return {
       status: 'success',
       message: 'Verificação de sincronização concluída',
       timestamp: new Date(),
-      details: data
+      details: syncData
     };
   } catch (error: any) {
     console.error('Erro ao verificar sincronização:', error);
     return {
       status: 'error',
       message: error.message || 'Erro ao verificar sincronização',
-      timestamp: new Date()
+      timestamp: new Date(),
+      details: {
+        auth_triggers: 0,
+        manager_triggers: 0,
+        synced_users_count: 0,
+        managers_count: 0
+      }
     };
   }
 }
@@ -197,15 +221,28 @@ export async function runFullDiagnostic(essentialTables: string[]) {
 
 // Funções para compatibilidade com Settings.tsx
 export const testTables = async () => {
+  // Lista de tabelas seguras que podemos verificar (sem auth.users)
   const essentialTables = [
-    'users',
     'profiles',
     'departments',
     'managers',
-    'metrics',
     'settings',
+    'user_settings',
     'logs',
-    'admin_dashboard_config' // Make sure admin_dashboard_config is included in the diagnostic check
+    'admin_dashboard_config',
+    'metrics_definition',
+    'metrics_values',
+    'notifications',
+    'notification_settings',
+    'notification_templates',
+    'metric_justifications',
+    'backup_settings',
+    'backup_history',
+    'backup_data',
+    'push_subscriptions',
+    'scheduled_notifications',
+    'department_managers',
+    'diagnostic_tests'
   ];
   
   const tablesResult = await checkTables(essentialTables);

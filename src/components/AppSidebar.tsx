@@ -8,6 +8,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Home,
@@ -23,10 +24,13 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import AppLogo from "@/components/AppLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function AppSidebar() {
   const { user, manager, logout } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const { setOpenMobile } = useSidebar();
   const [avatarSrc, setAvatarSrc] = React.useState("/lovable-uploads/28956acd-6e94-4125-8e46-702bdeef77b5.png");
 
   // Observar mudanças no tema para trocar o avatar
@@ -94,6 +98,14 @@ export function AppSidebar() {
     navigate('/login');
   };
 
+  const handleNavigation = (url: string) => {
+    // Fechar sidebar em mobile após navegação
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+    navigate(url);
+  };
+
   // Função melhorada para obter o nome de exibição
   const getDisplayName = () => {
     // Ordem de prioridade: display_name > name > full_name > manager name > fallback
@@ -141,7 +153,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarContent>
+      <SidebarContent className="safe-area-inset">
         <SidebarGroup>
           <SidebarGroupContent>
             {/* Logo da Terranova */}
@@ -152,40 +164,46 @@ export function AppSidebar() {
             <div className="py-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="justify-start px-2 w-full font-normal">
-                    <Avatar className="mr-2 h-8 w-8 flex-shrink-0">
+                  <Button variant="ghost" className="justify-start px-2 w-full font-normal h-auto py-3 hover:bg-sidebar-accent">
+                    <Avatar className="mr-3 h-10 w-10 flex-shrink-0">
                       <AvatarImage 
                         src={avatarSrc} 
                         alt={displayName}
                         className="object-contain"
                       />
-                      <AvatarFallback>{nameInitials}</AvatarFallback>
+                      <AvatarFallback className="text-sm font-semibold">{nameInitials}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col text-left min-w-0 flex-1">
-                      <span className="font-semibold text-sm truncate">{displayName}</span>
-                      <span className="text-muted-foreground text-xs truncate">{user?.email}</span>
+                      <span className="font-semibold text-sm truncate leading-tight">{displayName}</span>
+                      <span className="text-muted-foreground text-xs truncate leading-tight mt-0.5">{user?.email}</span>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
+                <DropdownMenuContent align="start" className="w-56">
                   <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>Sair</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
+                    Sair
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <SidebarMenu>
+            <SidebarMenu className="px-2">
               {navigation.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="h-12 text-base">
                     <NavLink
                       to={item.url}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleNavigation(item.url);
+                      }}
                       className={({ isActive }) =>
-                        `flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 ${isActive ? "bg-secondary" : ""}`
+                        `flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-all hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 ${isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`
                       }
                     >
-                      <item.icon className="h-4 w-4" />
-                      {item.title}
+                      <item.icon className="h-5 w-5" />
+                      <span className="truncate">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

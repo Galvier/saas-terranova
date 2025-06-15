@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDown, Home } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, Database, RefreshCw, Server, FileDown, Home, ShieldAlert } from 'lucide-react';
 import { 
   runFullDiagnostic, 
   ConnectionInfo, 
@@ -18,26 +18,76 @@ import { CustomBadge } from '@/components/ui/custom-badge';
 import { Link } from 'react-router-dom';
 import { TriggerCard } from '@/components/diagnostic/TriggerCard';
 import { LogsCard } from '@/components/diagnostic/LogsCard';
+import { DiagnosticSummary } from '@/components/diagnostic/DiagnosticSummary';
+import { SystemHealth } from '@/components/diagnostic/SystemHealth';
+import { RecommendationsCard } from '@/components/diagnostic/RecommendationsCard';
+import { TableUsageAnalysis } from '@/components/diagnostic/TableUsageAnalysis';
+import { useAuth } from '@/hooks/useAuth';
+import { SecurityHealthCard } from '@/components/diagnostic/SecurityHealthCard';
+import { SecurityAuditLogs } from '@/components/diagnostic/SecurityAuditLogs';
+import { SecuritySummary } from '@/components/diagnostic/SecuritySummary';
 
 const ESSENTIAL_TABLES = [
-  'users',
   'profiles',
-  'departments',
+  'departments', 
   'managers',
-  'metrics',
   'settings',
-  'logs'
+  'user_settings',
+  'logs',
+  'metrics_definition',
+  'metrics_values',
+  'notifications',
+  'notification_settings',
+  'notification_templates',
+  'metric_justifications',
+  'admin_dashboard_config',
+  'backup_settings',
+  'backup_history',
+  'backup_data',
+  'push_subscriptions',
+  'scheduled_notifications',
+  'department_managers',
+  'diagnostic_tests'
 ];
 
 const Diagnostic = () => {
   const { toast } = useToast();
+  const { isAdmin, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [connection, setConnection] = useState<ConnectionInfo | null>(null);
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [writeTest, setWriteTest] = useState<DiagnosticResult | null>(null);
   const [syncStatus, setSyncStatus] = useState<DiagnosticResult | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [triggerFixed, setTriggerFixed] = useState(false);
+
+  // Verificar se o usuário é admin
+  if (!authLoading && !isAdmin) {
+    return (
+      <div className="animate-fade-in space-y-6 p-4 md:p-8 min-h-screen bg-muted/30">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                <ShieldAlert className="h-6 w-6 text-destructive" />
+              </div>
+              <CardTitle>Acesso Restrito</CardTitle>
+              <CardDescription>
+                Esta página é restrita apenas para administradores do sistema.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Button asChild variant="outline">
+                <Link to="/">
+                  <Home className="mr-2 h-4 w-4" />
+                  Voltar ao Dashboard
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   const runDiagnostic = async () => {
     setIsLoading(true);
@@ -49,12 +99,6 @@ const Diagnostic = () => {
       setWriteTest(results.writeTest);
       setSyncStatus(results.syncStatus);
       setLastUpdate(new Date());
-      
-      // Verificar se o problema dos triggers foi resolvido
-      const syncDetails = results.syncStatus?.details;
-      if (syncDetails && syncDetails.auth_triggers > 0 && syncDetails.manager_triggers > 0) {
-        setTriggerFixed(true);
-      }
       
       toast({
         title: 'Diagnóstico concluído',
@@ -75,8 +119,10 @@ const Diagnostic = () => {
   };
 
   useEffect(() => {
-    runDiagnostic();
-  }, []);
+    if (isAdmin && !authLoading) {
+      runDiagnostic();
+    }
+  }, [isAdmin, authLoading]);
 
   const generateReport = () => {
     const reportData = {
@@ -85,14 +131,22 @@ const Diagnostic = () => {
       tables,
       writeTest,
       syncStatus,
-      supabaseUrl: getSupabaseUrlUtil()
+      supabaseUrl: getSupabaseUrlUtil(),
+      summary: {
+        totalTables: tables.length,
+        okTables: tables.filter(t => t.status === 'ok').length,
+        emptyTables: tables.filter(t => t.status === 'empty').length,
+        errorTables: tables.filter(t => t.status === 'error').length,
+        connectionStatus: connection?.connected ? 'connected' : 'disconnected',
+        writeTestStatus: writeTest?.status || 'unknown'
+      }
     };
     
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `supabase-diagnostic-${new Date().toISOString()}.json`;
+    a.download = `supabase-diagnostic-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     URL.revokeObjectURL(url);
@@ -104,21 +158,37 @@ const Diagnostic = () => {
     });
   };
 
+  // Se ainda está carregando a autenticação, mostrar loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Verificando permissões...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in space-y-6 p-4 md:p-8 min-h-screen bg-muted/30">
       <div className="flex justify-between items-start flex-col sm:flex-row gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Diagnóstico do Sistema</h1>
+          <h1 className="text-3xl font-bold">Diagnóstico Completo do Sistema</h1>
           <p className="text-muted-foreground">
-            Verifique a conexão com o banco de dados e o estado das tabelas
+            Análise detalhada do estado de saúde do sistema e recomendações
           </p>
+          {lastUpdate && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Última atualização: {lastUpdate.toLocaleString()}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild className="flex items-center gap-2">
-            <Link to="/login">
+            <Link to="/">
               <Home className="h-4 w-4" />
-              <span className="hidden md:inline">Voltar para o Login</span>
-              <span className="inline md:hidden">Login</span>
+              <span className="hidden md:inline">Dashboard</span>
             </Link>
           </Button>
           <Button 
@@ -130,68 +200,62 @@ const Diagnostic = () => {
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="hidden md:inline">Atualizando...</span>
+                <span className="hidden md:inline">Executando...</span>
               </>
             ) : (
               <>
                 <RefreshCw className="h-4 w-4" />
-                <span className="hidden md:inline">Atualizar</span>
-                <span className="inline md:hidden">Atualizar</span>
+                <span className="hidden md:inline">Executar Diagnóstico</span>
+                <span className="inline md:hidden">Executar</span>
               </>
             )}
           </Button>
         </div>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      {/* Resumo e Saúde Geral */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SystemHealth 
+          connection={connection}
+          tables={tables}
+          writeTest={writeTest}
+          syncStatus={syncStatus}
+        />
+        <SecuritySummary 
+          totalPolicies={tables.length}
+          activePolicies={tables.filter(t => t.status === 'ok').length}
+          criticalIssues={tables.filter(t => t.status === 'error').length}
+          warnings={tables.filter(t => t.status === 'empty').length}
+          lastSecurityCheck={lastUpdate}
+        />
+      </div>
+
+      {/* Cards de Status Rápido */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center">
-              <Server className="mr-2 h-5 w-5" />
-              Status da Conexão
+            <CardTitle className="flex items-center text-sm">
+              <Server className="mr-2 h-4 w-4" />
+              Conexão
             </CardTitle>
-            <CardDescription>
-              Informações sobre a conexão com o Supabase
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {!connection ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+              <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
             ) : (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Status:</span>
-                  <CustomBadge 
-                    variant={connection.connected ? "success" : "destructive"}
-                    className="flex items-center"
-                  >
-                    {connection.connected ? (
-                      <><CheckCircle className="mr-1 h-3 w-3" /> Conectado</>
-                    ) : (
-                      <><AlertCircle className="mr-1 h-3 w-3" /> Desconectado</>
-                    )}
-                  </CustomBadge>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Tempo de resposta:</span>
-                  <span className="text-sm">{connection.responseTime}ms</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">URL:</span>
-                  <span className="text-sm truncate max-w-[160px]" title={connection.url}>
-                    {connection.url}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Última verificação:</span>
-                  <span className="text-sm">
-                    {connection.timestamp.toLocaleTimeString()}
-                  </span>
+              <div className="space-y-2">
+                <CustomBadge 
+                  variant={connection.connected ? "success" : "destructive"}
+                  className="w-full justify-center"
+                >
+                  {connection.connected ? (
+                    <><CheckCircle className="mr-1 h-3 w-3" /> Conectado</>
+                  ) : (
+                    <><AlertCircle className="mr-1 h-3 w-3" /> Erro</>
+                  )}
+                </CustomBadge>
+                <div className="text-xs text-center text-muted-foreground">
+                  {connection.responseTime}ms
                 </div>
               </div>
             )}
@@ -200,52 +264,28 @@ const Diagnostic = () => {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center">
-              <Database className="mr-2 h-5 w-5" />
-              Teste de Escrita
+            <CardTitle className="flex items-center text-sm">
+              <Database className="mr-2 h-4 w-4" />
+              Escrita
             </CardTitle>
-            <CardDescription>
-              Verificação de operações de escrita no banco
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {!writeTest ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+              <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
             ) : (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Status:</span>
-                  <CustomBadge 
-                    variant={writeTest.status === "success" ? "success" : "destructive"}
-                    className="flex items-center"
-                  >
-                    {writeTest.status === "success" ? (
-                      <><CheckCircle className="mr-1 h-3 w-3" /> Sucesso</>
-                    ) : (
-                      <><AlertCircle className="mr-1 h-3 w-3" /> Falha</>
-                    )}
-                  </CustomBadge>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Mensagem:</span>
-                  <span className="text-sm truncate max-w-[160px]" title={writeTest.message}>
-                    {writeTest.message}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Tipo de teste:</span>
-                  <span className="text-sm">INSERT/DELETE</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Tempo:</span>
-                  <span className="text-sm">
-                    {writeTest.timestamp.toLocaleTimeString()}
-                  </span>
+              <div className="space-y-2">
+                <CustomBadge 
+                  variant={writeTest.status === "success" ? "success" : "destructive"}
+                  className="w-full justify-center"
+                >
+                  {writeTest.status === "success" ? (
+                    <><CheckCircle className="mr-1 h-3 w-3" /> OK</>
+                  ) : (
+                    <><AlertCircle className="mr-1 h-3 w-3" /> Erro</>
+                  )}
+                </CustomBadge>
+                <div className="text-xs text-center text-muted-foreground">
+                  {writeTest.status === "success" ? "Funcionando" : "Falhou"}
                 </div>
               </div>
             )}
@@ -255,58 +295,41 @@ const Diagnostic = () => {
         <TriggerCard syncStatus={syncStatus} isLoading={isLoading} />
       </div>
 
+      {/* Resumo dos Problemas */}
+      <DiagnosticSummary 
+        connection={connection}
+        tables={tables}
+        writeTest={writeTest}
+        syncStatus={syncStatus}
+      />
+
+      {/* Componentes de Segurança */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SecurityHealthCard />
+        <SecurityAuditLogs />
+      </div>
+
+      {/* Análise de Uso das Tabelas */}
+      <TableUsageAnalysis tables={tables} />
+
+      {/* Recomendações */}
+      <RecommendationsCard 
+        connection={connection}
+        tables={tables}
+        writeTest={writeTest}
+        syncStatus={syncStatus}
+      />
+
+      {/* Logs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <LogsCard mode="all" title="Logs Recentes" description="Últimos registros do sistema" limit={5} />
         <LogsCard mode="sync" title="Logs de Sincronização" description="Registros de sincronização entre auth.users e managers" limit={5} />
       </div>
-
-      {triggerFixed ? (
-        <Alert className="bg-green-50 border-green-200 text-green-800">
-          <CheckCircle className="h-4 w-4 text-green-500" />
-          <AlertTitle>Problema resolvido</AlertTitle>
-          <AlertDescription>
-            <p className="mb-2">
-              A recursão nos triggers de sincronização entre as tabelas auth.users e managers foi corrigida.
-              Agora você deve conseguir fazer login normalmente.
-            </p>
-            <div className="mt-4">
-              <Button asChild variant="outline" size="sm">
-                <Link to="/login">
-                  Voltar para a tela de login
-                </Link>
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Erro de login detectado</AlertTitle>
-          <AlertDescription>
-            <p className="mb-2">
-              Foi detectado um problema de recursão nos triggers de sincronização entre as tabelas auth.users e managers.
-              Este problema faz com que ocorra o erro "stack depth limit exceeded" durante o login.
-            </p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>
-                O erro "Database error granting user" ocorre devido a uma recursão infinita entre os triggers.
-              </li>
-              <li>
-                O sistema não consegue atualizar os metadados do usuário durante o login.
-              </li>
-            </ul>
-            <div className="mt-4">
-              <Button onClick={runDiagnostic} variant="outline" size="sm">
-                Verificar correção
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
       
+      {/* Detalhes das Tabelas */}
       <Card>
         <CardHeader>
-          <CardTitle>Status das Tabelas</CardTitle>
+          <CardTitle>Status Detalhado das Tabelas</CardTitle>
           <CardDescription>
             Verificação detalhada de cada tabela do sistema
           </CardDescription>
@@ -324,7 +347,7 @@ const Diagnostic = () => {
                     <TableHead>Tabela</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Registros</TableHead>
-                    <TableHead>Mensagem</TableHead>
+                    <TableHead>Detalhes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -349,7 +372,7 @@ const Diagnostic = () => {
                         </CustomBadge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {table.recordCount !== null ? table.recordCount : "N/A"}
+                        {table.recordCount !== null ? table.recordCount.toLocaleString() : "N/A"}
                       </TableCell>
                       <TableCell className="truncate max-w-[300px]" title={table.message || ""}>
                         {table.message || "-"}
@@ -368,7 +391,7 @@ const Diagnostic = () => {
             disabled={isLoading || !tables.length}
           >
             <FileDown className="mr-2 h-4 w-4" />
-            Gerar Relatório
+            Gerar Relatório Completo
           </Button>
           <Button 
             onClick={runDiagnostic}
@@ -382,32 +405,12 @@ const Diagnostic = () => {
             ) : (
               <>
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Atualizar Diagnóstico
+                Executar Novo Diagnóstico
               </>
             )}
           </Button>
         </CardFooter>
       </Card>
-      
-      {tables.some(t => t.status === "error") && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Problemas detectados</AlertTitle>
-          <AlertDescription>
-            <p className="mb-2">
-              Foram encontrados problemas com algumas tabelas. Recomendações:
-            </p>
-            <ul className="list-disc pl-5 space-y-1">
-              {tables.filter(t => t.status === "error").map(table => (
-                <li key={`fix-${table.name}`}>
-                  Tabela <strong>{table.name}</strong>: {table.message || "Erro desconhecido"}. 
-                  Verifique se a tabela existe e se as permissões estão corretas.
-                </li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
     </div>
   );
 };

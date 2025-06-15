@@ -28,6 +28,19 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         replace: true,
         state: { from: location.pathname }
       });
+      return;
+    }
+
+    // Se está autenticado mas está tentando acessar uma rota inválida, redirecionar para dashboard
+    if (!isLoading && isAuthenticated && location.pathname !== '/' && 
+        !location.pathname.startsWith('/metrics') && 
+        !location.pathname.startsWith('/departments') && 
+        !location.pathname.startsWith('/managers') && 
+        !location.pathname.startsWith('/settings') && 
+        !location.pathname.startsWith('/notifications') && 
+        !location.pathname.startsWith('/diagnostico')) {
+      console.log('[AuthGuard] Rota inválida detectada, redirecionando para dashboard:', location.pathname);
+      navigate('/', { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, location, user]);
 
