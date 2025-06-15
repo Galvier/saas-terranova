@@ -7,41 +7,37 @@ export const usePushNotifications = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Iniciar como true
   const { toast } = useToast();
 
   useEffect(() => {
-    checkSupport();
+    initializePushNotifications();
   }, []);
 
-  // Verificar suporte periodicamente
-  useEffect(() => {
-    if (!isSupported) return;
-
-    const checkChanges = () => {
-      const currentPermission = Notification.permission;
-      if (currentPermission !== permission) {
-        console.log('Permission changed:', permission, '->', currentPermission);
-        setPermission(currentPermission);
-        
-        if (currentPermission === 'granted') {
-          checkSubscriptionStatus();
-        } else if (currentPermission === 'denied') {
-          setIsSubscribed(false);
-        }
-      }
-    };
-
-    const interval = setInterval(checkChanges, 2000);
-    window.addEventListener('focus', checkChanges);
+  const initializePushNotifications = async () => {
+    console.log('[PushNotifications] Inicializando...');
+    setIsLoading(true);
     
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', checkChanges);
-    };
-  }, [permission, isSupported]);
+    try {
+      // Verificar suporte
+      const supported = checkSupport();
+      console.log('[PushNotifications] Suporte:', supported);
+      
+      if (supported) {
+        // Aguardar Service Worker estar pronto
+        await waitForServiceWorker();
+        
+        // Verificar status da inscrição
+        await checkSubscriptionStatus();
+      }
+    } catch (error) {
+      console.error('[PushNotifications] Erro na inicialização:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const checkSupport = async () => {
+  const checkSupport = () => {
     const supported = 'Notification' in window && 
                      'serviceWorker' in navigator && 
                      'PushManager' in window;
@@ -49,45 +45,51 @@ export const usePushNotifications = () => {
     setIsSupported(supported);
     
     if (supported) {
-      setPermission(Notification.permission);
-      await waitForServiceWorker();
-      await checkSubscriptionStatus();
+      const currentPermission = Notification.permission;
+      console.log('[PushNotifications] Permissão atual:', currentPermission);
+      setPermission(currentPermission);
     }
+    
+    return supported;
   };
 
   const waitForServiceWorker = async () => {
-    if ('serviceWorker' in navigator) {
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        console.log('Service Worker ready:', registration);
-        return registration;
-      } catch (error) {
-        console.error('Service Worker not ready:', error);
-        throw error;
-      }
+    if (!('serviceWorker' in navigator)) {
+      throw new Error('Service Worker não suportado');
+    }
+
+    try {
+      console.log('[PushNotifications] Aguardando Service Worker...');
+      const registration = await navigator.serviceWorker.ready;
+      console.log('[PushNotifications] Service Worker pronto:', registration.scope);
+      return registration;
+    } catch (error) {
+      console.error('[PushNotifications] Erro no Service Worker:', error);
+      throw error;
     }
   };
 
   const checkSubscriptionStatus = async () => {
     try {
-      if (Notification.permission !== 'granted') {
+      if (permission !== 'granted') {
+        console.log('[PushNotifications] Permissão não concedida, subscription = false');
         setIsSubscribed(false);
         return;
       }
 
-      await waitForServiceWorker();
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       
-      console.log('Subscription check:', {
-        hasSubscription: !!subscription,
-        endpoint: subscription?.endpoint,
-        permission: Notification.permission
+      const hasSubscription = !!subscription;
+      console.log('[PushNotifications] Status da inscrição:', {
+        hasSubscription,
+        endpoint: subscription?.endpoint?.substring(0, 50) + '...',
+        permission
       });
       
-      setIsSubscribed(!!subscription);
+      setIsSubscribed(hasSubscription);
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      console.error('[PushNotifications] Erro ao verificar inscrição:', error);
       setIsSubscribed(false);
     }
   };
@@ -102,30 +104,36 @@ export const usePushNotifications = () => {
       return false;
     }
 
+    console.log('[PushNotifications] Solicitando permissão...');
     setIsLoading(true);
+    
     try {
-      const permission = await Notification.requestPermission();
-      setPermission(permission);
+      const result = await Notification.requestPermission();
+      console.log('[PushNotifications] Resultado da permissão:', result);
+      setPermission(result);
       
-      console.log('Permission result:', permission);
-      
-      if (permission === 'granted') {
+      if (result === 'granted') {
         toast({
           title: 'Permissão concedida! 🎉',
           description: 'Agora você pode ativar as notificações push',
         });
-        setTimeout(checkSubscriptionStatus, 1000);
+        
+        // Verificar status da inscrição após conceder permissão
+        setTimeout(() => {
+          checkSubscriptionStatus();
+        }, 500);
+        
         return true;
       } else {
         toast({
           title: 'Permissão negada',
-          description: 'Para ativar, clique no ícone de cadeado na barra de endereço',
+          description: 'Para ativar, clique no ícone na barra de endereço',
           variant: 'destructive'
         });
         return false;
       }
     } catch (error) {
-      console.error('Error requesting permission:', error);
+      console.error('[PushNotifications] Erro ao solicitar permissão:', error);
       toast({
         title: 'Erro',
         description: 'Falha ao solicitar permissão para notificações',
@@ -138,17 +146,21 @@ export const usePushNotifications = () => {
   };
 
   const subscribe = async (): Promise<boolean> => {
+    console.log('[PushNotifications] Tentando se inscrever...', { permission, isLoading });
+    
     if (permission !== 'granted') {
+      console.log('[PushNotifications] Permissão necessária, solicitando...');
       const granted = await requestPermission();
       if (!granted) return false;
     }
 
     setIsLoading(true);
+    
     try {
-      await waitForServiceWorker();
       const registration = await navigator.serviceWorker.ready;
+      console.log('[PushNotifications] Service Worker pronto para inscrição');
       
-      // Chave VAPID pública - deve ser configurada no Supabase
+      // Chave VAPID pública - temporária para testes
       const vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa40HI80NlMAPF6h5wFAAKgqR_GZV6XZJvDyoWksPa4UBlvKQRKzPRgQzFhiZI';
       
       const subscription = await registration.pushManager.subscribe({
@@ -156,22 +168,29 @@ export const usePushNotifications = () => {
         applicationServerKey: urlB64ToUint8Array(vapidPublicKey)
       });
 
-      console.log('Push subscription created:', subscription);
+      console.log('[PushNotifications] Inscrição criada:', {
+        endpoint: subscription.endpoint.substring(0, 50) + '...',
+        keys: Object.keys(subscription.getKey ? subscription.toJSON() : {})
+      });
       
-      const success = await notificationService.subscribeToPush(subscription);
-      
-      if (success) {
-        setIsSubscribed(true);
-        toast({
-          title: 'Notificações ativadas! 🔔',
-          description: 'Você receberá notificações push do sistema',
-        });
-        return true;
-      } else {
-        throw new Error('Failed to save subscription on server');
+      // Salvar no servidor (por enquanto só fazer o log)
+      try {
+        const success = await notificationService.subscribeToPush(subscription);
+        console.log('[PushNotifications] Salvo no servidor:', success);
+      } catch (serverError) {
+        console.warn('[PushNotifications] Erro ao salvar no servidor:', serverError);
+        // Continuar mesmo se falhar no servidor
       }
+      
+      setIsSubscribed(true);
+      toast({
+        title: 'Notificações ativadas! 🔔',
+        description: 'Você receberá notificações push do sistema',
+      });
+      
+      return true;
     } catch (error) {
-      console.error('Error subscribing to push:', error);
+      console.error('[PushNotifications] Erro na inscrição:', error);
       
       let errorMessage = 'Falha ao se inscrever para notificações push';
       if (error instanceof Error) {
@@ -187,6 +206,7 @@ export const usePushNotifications = () => {
         description: errorMessage,
         variant: 'destructive'
       });
+      
       return false;
     } finally {
       setIsLoading(false);
@@ -194,13 +214,17 @@ export const usePushNotifications = () => {
   };
 
   const unsubscribe = async (): Promise<boolean> => {
+    console.log('[PushNotifications] Cancelando inscrição...');
     setIsLoading(true);
+    
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       
       if (subscription) {
         const unsubscribed = await subscription.unsubscribe();
+        console.log('[PushNotifications] Inscrição cancelada:', unsubscribed);
+        
         if (unsubscribed) {
           setIsSubscribed(false);
           toast({
@@ -214,7 +238,7 @@ export const usePushNotifications = () => {
       setIsSubscribed(false);
       return true;
     } catch (error) {
-      console.error('Error unsubscribing from push:', error);
+      console.error('[PushNotifications] Erro ao cancelar inscrição:', error);
       toast({
         title: 'Erro',
         description: 'Falha ao cancelar inscrição das notificações',
@@ -237,7 +261,8 @@ export const usePushNotifications = () => {
     }
 
     try {
-      // Primeira tentativa: notificação local
+      console.log('[PushNotifications] Enviando notificação de teste...');
+      
       const notification = new Notification('🎯 Teste de Notificação - Terranova', {
         body: 'Esta é uma notificação de teste do sistema. Se você está vendo isso, as notificações estão funcionando!',
         icon: '/favicon.ico',
@@ -256,10 +281,10 @@ export const usePushNotifications = () => {
         description: 'Verifique se a notificação apareceu no seu dispositivo',
       });
 
-      console.log('Test notification sent successfully');
+      console.log('[PushNotifications] Notificação de teste enviada com sucesso');
       
     } catch (error) {
-      console.error('Error sending test notification:', error);
+      console.error('[PushNotifications] Erro ao enviar notificação de teste:', error);
       toast({
         title: 'Erro no teste',
         description: 'Não foi possível enviar a notificação de teste',

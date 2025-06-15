@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell, BellOff, Smartphone, TestTube, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Bell, BellOff, Smartphone, TestTube, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,20 +16,24 @@ import { cn } from '@/lib/utils';
 const MobilePushToggle = ({ 
   isSubscribed, 
   onToggle,
-  disabled
+  disabled,
+  isLoading
 }: { 
   isSubscribed: boolean; 
   onToggle: (checked: boolean) => void;
   disabled: boolean;
+  isLoading: boolean;
 }) => {
   return (
     <button
-      onClick={() => !disabled && onToggle(!isSubscribed)}
-      disabled={disabled}
+      onClick={() => !disabled && !isLoading && onToggle(!isSubscribed)}
+      disabled={disabled || isLoading}
       className="w-full flex items-center justify-between p-3 rounded-lg border transition-all duration-200 min-h-[48px] touch-manipulation hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <div className="flex items-center gap-3">
-        {isSubscribed ? (
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground flex-shrink-0" />
+        ) : isSubscribed ? (
           <Bell className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
         ) : (
           <BellOff className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -37,9 +41,11 @@ const MobilePushToggle = ({
         <div className="flex flex-col items-start gap-0.5">
           <span className="text-sm font-medium">Notificações Push</span>
           <span className="text-xs text-muted-foreground text-left">
-            {isSubscribed 
-              ? 'Recebendo notificações push' 
-              : 'Ative para receber notificações'
+            {isLoading 
+              ? 'Carregando...'
+              : isSubscribed 
+                ? 'Recebendo notificações push' 
+                : 'Ative para receber notificações'
             }
           </span>
         </div>
@@ -48,7 +54,7 @@ const MobilePushToggle = ({
         <Checkbox 
           checked={isSubscribed}
           onCheckedChange={onToggle}
-          disabled={disabled}
+          disabled={disabled || isLoading}
           className={cn(
             "h-4 w-4",
             isSubscribed && "bg-primary border-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary"
@@ -73,6 +79,13 @@ const PushNotificationSettings: React.FC = () => {
   
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
+
+  console.log('[PushNotificationSettings] Estado atual:', {
+    isSupported,
+    permission,
+    isSubscribed,
+    isLoading
+  });
 
   const getPermissionStatus = () => {
     switch (permission) {
@@ -101,23 +114,31 @@ const PushNotificationSettings: React.FC = () => {
   };
 
   const handleSwitchChange = async (checked: boolean) => {
-    console.log('Switch change:', { checked, permission, isSubscribed, isLoading });
+    console.log('[PushNotificationSettings] Switch alterado:', { 
+      checked, 
+      permission, 
+      isSubscribed, 
+      isLoading 
+    });
     
     if (isLoading) {
-      console.log('Already loading, ignoring switch change');
+      console.log('[PushNotificationSettings] Já está carregando, ignorando mudança');
       return;
     }
 
     if (checked) {
-      console.log('Attempting to subscribe...');
+      console.log('[PushNotificationSettings] Tentando se inscrever...');
       const success = await subscribe();
-      console.log('Subscribe result:', success);
+      console.log('[PushNotificationSettings] Resultado da inscrição:', success);
     } else {
-      console.log('Attempting to unsubscribe...');
+      console.log('[PushNotificationSettings] Tentando cancelar inscrição...');
       const success = await unsubscribe();
-      console.log('Unsubscribe result:', success);
+      console.log('[PushNotificationSettings] Resultado do cancelamento:', success);
     }
   };
+
+  // Determinar se o switch deve estar desabilitado
+  const isSwitchDisabled = isLoading || !isSupported;
 
   if (!isSupported) {
     return (
@@ -153,6 +174,7 @@ const PushNotificationSettings: React.FC = () => {
         <CardTitle className="flex items-center gap-2">
           <Smartphone className={`h-5 w-5 ${isTablet ? 'h-6 w-6' : ''}`} />
           Notificações Push
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </CardTitle>
         <CardDescription>
           Receba notificações mesmo quando o navegador estiver fechado
@@ -190,14 +212,19 @@ const PushNotificationSettings: React.FC = () => {
           <MobilePushToggle
             isSubscribed={isSubscribed}
             onToggle={handleSwitchChange}
-            disabled={isLoading}
+            disabled={isSwitchDisabled}
+            isLoading={isLoading}
           />
         ) : (
           <div className={`flex items-center justify-between rounded-lg border ${
             isTablet ? 'p-5 bg-muted/50' : 'p-4 bg-muted/50'
           }`}>
             <div className="flex items-center gap-3">
-              {isSubscribed ? (
+              {isLoading ? (
+                <Loader2 className={`animate-spin text-muted-foreground ${
+                  isTablet ? 'h-6 w-6' : 'h-5 w-5'
+                }`} />
+              ) : isSubscribed ? (
                 <Bell className={`text-green-600 dark:text-green-400 ${
                   isTablet ? 'h-6 w-6' : 'h-5 w-5'
                 }`} />
@@ -213,9 +240,11 @@ const PushNotificationSettings: React.FC = () => {
                 <p className={`text-muted-foreground ${
                   isTablet ? 'text-sm' : 'text-xs'
                 }`}>
-                  {isSubscribed 
-                    ? 'Ativo - Você receberá notificações push' 
-                    : 'Inativo - Ative para receber notificações push'
+                  {isLoading 
+                    ? 'Carregando...'
+                    : isSubscribed 
+                      ? 'Ativo - Você receberá notificações push' 
+                      : 'Inativo - Ative para receber notificações push'
                   }
                 </p>
               </div>
@@ -223,14 +252,14 @@ const PushNotificationSettings: React.FC = () => {
             <Switch
               checked={isSubscribed}
               onCheckedChange={handleSwitchChange}
-              disabled={isLoading}
+              disabled={isSwitchDisabled}
               className={isTablet ? 'scale-110' : ''}
             />
           </div>
         )}
 
         {/* Alertas e ações baseados no status */}
-        {permission === 'default' && (
+        {permission === 'default' && !isLoading && (
           <Alert>
             <Bell className="h-4 w-4" />
             <AlertDescription>
@@ -267,17 +296,17 @@ const PushNotificationSettings: React.FC = () => {
           </Alert>
         )}
 
-        {permission === 'granted' && !isSubscribed && (
+        {permission === 'granted' && !isSubscribed && !isLoading && (
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              <span>Permissão concedida! Ative o switch acima para se inscrever nas notificações.</span>
+              <span>Permissão concedida! Use o switch acima para ativar as notificações.</span>
             </AlertDescription>
           </Alert>
         )}
 
         {/* Botão de teste */}
-        {permission === 'granted' && isSubscribed && (
+        {permission === 'granted' && isSubscribed && !isLoading && (
           <div className="pt-2">
             <Button 
               onClick={sendTestNotification}
@@ -287,7 +316,7 @@ const PushNotificationSettings: React.FC = () => {
               disabled={isLoading}
             >
               <TestTube className={`mr-2 ${isTablet ? 'h-5 w-5' : 'h-4 w-4'}`} />
-              {isLoading ? 'Enviando...' : 'Enviar Notificação de Teste'}
+              Enviar Notificação de Teste
             </Button>
           </div>
         )}
