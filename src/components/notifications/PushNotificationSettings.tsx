@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsTablet } from '@/hooks/use-tablet';
 import { cn } from '@/lib/utils';
 
 // Mobile Push Toggle Component - Compact Design
@@ -71,6 +72,7 @@ const PushNotificationSettings: React.FC = () => {
   } = usePushNotifications();
   
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
 
   const getPermissionStatus = () => {
     switch (permission) {
@@ -149,31 +151,41 @@ const PushNotificationSettings: React.FC = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Smartphone className="h-5 w-5" />
+          <Smartphone className={`h-5 w-5 ${isTablet ? 'h-6 w-6' : ''}`} />
           Notificações Push
         </CardTitle>
         <CardDescription>
           Receba notificações mesmo quando o navegador estiver fechado
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className={`space-y-4 ${isTablet ? 'space-y-6' : ''}`}>
         {/* Status da permissão */}
-        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+        <div className={`flex items-center justify-between rounded-lg border ${
+          isTablet ? 'p-5 bg-muted/50' : 'p-4 bg-muted/50'
+        }`}>
           <div className="flex items-center gap-3">
-            <StatusIcon className={`h-5 w-5 ${permissionStatus.iconColor}`} />
+            <StatusIcon className={`h-5 w-5 ${permissionStatus.iconColor} ${
+              isTablet ? 'h-6 w-6' : ''
+            }`} />
             <div>
-              <h4 className="font-medium">Status da Permissão</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className={`font-medium ${
+                isTablet ? 'text-base' : 'text-sm'
+              }`}>Status da Permissão</h4>
+              <p className={`text-muted-foreground ${
+                isTablet ? 'text-sm' : 'text-xs'
+              }`}>
                 Permissão para enviar notificações do navegador
               </p>
             </div>
           </div>
-          <Badge className={permissionStatus.color}>
+          <Badge className={`${permissionStatus.color} ${
+            isTablet ? 'text-sm px-3 py-1' : ''
+          }`}>
             {permissionStatus.text}
           </Badge>
         </div>
 
-        {/* Status da inscrição - Mobile/Desktop Layout */}
+        {/* Status da inscrição - Mobile/Desktop/Tablet Layout */}
         {isMobile ? (
           <MobilePushToggle
             isSubscribed={isSubscribed}
@@ -181,16 +193,26 @@ const PushNotificationSettings: React.FC = () => {
             disabled={isLoading}
           />
         ) : (
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+          <div className={`flex items-center justify-between rounded-lg border ${
+            isTablet ? 'p-5 bg-muted/50' : 'p-4 bg-muted/50'
+          }`}>
             <div className="flex items-center gap-3">
               {isSubscribed ? (
-                <Bell className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <Bell className={`text-green-600 dark:text-green-400 ${
+                  isTablet ? 'h-6 w-6' : 'h-5 w-5'
+                }`} />
               ) : (
-                <BellOff className="h-5 w-5 text-muted-foreground" />
+                <BellOff className={`text-muted-foreground ${
+                  isTablet ? 'h-6 w-6' : 'h-5 w-5'
+                }`} />
               )}
               <div>
-                <h4 className="font-medium">Notificações Push</h4>
-                <p className="text-sm text-muted-foreground">
+                <h4 className={`font-medium ${
+                  isTablet ? 'text-base' : 'text-sm'
+                }`}>Notificações Push</h4>
+                <p className={`text-muted-foreground ${
+                  isTablet ? 'text-sm' : 'text-xs'
+                }`}>
                   {isSubscribed 
                     ? 'Ativo - Você receberá notificações push' 
                     : 'Inativo - Ative para receber notificações push'
@@ -202,6 +224,7 @@ const PushNotificationSettings: React.FC = () => {
               checked={isSubscribed}
               onCheckedChange={handleSwitchChange}
               disabled={isLoading}
+              className={isTablet ? 'scale-110' : ''}
             />
           </div>
         )}
@@ -215,7 +238,7 @@ const PushNotificationSettings: React.FC = () => {
                 <span>Para receber notificações push, você precisa conceder permissão ao navegador.</span>
                 <Button 
                   onClick={requestPermission}
-                  size="sm"
+                  size={isTablet ? 'default' : 'sm'}
                   className="ml-2"
                   disabled={isLoading}
                 >
@@ -232,7 +255,9 @@ const PushNotificationSettings: React.FC = () => {
             <AlertDescription>
               <div className="space-y-2">
                 <p><strong>Permissão negada:</strong> Para habilitar notificações push, você precisa:</p>
-                <ol className="list-decimal list-inside space-y-1 text-sm ml-4">
+                <ol className={`list-decimal list-inside space-y-1 ml-4 ${
+                  isTablet ? 'text-sm' : 'text-xs'
+                }`}>
                   <li>Clicar no ícone de cadeado/informações na barra de endereço</li>
                   <li>Alterar a configuração de "Notificações" para "Permitir"</li>
                   <li>Recarregar a página</li>
@@ -246,9 +271,7 @@ const PushNotificationSettings: React.FC = () => {
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              <div className="flex items-center justify-between">
-                <span>Permissão concedida! Ative o switch acima para se inscrever nas notificações.</span>
-              </div>
+              <span>Permissão concedida! Ative o switch acima para se inscrever nas notificações.</span>
             </AlertDescription>
           </Alert>
         )}
@@ -260,21 +283,28 @@ const PushNotificationSettings: React.FC = () => {
               onClick={sendTestNotification}
               variant="outline"
               className="w-full"
+              size={isTablet ? 'default' : 'sm'}
               disabled={isLoading}
             >
-              <TestTube className="h-4 w-4 mr-2" />
+              <TestTube className={`mr-2 ${isTablet ? 'h-5 w-5' : 'h-4 w-4'}`} />
               {isLoading ? 'Enviando...' : 'Enviar Notificação de Teste'}
             </Button>
           </div>
         )}
 
         {/* Informações sobre funcionalidades */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-900/20 dark:border-blue-800">
-          <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-3 flex items-center gap-2">
-            <Bell className="h-4 w-4" />
+        <div className={`p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-900/20 dark:border-blue-800 ${
+          isTablet ? 'mt-8 p-5' : 'mt-6'
+        }`}>
+          <h4 className={`font-medium text-blue-900 dark:text-blue-300 mb-3 flex items-center gap-2 ${
+            isTablet ? 'text-base' : 'text-sm'
+          }`}>
+            <Bell className={isTablet ? 'h-5 w-5' : 'h-4 w-4'} />
             O que você receberá:
           </h4>
-          <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-2">
+          <ul className={`text-blue-800 dark:text-blue-300 space-y-2 ${
+            isTablet ? 'text-sm' : 'text-xs'
+          }`}>
             <li className="flex items-start gap-2">
               <span className="text-blue-600 dark:text-blue-400">•</span>
               <span><strong>Alertas de métricas:</strong> Quando valores estão fora do alvo ou em atraso</span>

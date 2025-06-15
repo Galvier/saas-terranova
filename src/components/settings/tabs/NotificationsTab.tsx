@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsTablet } from '@/hooks/use-tablet';
 import { cn } from '@/lib/utils';
 import BroadcastNotification from '@/components/notifications/BroadcastNotification';
 import PushNotificationSettings from '@/components/notifications/PushNotificationSettings';
@@ -80,6 +81,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
 }) => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
 
   // Verificar se o usuário é admin (simplificado)
   const isAdmin = user?.user_metadata?.role === 'admin';
@@ -104,33 +106,47 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
   return (
     <div className="space-y-6">
       <Tabs defaultValue="preferences" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="preferences" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Preferências
+        <TabsList className={`w-full ${
+          isTablet ? 'grid-cols-4 h-12' : 'grid-cols-4'
+        } grid`}>
+          <TabsTrigger value="preferences" className={`flex items-center gap-2 ${
+            isTablet ? 'text-sm px-4' : 'px-2'
+          }`}>
+            <Settings className={isTablet ? 'h-5 w-5' : 'h-4 w-4'} />
+            <span className={isTablet ? 'inline' : 'hidden sm:inline'}>Preferências</span>
           </TabsTrigger>
-          <TabsTrigger value="push" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Push
+          <TabsTrigger value="push" className={`flex items-center gap-2 ${
+            isTablet ? 'text-sm px-4' : 'px-2'
+          }`}>
+            <Bell className={isTablet ? 'h-5 w-5' : 'h-4 w-4'} />
+            <span className={isTablet ? 'inline' : 'hidden sm:inline'}>Push</span>
           </TabsTrigger>
           {isAdmin && (
-            <TabsTrigger value="broadcast" className="flex items-center gap-2">
-              <Send className="h-4 w-4" />
-              Broadcast
+            <TabsTrigger value="broadcast" className={`flex items-center gap-2 ${
+              isTablet ? 'text-sm px-4' : 'px-2'
+            }`}>
+              <Send className={isTablet ? 'h-5 w-5' : 'h-4 w-4'} />
+              <span className={isTablet ? 'inline' : 'hidden sm:inline'}>Broadcast</span>
             </TabsTrigger>
           )}
           {isAdmin && (
-            <TabsTrigger value="system" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Sistema
+            <TabsTrigger value="system" className={`flex items-center gap-2 ${
+              isTablet ? 'text-sm px-4' : 'px-2'
+            }`}>
+              <Settings className={isTablet ? 'h-5 w-5' : 'h-4 w-4'} />
+              <span className={isTablet ? 'inline' : 'hidden sm:inline'}>Sistema</span>
             </TabsTrigger>
           )}
         </TabsList>
 
-        <TabsContent value="preferences" className="space-y-4">
+        <TabsContent value="preferences" className={`space-y-4 ${
+          isTablet ? 'space-y-6' : ''
+        }`}>
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className={isTablet ? 'p-6' : ''}>
+              <CardTitle className={`flex items-center gap-2 ${
+                isTablet ? 'text-lg' : ''
+              }`}>
                 Preferências de Notificação
                 {hasChanges && (
                   <div className="flex items-center gap-1">
@@ -139,11 +155,13 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                   </div>
                 )}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className={isTablet ? 'text-sm' : ''}>
                 Configure quais tipos de notificações você deseja receber
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className={`space-y-3 ${
+              isTablet ? 'p-6 space-y-4' : ''
+            }`}>
               {isMobile ? (
                 <div className="space-y-2">
                   <MobileNotificationToggle
@@ -173,10 +191,16 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className={`flex items-center justify-between border rounded-lg ${
+                    isTablet ? 'p-4' : 'p-3'
+                  }`}>
                     <div>
-                      <h4 className="font-medium">Notificações do Sistema</h4>
-                      <p className="text-sm text-gray-600">
+                      <h4 className={`font-medium ${
+                        isTablet ? 'text-base' : 'text-sm'
+                      }`}>Notificações do Sistema</h4>
+                      <p className={`text-gray-600 ${
+                        isTablet ? 'text-sm' : 'text-xs'
+                      }`}>
                         Atualizações importantes do sistema e manutenções
                       </p>
                     </div>
@@ -184,13 +208,20 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                       checked={preferences.system}
                       onCheckedChange={(checked) => handlePreferenceChange('system', checked)}
                       disabled={isLoading}
+                      className={isTablet ? 'scale-110' : ''}
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className={`flex items-center justify-between border rounded-lg ${
+                    isTablet ? 'p-4' : 'p-3'
+                  }`}>
                     <div>
-                      <h4 className="font-medium">Alertas de Métricas</h4>
-                      <p className="text-sm text-gray-600">
+                      <h4 className={`font-medium ${
+                        isTablet ? 'text-base' : 'text-sm'
+                      }`}>Alertas de Métricas</h4>
+                      <p className={`text-gray-600 ${
+                        isTablet ? 'text-sm' : 'text-xs'
+                      }`}>
                         Avisos quando métricas estão fora do alvo ou em atraso
                       </p>
                     </div>
@@ -198,13 +229,20 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                       checked={preferences.alerts}
                       onCheckedChange={(checked) => handlePreferenceChange('alerts', checked)}
                       disabled={isLoading}
+                      className={isTablet ? 'scale-110' : ''}
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className={`flex items-center justify-between border rounded-lg ${
+                    isTablet ? 'p-4' : 'p-3'
+                  }`}>
                     <div>
-                      <h4 className="font-medium">Notificações por Email</h4>
-                      <p className="text-sm text-gray-600">
+                      <h4 className={`font-medium ${
+                        isTablet ? 'text-base' : 'text-sm'
+                      }`}>Notificações por Email</h4>
+                      <p className={`text-gray-600 ${
+                        isTablet ? 'text-sm' : 'text-xs'
+                      }`}>
                         Receber notificações importantes por email
                       </p>
                     </div>
@@ -212,28 +250,36 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                       checked={preferences.email}
                       onCheckedChange={(checked) => handlePreferenceChange('email', checked)}
                       disabled={isLoading}
+                      className={isTablet ? 'scale-110' : ''}
                     />
                   </div>
                 </>
               )}
             </CardContent>
-            <CardFooter className="border-t bg-muted/50 px-4 md:px-6 py-4">
+            <CardFooter className={`border-t bg-muted/50 ${
+              isTablet ? 'px-6 py-5' : 'px-4 md:px-6 py-4'
+            }`}>
               <Button 
                 onClick={onSave} 
                 disabled={isLoading || !hasChanges}
                 className={cn(
                   "w-full md:w-auto",
-                  hasChanges && "bg-primary hover:bg-primary/90"
+                  hasChanges && "bg-primary hover:bg-primary/90",
+                  isTablet && "px-6 py-3 text-base"
                 )}
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className={`mr-2 animate-spin ${
+                      isTablet ? 'h-5 w-5' : 'h-4 w-4'
+                    }`} />
                     Salvando...
                   </>
                 ) : (
                   <>
-                    <Save className="mr-2 h-4 w-4" />
+                    <Save className={`mr-2 ${
+                      isTablet ? 'h-5 w-5' : 'h-4 w-4'
+                    }`} />
                     {hasChanges ? "Salvar Alterações" : "Salvar"}
                   </>
                 )}

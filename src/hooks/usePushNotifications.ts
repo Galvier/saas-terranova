@@ -11,30 +11,19 @@ export const usePushNotifications = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Verificar suporte do navegador
-    const supported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
-    setIsSupported(supported);
-    
-    if (supported) {
-      // Verificar permissão atual
-      const currentPermission = Notification.permission;
-      setPermission(currentPermission);
-      console.log('Current notification permission:', currentPermission);
-      
-      // Verificar status da inscrição push
-      checkSubscriptionStatus();
-    }
+    checkSupport();
   }, []);
 
-  // Verificar mudanças na permissão periodicamente
+  // Verificar suporte periodicamente
   useEffect(() => {
     if (!isSupported) return;
 
-    const checkPermissionChanges = () => {
+    const checkChanges = () => {
       const currentPermission = Notification.permission;
       if (currentPermission !== permission) {
-        console.log('Permission changed from', permission, 'to', currentPermission);
+        console.log('Permission changed:', permission, '->', currentPermission);
         setPermission(currentPermission);
+        
         if (currentPermission === 'granted') {
           checkSubscriptionStatus();
         } else if (currentPermission === 'denied') {
@@ -43,43 +32,62 @@ export const usePushNotifications = () => {
       }
     };
 
-    // Verificar mudanças a cada 2 segundos
-    const interval = setInterval(checkPermissionChanges, 2000);
-    
-    // Verificar quando a janela ganha foco (usuário volta para a aba)
-    const handleFocus = () => {
-      checkPermissionChanges();
-      checkSubscriptionStatus();
-    };
-    
-    window.addEventListener('focus', handleFocus);
+    const interval = setInterval(checkChanges, 2000);
+    window.addEventListener('focus', checkChanges);
     
     return () => {
       clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('focus', checkChanges);
     };
   }, [permission, isSupported]);
 
+  const checkSupport = async () => {
+    const supported = 'Notification' in window && 
+                     'serviceWorker' in navigator && 
+                     'PushManager' in window;
+    
+    setIsSupported(supported);
+    
+    if (supported) {
+      setPermission(Notification.permission);
+      await waitForServiceWorker();
+      await checkSubscriptionStatus();
+    }
+  };
+
+  const waitForServiceWorker = async () => {
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        console.log('Service Worker ready:', registration);
+        return registration;
+      } catch (error) {
+        console.error('Service Worker not ready:', error);
+        throw error;
+      }
+    }
+  };
+
   const checkSubscriptionStatus = async () => {
     try {
-      if ('serviceWorker' in navigator && Notification.permission === 'granted') {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        const hasSubscription = !!subscription;
-        
-        console.log('Push subscription check:', {
-          hasSubscription,
-          endpoint: subscription?.endpoint,
-          permission: Notification.permission
-        });
-        
-        setIsSubscribed(hasSubscription);
-      } else {
-        console.log('Cannot check subscription - permission not granted or service worker not available');
+      if (Notification.permission !== 'granted') {
         setIsSubscribed(false);
+        return;
       }
+
+      await waitForServiceWorker();
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      
+      console.log('Subscription check:', {
+        hasSubscription: !!subscription,
+        endpoint: subscription?.endpoint,
+        permission: Notification.permission
+      });
+      
+      setIsSubscribed(!!subscription);
     } catch (error) {
-      console.error('Error checking subscription status:', error);
+      console.error('Error checking subscription:', error);
       setIsSubscribed(false);
     }
   };
@@ -96,28 +104,26 @@ export const usePushNotifications = () => {
 
     setIsLoading(true);
     try {
-      const permission = await notificationService.requestPushPermission();
-      const newPermission = Notification.permission;
-      setPermission(newPermission);
+      const permission = await Notification.requestPermission();
+      setPermission(permission);
       
-      console.log('Permission request result:', { permission, newPermission });
+      console.log('Permission result:', permission);
       
-      if (permission) {
+      if (permission === 'granted') {
         toast({
           title: 'Permissão concedida! 🎉',
           description: 'Agora você pode ativar as notificações push',
         });
-        // Verificar automaticamente o status da inscrição após conceder permissão
         setTimeout(checkSubscriptionStatus, 1000);
+        return true;
       } else {
         toast({
           title: 'Permissão negada',
           description: 'Para ativar, clique no ícone de cadeado na barra de endereço',
           variant: 'destructive'
         });
+        return false;
       }
-      
-      return permission;
     } catch (error) {
       console.error('Error requesting permission:', error);
       toast({
@@ -139,14 +145,15 @@ export const usePushNotifications = () => {
 
     setIsLoading(true);
     try {
+      await waitForServiceWorker();
       const registration = await navigator.serviceWorker.ready;
       
-      // Chave pública VAPID - em produção, isso deve vir de variáveis de ambiente
+      // Chave VAPID pública - deve ser configurada no Supabase
       const vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa40HI80NlMAPF6h5wFAAKgqR_GZV6XZJvDyoWksPa4UBlvKQRKzPRgQzFhiZI';
       
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: vapidPublicKey
+        applicationServerKey: urlB64ToUint8Array(vapidPublicKey)
       });
 
       console.log('Push subscription created:', subscription);
@@ -159,11 +166,10 @@ export const usePushNotifications = () => {
           title: 'Notificações ativadas! 🔔',
           description: 'Você receberá notificações push do sistema',
         });
+        return true;
       } else {
         throw new Error('Failed to save subscription on server');
       }
-      
-      return success;
     } catch (error) {
       console.error('Error subscribing to push:', error);
       
@@ -250,7 +256,6 @@ export const usePushNotifications = () => {
         description: 'Verifique se a notificação apareceu no seu dispositivo',
       });
 
-      // Log para debugging
       console.log('Test notification sent successfully');
       
     } catch (error) {
@@ -261,6 +266,22 @@ export const usePushNotifications = () => {
         variant: 'destructive'
       });
     }
+  };
+
+  // Função para converter chave VAPID
+  const urlB64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
   };
 
   return {
