@@ -28,32 +28,44 @@ const Settings = () => {
   };
   
   // Handle saving interface settings
-  const handleSaveInterfaceSettings = () => {
-    updateSettings({
-      theme: settings.theme,
-      animationsEnabled: settings.animationsEnabled
-    });
-    
-    toast({
-      title: "Configurações salvas",
-      description: "Suas preferências de interface foram atualizadas"
-    });
+  const handleSaveInterfaceSettings = async () => {
+    try {
+      await updateSettings({
+        theme: settings.theme,
+        animationsEnabled: settings.animationsEnabled
+      });
+      
+      toast({
+        title: "Configurações salvas",
+        description: "Suas preferências de interface foram atualizadas"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar configurações de interface",
+        variant: "destructive"
+      });
+    }
   };
   
   // Handle saving notification settings
-  const handleSaveNotificationSettings = () => {
-    updateSettings({
-      notificationPreferences: {
-        email: settings.notificationPreferences.email,
-        system: settings.notificationPreferences.system,
-        alerts: settings.notificationPreferences.alerts
-      }
-    });
-    
-    toast({
-      title: "Configurações salvas",
-      description: "Suas preferências de notificação foram atualizadas"
-    });
+  const handleSaveNotificationSettings = async () => {
+    try {
+      await updateSettings({
+        notificationPreferences: settings.notificationPreferences
+      });
+      
+      toast({
+        title: "Configurações salvas",
+        description: "Suas preferências de notificação foram atualizadas"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro", 
+        description: "Erro ao salvar configurações de notificação",
+        variant: "destructive"
+      });
+    }
   };
 
   // Show loading state while settings are being fetched
@@ -109,7 +121,8 @@ const Settings = () => {
             <TabsContent value="notifications">
               <NotificationsTab 
                 settings={settings} 
-                isLoading={isSaving}
+                isSaving={isSaving}
+                onSave={handleSaveNotificationSettings}
                 onUpdateSettings={updateSettings}
               />
             </TabsContent>
