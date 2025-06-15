@@ -1,3 +1,4 @@
+
 /* Mobile-first optimizations for Terranova Dashboard */
 
 /* Base mobile styles */
@@ -542,21 +543,8 @@
   }
 }
 
-/* CRITICAL: Switch and Radio Button Mobile Optimizations */
+/* CRITICAL: Switch Mobile Optimizations - FIXED */
 @media (max-width: 640px) {
-  /* Switch component mobile fixes */
-  [data-radix-switch-root] {
-    min-height: 28px !important;
-    min-width: 48px !important;
-    height: 28px !important;
-    width: 48px !important;
-  }
-  
-  [data-radix-switch-thumb] {
-    height: 24px !important;
-    width: 24px !important;
-  }
-  
   /* Radio group mobile optimizations */
   [data-radix-radiogroup-root] .flex {
     flex-direction: column;
@@ -669,18 +657,6 @@
 
 /* Extra small screens - even more optimized */
 @media (max-width: 380px) {
-  [data-radix-switch-root] {
-    min-height: 32px !important;
-    min-width: 52px !important;
-    height: 32px !important;
-    width: 52px !important;
-  }
-  
-  [data-radix-switch-thumb] {
-    height: 26px !important;
-    width: 26px !important;
-  }
-  
   .mobile-radio-option,
   .mobile-switch-container,
   .settings-form-element {
