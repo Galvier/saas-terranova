@@ -7,7 +7,6 @@ export interface DirectBroadcastParams {
   type: 'info' | 'warning' | 'success' | 'error';
   targetType: 'all' | 'admins' | 'department';
   departmentId?: string;
-  variables?: Record<string, any>;
 }
 
 export interface BroadcastUser {
@@ -48,28 +47,8 @@ export const directBroadcastService = {
     return data || [];
   },
 
-  processVariables(text: string, variables: Record<string, any>, userName?: string): string {
-    let processedText = text;
-
-    // Processar variáveis personalizadas
-    Object.entries(variables).forEach(([key, value]) => {
-      const placeholder = `{{${key}}}`;
-      processedText = processedText.replace(new RegExp(placeholder, 'g'), String(value));
-    });
-
-    // Processar variáveis padrão
-    if (userName) {
-      processedText = processedText.replace(/\{\{user_name\}\}/g, userName);
-    }
-
-    processedText = processedText.replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('pt-BR'));
-    processedText = processedText.replace(/\{\{current_period\}\}/g, new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' }));
-
-    return processedText;
-  },
-
   async sendDirectBroadcast(params: DirectBroadcastParams): Promise<number> {
-    const { title, message, type, targetType, departmentId, variables = {} } = params;
+    const { title, message, type, targetType, departmentId } = params;
 
     console.log('Starting direct broadcast...', params);
 
@@ -89,18 +68,18 @@ export const directBroadcastService = {
     // Enviar notificação para cada usuário
     for (const user of targetUsers) {
       try {
-        const processedTitle = this.processVariables(title, variables, user.name);
-        const processedMessage = this.processVariables(message, variables, user.name);
+        // Substituir apenas o nome do usuário na mensagem se houver {{user_name}}
+        const personalizedTitle = title.replace(/\{\{user_name\}\}/g, user.name);
+        const personalizedMessage = message.replace(/\{\{user_name\}\}/g, user.name);
 
         const { data, error } = await supabase.rpc('create_notification', {
           target_user_id: user.user_id,
-          notification_title: processedTitle,
-          notification_message: processedMessage,
+          notification_title: personalizedTitle,
+          notification_message: personalizedMessage,
           notification_type: type,
           notification_metadata: {
             broadcast_type: targetType,
             department_id: departmentId,
-            processed_variables: variables,
             direct_broadcast: true
           }
         });

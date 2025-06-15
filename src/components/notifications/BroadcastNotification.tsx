@@ -1,84 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { Send, Users, UserCheck, Building2, Info, HelpCircle } from 'lucide-react';
+
+import React, { useState } from 'react';
+import { Send, Users, UserCheck, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { notificationService, NotificationTemplate } from '@/services/notificationService';
 import { directBroadcastService } from '@/services/directBroadcastService';
 import { useDepartmentsData } from '@/hooks/useDepartmentsData';
-import { translateTemplateName } from '@/utils/roleTranslations';
-import VariablesHelper from './VariablesHelper';
 
 interface BroadcastNotificationProps {
   onSent?: () => void;
 }
 
 const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent }) => {
-  const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [customTitle, setCustomTitle] = useState('');
   const [customMessage, setCustomMessage] = useState('');
   const [targetType, setTargetType] = useState<'all' | 'admins' | 'department'>('all');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [notificationType, setNotificationType] = useState<'info' | 'warning' | 'success' | 'error'>('info');
   const [isLoading, setIsLoading] = useState(false);
-  const [showVariablesHelp, setShowVariablesHelp] = useState(false);
   
   const { toast } = useToast();
   const { departments } = useDepartmentsData();
-
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  const loadTemplates = async () => {
-    try {
-      console.log('Loading templates...');
-      const templateList = await notificationService.getTemplates();
-      console.log('Templates loaded:', templateList);
-      setTemplates(templateList);
-    } catch (error) {
-      console.error('Error loading templates:', error);
-      toast({
-        title: 'Erro',
-        description: 'Falha ao carregar templates',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleTemplateSelect = (templateId: string) => {
-    const template = templates.find(t => t.id === templateId);
-    if (template) {
-      setSelectedTemplate(templateId);
-      setCustomTitle(template.title);
-      setCustomMessage(template.message);
-      setNotificationType(template.type);
-    }
-  };
-
-  const insertVariable = (variable: string) => {
-    const textarea = document.getElementById('message-textarea') as HTMLTextAreaElement;
-    if (textarea) {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const text = textarea.value;
-      const before = text.substring(0, start);
-      const after = text.substring(end, text.length);
-      const newText = before + `{{${variable}}}` + after;
-      setCustomMessage(newText);
-      
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start + variable.length + 4, start + variable.length + 4);
-      }, 0);
-    }
-  };
 
   const handleSendBroadcast = async () => {
     if (!customTitle.trim() || !customMessage.trim()) {
@@ -102,41 +48,21 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
     setIsLoading(true);
 
     try {
-      console.log('Starting direct broadcast notification...');
+      console.log('Starting broadcast notification...');
       console.log('Target type:', targetType);
       console.log('Selected department:', selectedDepartment);
       console.log('Title:', customTitle);
       console.log('Message:', customMessage);
 
-      // Preparar variáveis para substituição
-      const variables: Record<string, any> = {};
-      
-      // Adicionar informações do departamento se selecionado
-      if (targetType === 'department' && selectedDepartment) {
-        const dept = departments.find(d => d.id === selectedDepartment);
-        if (dept) {
-          variables.department_name = dept.name;
-          console.log('Department name added to variables:', dept.name);
-        }
-      }
-
-      // Adicionar variáveis de contexto
-      variables.current_date = new Date().toLocaleDateString('pt-BR');
-      variables.current_period = new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
-      
-      console.log('Variables prepared:', variables);
-
-      // Usar o novo serviço de broadcast direto
       const notificationCount = await directBroadcastService.sendDirectBroadcast({
         title: customTitle,
         message: customMessage,
         type: notificationType,
         targetType,
-        departmentId: targetType === 'department' ? selectedDepartment : undefined,
-        variables
+        departmentId: targetType === 'department' ? selectedDepartment : undefined
       });
 
-      console.log('Direct broadcast completed. Notification count:', notificationCount);
+      console.log('Broadcast completed. Notification count:', notificationCount);
 
       if (notificationCount > 0) {
         toast({
@@ -145,7 +71,6 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
         });
         
         // Reset form
-        setSelectedTemplate('');
         setCustomTitle('');
         setCustomMessage('');
         setTargetType('all');
@@ -161,7 +86,7 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
         });
       }
     } catch (error) {
-      console.error('Error sending direct broadcast:', error);
+      console.error('Error sending broadcast:', error);
       let errorMessage = 'Erro desconhecido ao enviar notificação';
       
       if (error instanceof Error) {
@@ -178,12 +103,14 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
     }
   };
 
-  const getTargetIcon = () => {
-    switch (targetType) {
-      case 'all': return <Users className="h-4 w-4" />;
-      case 'admins': return <UserCheck className="h-4 w-4" />;
-      case 'department': return <Building2 className="h-4 w-4" />;
-    }
+  const translateNotificationType = (type: string) => {
+    const typeTranslations: Record<string, string> = {
+      'info': 'Informação',
+      'success': 'Sucesso',
+      'warning': 'Aviso',
+      'error': 'Erro'
+    };
+    return typeTranslations[type] || type;
   };
 
   const getTypeColor = (type: string) => {
@@ -193,16 +120,6 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
       case 'error': return 'bg-red-100 text-red-800';
       default: return 'bg-blue-100 text-blue-800';
     }
-  };
-
-  const translateNotificationType = (type: string) => {
-    const typeTranslations: Record<string, string> = {
-      'info': 'Informação',
-      'success': 'Sucesso',
-      'warning': 'Aviso',
-      'error': 'Erro'
-    };
-    return typeTranslations[type] || type;
   };
 
   return (
@@ -218,28 +135,6 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Seleção de Template */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Template (opcional)</label>
-            <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um template ou crie uma mensagem personalizada" />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.filter(t => t.is_active).map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
-                    <div className="flex items-center gap-2">
-                      <Badge className={getTypeColor(template.type)}>
-                        {translateNotificationType(template.type)}
-                      </Badge>
-                      {translateTemplateName(template.name)}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Título personalizado */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Título</label>
@@ -252,33 +147,16 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
 
           {/* Mensagem personalizada */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Mensagem</label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowVariablesHelp(!showVariablesHelp)}
-                className="flex items-center gap-1 text-xs"
-              >
-                <HelpCircle className="h-3 w-3" />
-                Variáveis disponíveis
-              </Button>
-            </div>
+            <label className="text-sm font-medium">Mensagem</label>
             <Textarea
-              id="message-textarea"
               value={customMessage}
               onChange={(e) => setCustomMessage(e.target.value)}
-              placeholder="Digite a mensagem da notificação"
+              placeholder="Digite a mensagem da notificação. Use {{user_name}} para incluir o nome do destinatário."
               rows={3}
             />
-            
-            {/* Ajuda com variáveis */}
-            <Collapsible open={showVariablesHelp} onOpenChange={setShowVariablesHelp}>
-              <CollapsibleContent className="space-y-3">
-                <VariablesHelper onVariableClick={insertVariable} />
-              </CollapsibleContent>
-            </Collapsible>
+            <p className="text-xs text-gray-500">
+              💡 Dica: Use <code>{{"{{"}}user_name{{"}}"}}</code> na mensagem para personalizar com o nome do destinatário
+            </p>
           </div>
 
           {/* Tipo de notificação */}
@@ -375,35 +253,6 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
       </Card>
     </div>
   );
-};
-
-// Helper functions
-const getTargetIcon = (targetType: string) => {
-  switch (targetType) {
-    case 'all': return <Users className="h-4 w-4" />;
-    case 'admins': return <UserCheck className="h-4 w-4" />;
-    case 'department': return <Building2 className="h-4 w-4" />;
-    default: return <Users className="h-4 w-4" />;
-  }
-};
-
-const getTypeColor = (type: string) => {
-  switch (type) {
-    case 'success': return 'bg-green-100 text-green-800';
-    case 'warning': return 'bg-yellow-100 text-yellow-800';
-    case 'error': return 'bg-red-100 text-red-800';
-    default: return 'bg-blue-100 text-blue-800';
-  }
-};
-
-const translateNotificationType = (type: string) => {
-  const typeTranslations: Record<string, string> = {
-    'info': 'Informação',
-    'success': 'Sucesso',
-    'warning': 'Aviso',
-    'error': 'Erro'
-  };
-  return typeTranslations[type] || type;
 };
 
 export default BroadcastNotification;
