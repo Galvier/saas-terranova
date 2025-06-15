@@ -4,7 +4,10 @@ import { Bell, Send, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import BroadcastNotification from '@/components/notifications/BroadcastNotification';
 import PushNotificationSettings from '@/components/notifications/PushNotificationSettings';
 import NotificationSettings from '@/components/notifications/NotificationSettings';
@@ -21,8 +24,59 @@ interface NotificationsTabProps {
   onUpdateSettings: (newSettings: any) => Promise<void>;
 }
 
+// Mobile Notification Toggle Component
+const MobileNotificationToggle = ({ 
+  id,
+  title,
+  description,
+  checked, 
+  onCheckedChange,
+  disabled = false
+}: { 
+  id: string;
+  title: string;
+  description: string;
+  checked: boolean; 
+  onCheckedChange: (checked: boolean) => void;
+  disabled?: boolean;
+}) => {
+  return (
+    <button
+      onClick={() => !disabled && onCheckedChange(!checked)}
+      disabled={disabled}
+      className="w-full flex items-center justify-between p-4 rounded-lg border transition-all duration-200 min-h-[70px] touch-manipulation hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <div className="flex flex-col items-start gap-1 flex-1 min-w-0">
+        <span className="text-sm font-medium text-left">{title}</span>
+        <span className="text-xs text-muted-foreground text-left line-clamp-2">
+          {description}
+        </span>
+      </div>
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <span className={cn(
+          "text-xs font-medium transition-colors",
+          checked ? "text-primary" : "text-muted-foreground"
+        )}>
+          {checked ? "ATIVO" : "INATIVO"}
+        </span>
+        <Checkbox 
+          id={id}
+          checked={checked}
+          onCheckedChange={onCheckedChange}
+          disabled={disabled}
+          className={cn(
+            "h-5 w-5",
+            checked && "bg-primary border-primary"
+          )}
+        />
+      </div>
+    </button>
+  );
+};
+
 const NotificationsTab: React.FC<NotificationsTabProps> = ({ settings, isLoading, onUpdateSettings }) => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   // Verificar se o usuário é admin (simplificado)
   const isAdmin = user?.user_metadata?.role === 'admin';
@@ -79,47 +133,78 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ settings, isLoading
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <h4 className="font-medium">Notificações do Sistema</h4>
-                  <p className="text-sm text-gray-600">
-                    Atualizações importantes do sistema e manutenções
-                  </p>
+              {isMobile ? (
+                <div className="space-y-3">
+                  <MobileNotificationToggle
+                    id="system-notifications"
+                    title="Notificações do Sistema"
+                    description="Atualizações importantes do sistema e manutenções"
+                    checked={preferences.system}
+                    onCheckedChange={(checked) => handlePreferenceChange('system', checked)}
+                    disabled={isLoading}
+                  />
+                  <MobileNotificationToggle
+                    id="alerts-notifications"
+                    title="Alertas de Métricas"
+                    description="Avisos quando métricas estão fora do alvo ou em atraso"
+                    checked={preferences.alerts}
+                    onCheckedChange={(checked) => handlePreferenceChange('alerts', checked)}
+                    disabled={isLoading}
+                  />
+                  <MobileNotificationToggle
+                    id="email-notifications"
+                    title="Notificações por Email"
+                    description="Receber notificações importantes por email"
+                    checked={preferences.email}
+                    onCheckedChange={(checked) => handlePreferenceChange('email', checked)}
+                    disabled={isLoading}
+                  />
                 </div>
-                <Switch
-                  checked={preferences.system}
-                  onCheckedChange={(checked) => handlePreferenceChange('system', checked)}
-                  disabled={isLoading}
-                />
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <h4 className="font-medium">Notificações do Sistema</h4>
+                      <p className="text-sm text-gray-600">
+                        Atualizações importantes do sistema e manutenções
+                      </p>
+                    </div>
+                    <Switch
+                      checked={preferences.system}
+                      onCheckedChange={(checked) => handlePreferenceChange('system', checked)}
+                      disabled={isLoading}
+                    />
+                  </div>
 
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <h4 className="font-medium">Alertas de Métricas</h4>
-                  <p className="text-sm text-gray-600">
-                    Avisos quando métricas estão fora do alvo ou em atraso
-                  </p>
-                </div>
-                <Switch
-                  checked={preferences.alerts}
-                  onCheckedChange={(checked) => handlePreferenceChange('alerts', checked)}
-                  disabled={isLoading}
-                />
-              </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <h4 className="font-medium">Alertas de Métricas</h4>
+                      <p className="text-sm text-gray-600">
+                        Avisos quando métricas estão fora do alvo ou em atraso
+                      </p>
+                    </div>
+                    <Switch
+                      checked={preferences.alerts}
+                      onCheckedChange={(checked) => handlePreferenceChange('alerts', checked)}
+                      disabled={isLoading}
+                    />
+                  </div>
 
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <h4 className="font-medium">Notificações por Email</h4>
-                  <p className="text-sm text-gray-600">
-                    Receber notificações importantes por email
-                  </p>
-                </div>
-                <Switch
-                  checked={preferences.email}
-                  onCheckedChange={(checked) => handlePreferenceChange('email', checked)}
-                  disabled={isLoading}
-                />
-              </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <h4 className="font-medium">Notificações por Email</h4>
+                      <p className="text-sm text-gray-600">
+                        Receber notificações importantes por email
+                      </p>
+                    </div>
+                    <Switch
+                      checked={preferences.email}
+                      onCheckedChange={(checked) => handlePreferenceChange('email', checked)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
