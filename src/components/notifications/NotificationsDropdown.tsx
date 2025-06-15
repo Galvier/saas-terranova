@@ -9,18 +9,36 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications, Notification } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import NotificationsDialog from './NotificationsDialog';
+import { useNavigate } from 'react-router-dom';
+import NotificationViewDialog from './NotificationViewDialog';
 
 const NotificationsDropdown: React.FC = () => {
   const { notifications, unreadCount, isLoading, markAsRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
-  const [showDialog, setShowDialog] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const navigate = useNavigate();
 
   // Destacar quando há notificações não lidas
   const hasUnread = unreadCount > 0;
+
+  const handleNotificationClick = (notification: Notification) => {
+    setSelectedNotification(notification);
+    setShowViewDialog(true);
+    setIsOpen(false);
+  };
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    await markAsRead(notificationId);
+  };
+
+  const handleViewAll = () => {
+    navigate('/notifications');
+    setIsOpen(false);
+  };
 
   return (
     <>
@@ -82,7 +100,7 @@ const NotificationsDropdown: React.FC = () => {
                         ? 'bg-blue-50 dark:bg-blue-950/30 border-l-blue-500 shadow-sm' 
                         : 'bg-background border-l-transparent'
                     }`}
-                    onClick={() => !notification.is_read && markAsRead(notification.id)}
+                    onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -121,10 +139,7 @@ const NotificationsDropdown: React.FC = () => {
               variant="ghost" 
               size="sm" 
               className="w-full text-xs justify-between"
-              onClick={() => {
-                setShowDialog(true);
-                setIsOpen(false);
-              }}
+              onClick={handleViewAll}
             >
               Ver todas as notificações
               <ExternalLink className="h-3 w-3" />
@@ -133,9 +148,11 @@ const NotificationsDropdown: React.FC = () => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <NotificationsDialog 
-        open={showDialog} 
-        onOpenChange={setShowDialog} 
+      <NotificationViewDialog
+        notification={selectedNotification}
+        open={showViewDialog}
+        onOpenChange={setShowViewDialog}
+        onMarkAsRead={handleMarkAsRead}
       />
     </>
   );

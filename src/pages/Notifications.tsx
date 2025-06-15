@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications, Notification } from '@/hooks/useNotifications';
 import { useAuth } from '@/hooks/useAuth';
-import { Bell, Check, CheckCheck, Filter, Calendar, Tag, History, ExternalLink } from 'lucide-react';
+import { Bell, Check, CheckCheck, Filter, Calendar, Tag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import NotificationSettings from '@/components/notifications/NotificationSettings';
-import NotificationsDialog from '@/components/notifications/NotificationsDialog';
+import NotificationViewDialog from '@/components/notifications/NotificationViewDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Notifications: React.FC = () => {
@@ -22,7 +22,8 @@ const Notifications: React.FC = () => {
   const { toast } = useToast();
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
   const isMobile = useIsMobile();
 
   // Verificar se o usuário é admin
@@ -37,6 +38,11 @@ const Notifications: React.FC = () => {
   });
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  const handleNotificationClick = (notification: Notification) => {
+    setSelectedNotification(notification);
+    setShowViewDialog(true);
+  };
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
@@ -116,22 +122,10 @@ const Notifications: React.FC = () => {
             <Card>
               <CardHeader>
                 <div className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Filter className="h-5 w-5" />
-                      Filtros
-                    </CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowHistoryDialog(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <History className="h-4 w-4" />
-                      Ver Histórico Completo
-                      <ExternalLink className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Filter className="h-5 w-5" />
+                    Filtros
+                  </CardTitle>
                   {unreadCount > 0 && (
                     <div className="flex justify-center sm:justify-end">
                       <Button 
@@ -205,9 +199,10 @@ const Notifications: React.FC = () => {
                 filteredNotifications.map((notification) => (
                   <Card 
                     key={notification.id} 
-                    className={`transition-all hover:shadow-md mobile-card ${
+                    className={`transition-all hover:shadow-md mobile-card cursor-pointer ${
                       !notification.is_read ? 'border-l-4 border-l-primary bg-primary/5' : ''
                     }`}
+                    onClick={() => handleNotificationClick(notification)}
                   >
                     <CardContent className="p-4">
                       <div className="space-y-3">
@@ -248,7 +243,10 @@ const Notifications: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleMarkAsRead(notification.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkAsRead(notification.id);
+                              }}
                               className="flex items-center gap-1 w-full sm:w-auto"
                             >
                               <Check className="h-3 w-3" />
@@ -272,9 +270,11 @@ const Notifications: React.FC = () => {
         </Tabs>
       </div>
 
-      <NotificationsDialog 
-        open={showHistoryDialog} 
-        onOpenChange={setShowHistoryDialog} 
+      <NotificationViewDialog
+        notification={selectedNotification}
+        open={showViewDialog}
+        onOpenChange={setShowViewDialog}
+        onMarkAsRead={handleMarkAsRead}
       />
     </div>
   );
