@@ -163,19 +163,35 @@ export const notificationService = {
   async subscribeToPush(subscription: PushSubscription): Promise<boolean> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
+      if (!user) {
+        console.warn('No user found for push subscription');
+        return false;
+      }
+
+      // Verificar se as chaves existem antes de tentar convertê-las
+      const p256dhKey = subscription.getKey('p256dh');
+      const authKey = subscription.getKey('auth');
+      
+      if (!p256dhKey || !authKey) {
+        console.error('Missing subscription keys');
+        return false;
+      }
 
       const { error } = await supabase
         .from('push_subscriptions')
         .upsert({
           user_id: user.id,
           endpoint: subscription.endpoint,
-          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
-          auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!))),
+          p256dh: btoa(String.fromCharCode(...new Uint8Array(p256dhKey))),
+          auth: btoa(String.fromCharCode(...new Uint8Array(authKey))),
           is_active: true
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving push subscription:', error);
+        return false;
+      }
+      
       return true;
     } catch (error) {
       console.error('Error saving push subscription:', error);

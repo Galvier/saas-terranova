@@ -7,7 +7,7 @@ export const usePushNotifications = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Iniciar como true
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -19,19 +19,20 @@ export const usePushNotifications = () => {
     setIsLoading(true);
     
     try {
-      // Verificar suporte
       const supported = checkSupport();
       console.log('[PushNotifications] Suporte:', supported);
       
       if (supported) {
-        // Aguardar Service Worker estar pronto
         await waitForServiceWorker();
-        
-        // Verificar status da inscrição
         await checkSubscriptionStatus();
       }
     } catch (error) {
       console.error('[PushNotifications] Erro na inicialização:', error);
+      toast({
+        title: 'Erro de inicialização',
+        description: 'Falha ao inicializar notificações push',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +119,6 @@ export const usePushNotifications = () => {
           description: 'Agora você pode ativar as notificações push',
         });
         
-        // Verificar status da inscrição após conceder permissão
         setTimeout(() => {
           checkSubscriptionStatus();
         }, 500);
@@ -170,16 +170,20 @@ export const usePushNotifications = () => {
 
       console.log('[PushNotifications] Inscrição criada:', {
         endpoint: subscription.endpoint.substring(0, 50) + '...',
-        keys: Object.keys(subscription.getKey ? subscription.toJSON() : {})
+        hasKeys: !!(subscription.getKey && subscription.getKey('p256dh') && subscription.getKey('auth'))
       });
       
-      // Salvar no servidor (por enquanto só fazer o log)
+      // Salvar no servidor
       try {
         const success = await notificationService.subscribeToPush(subscription);
         console.log('[PushNotifications] Salvo no servidor:', success);
+        
+        if (!success) {
+          console.warn('[PushNotifications] Falha ao salvar no servidor, mas continuando...');
+        }
       } catch (serverError) {
         console.warn('[PushNotifications] Erro ao salvar no servidor:', serverError);
-        // Continuar mesmo se falhar no servidor
+        // Continuar mesmo se falhar no servidor para permitir testes locais
       }
       
       setIsSubscribed(true);
@@ -198,6 +202,8 @@ export const usePushNotifications = () => {
           errorMessage = 'Notificações push não são suportadas neste dispositivo';
         } else if (error.message.includes('permission_denied')) {
           errorMessage = 'Permissão negada pelo navegador';
+        } else if (error.message.includes('AbortError')) {
+          errorMessage = 'Operação cancelada. Tente novamente.';
         }
       }
       
@@ -271,7 +277,6 @@ export const usePushNotifications = () => {
         requireInteraction: false
       });
 
-      // Auto-fechar após 5 segundos
       setTimeout(() => {
         notification.close();
       }, 5000);
