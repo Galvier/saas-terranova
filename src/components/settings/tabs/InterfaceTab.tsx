@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -6,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Save, Loader2, Sun, Moon, Globe } from 'lucide-react';
+import { Save, Loader2, Sun, Moon, Globe, AlertCircle } from 'lucide-react';
 import { UserSettings } from '@/hooks/useUserSettings';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -14,6 +13,7 @@ import { cn } from '@/lib/utils';
 interface InterfaceTabProps {
   settings: UserSettings;
   isSaving: boolean;
+  hasChanges: boolean;
   onSave: () => void;
   onUpdateSettings: (settings: Partial<UserSettings>) => void;
 }
@@ -109,13 +109,21 @@ const MobileAnimationToggle = ({
   );
 };
 
-const InterfaceTab = ({ settings, isSaving, onSave, onUpdateSettings }: InterfaceTabProps) => {
+const InterfaceTab = ({ settings, isSaving, hasChanges, onSave, onUpdateSettings }: InterfaceTabProps) => {
   const isMobile = useIsMobile();
 
   return (
     <Card className="w-full max-w-full overflow-hidden">
       <CardHeader className="pb-4">
-        <CardTitle>Preferências de Interface</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Preferências de Interface
+          {hasChanges && (
+            <div className="flex items-center gap-1">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <span className="text-xs text-amber-600 font-normal">Alterações não salvas</span>
+            </div>
+          )}
+        </CardTitle>
         <CardDescription>
           Personalize a aparência da interface
         </CardDescription>
@@ -187,7 +195,14 @@ const InterfaceTab = ({ settings, isSaving, onSave, onUpdateSettings }: Interfac
         </div>
       </CardContent>
       <CardFooter className="border-t bg-muted/50 px-4 md:px-6 py-4">
-        <Button onClick={onSave} disabled={isSaving} className="w-full md:w-auto">
+        <Button 
+          onClick={onSave} 
+          disabled={isSaving || !hasChanges}
+          className={cn(
+            "w-full md:w-auto",
+            hasChanges && "bg-primary hover:bg-primary/90"
+          )}
+        >
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -196,7 +211,7 @@ const InterfaceTab = ({ settings, isSaving, onSave, onUpdateSettings }: Interfac
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              Salvar
+              {hasChanges ? "Salvar Alterações" : "Salvar"}
             </>
           )}
         </Button>

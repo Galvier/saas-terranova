@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, User, Settings2, Bell, Database } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useUserSettings } from '@/hooks/useUserSettings';
+import { usePendingSettings } from '@/hooks/usePendingSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,54 +18,55 @@ import BackupTab from '@/components/settings/tabs/BackupTab';
 
 const Settings = () => {
   const { toast } = useToast();
-  const { settings, isLoading: isSettingsLoading, isSaving, updateSettings } = useUserSettings();
+  const { settings, isLoading: isSettingsLoading, isSaving, applyLocalChanges, saveToDatabase } = useUserSettings();
   const { isLoading: isAuthLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const isMobile = useIsMobile();
+  
+  // Gerenciar mudanças pendentes
+  const {
+    pendingSettings,
+    pendingChanges,
+    updatePendingSettings,
+    clearPendingChanges,
+    resetPendingSettings
+  } = usePendingSettings(settings);
+
+  // Sincronizar settings com pendingSettings quando settings mudam
+  React.useEffect(() => {
+    if (!pendingChanges.hasChanges) {
+      resetPendingSettings(settings);
+    }
+  }, [settings, pendingChanges.hasChanges, resetPendingSettings]);
   
   // Handle tab changes from sidebar
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
   };
   
+  // Handle updating pending settings (aplicar localmente para preview)
+  const handleUpdatePendingSettings = (newSettings: Partial<typeof settings>) => {
+    updatePendingSettings(newSettings);
+    applyLocalChanges(newSettings);
+  };
+  
   // Handle saving interface settings
   const handleSaveInterfaceSettings = async () => {
     try {
-      await updateSettings({
-        theme: settings.theme,
-        animationsEnabled: settings.animationsEnabled
-      });
-      
-      toast({
-        title: "Configurações salvas",
-        description: "Suas preferências de interface foram atualizadas"
-      });
+      await saveToDatabase(pendingSettings);
+      clearPendingChanges();
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar configurações de interface",
-        variant: "destructive"
-      });
+      // Error handling is done in saveToDatabase
     }
   };
   
   // Handle saving notification settings
   const handleSaveNotificationSettings = async () => {
     try {
-      await updateSettings({
-        notificationPreferences: settings.notificationPreferences
-      });
-      
-      toast({
-        title: "Configurações salvas",
-        description: "Suas preferências de notificação foram atualizadas"
-      });
+      await saveToDatabase(pendingSettings);
+      clearPendingChanges();
     } catch (error) {
-      toast({
-        title: "Erro", 
-        description: "Erro ao salvar configurações de notificação",
-        variant: "destructive"
-      });
+      // Error handling is done in saveToDatabase
     }
   };
 
@@ -127,18 +129,21 @@ const Settings = () => {
               
               <TabsContent value="interface" className="mt-0">
                 <InterfaceTab 
-                  settings={settings} 
+                  settings={pendingSettings} 
                   isSaving={isSaving} 
+                  hasChanges={pendingChanges.hasChanges}
                   onSave={handleSaveInterfaceSettings}
-                  onUpdateSettings={updateSettings}
+                  onUpdateSettings={handleUpdatePendingSettings}
                 />
               </TabsContent>
               
               <TabsContent value="notifications" className="mt-0">
                 <NotificationsTab 
-                  settings={settings} 
+                  settings={pendingSettings} 
                   isLoading={isSaving}
-                  onUpdateSettings={updateSettings}
+                  hasChanges={pendingChanges.hasChanges}
+                  onSave={handleSaveNotificationSettings}
+                  onUpdateSettings={handleUpdatePendingSettings}
                 />
               </TabsContent>
               
@@ -173,18 +178,21 @@ const Settings = () => {
               
               <TabsContent value="interface">
                 <InterfaceTab 
-                  settings={settings} 
+                  settings={pendingSettings} 
                   isSaving={isSaving} 
+                  hasChanges={pendingChanges.hasChanges}
                   onSave={handleSaveInterfaceSettings}
-                  onUpdateSettings={updateSettings}
+                  onUpdateSettings={handleUpdatePendingSettings}
                 />
               </TabsContent>
               
               <TabsContent value="notifications">
                 <NotificationsTab 
-                  settings={settings} 
+                  settings={pendingSettings} 
                   isLoading={isSaving}
-                  onUpdateSettings={updateSettings}
+                  hasChanges={pendingChanges.hasChanges}
+                  onSave={handleSaveNotificationSettings}
+                  onUpdateSettings={handleUpdatePendingSettings}
                 />
               </TabsContent>
               
