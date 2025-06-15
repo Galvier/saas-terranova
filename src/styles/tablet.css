@@ -1,0 +1,117 @@
+
+/* Tablet-specific optimizations (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Layout optimizations for tablet */
+  .tablet-container {
+    padding: 1rem 1.5rem;
+  }
+  
+  .tablet-spacing {
+    gap: 1.5rem;
+  }
+  
+  .tablet-card {
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+  }
+  
+  /* Grid layouts optimized for tablet */
+  .tablet-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .tablet-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  
+  /* Tablet-friendly touch targets */
+  .tablet-touch {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better text sizing for tablet readability */
+  .tablet-text-base {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  
+  .tablet-text-lg {
+    font-size: 1.125rem;
+    line-height: 1.5;
+  }
+  
+  /* Sidebar optimizations for tablet */
+  .tablet-sidebar-compact {
+    width: 200px;
+  }
+  
+  /* Table optimizations for tablet */
+  .tablet-table {
+    font-size: 0.875rem;
+  }
+  
+  .tablet-table th,
+  .tablet-table td {
+    padding: 0.75rem 1rem;
+  }
+  
+  /* Form optimizations for tablet */
+  .tablet-form-spacing {
+    gap: 1.25rem;
+  }
+  
+  .tablet-input {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  
+  /* Button optimizations for tablet */
+  .tablet-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    min-height: 44px;
+  }
+  
+  /* Card optimizations for tablet */
+  .tablet-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  /* Navigation optimizations for tablet */
+  .tablet-nav-item {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+  }
+  
+  /* Dialog optimizations for tablet */
+  .tablet-dialog {
+    max-width: 90vw;
+    width: 600px;
+  }
+}
+
+/* Utility classes for tablet-specific styling */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hidden-tablet {
+    display: none !important;
+  }
+  
+  .block-tablet {
+    display: block !important;
+  }
+  
+  .flex-tablet {
+    display: flex !important;
+  }
+  
+  .grid-tablet {
+    display: grid !important;
+  }
+}

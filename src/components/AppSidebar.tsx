@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Sidebar,
@@ -25,11 +24,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import AppLogo from "@/components/AppLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsTablet } from "@/hooks/use-tablet";
 
 export function AppSidebar() {
   const { user, manager, logout } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
   const { setOpenMobile } = useSidebar();
   const [avatarSrc, setAvatarSrc] = React.useState("/lovable-uploads/28956acd-6e94-4125-8e46-702bdeef77b5.png");
 
@@ -157,25 +158,35 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             {/* Logo da Terranova */}
-            <div className="p-4 border-b">
+            <div className={`border-b ${isTablet ? 'p-5' : 'p-4'}`}>
               <AppLogo />
             </div>
             
-            <div className="py-4">
+            <div className={isTablet ? 'py-5' : 'py-4'}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="justify-start px-2 w-full font-normal h-auto py-3 hover:bg-sidebar-accent">
-                    <Avatar className="mr-3 h-10 w-10 flex-shrink-0">
+                  <Button variant="ghost" className={`justify-start w-full font-normal transition-colors hover:bg-sidebar-accent ${
+                    isTablet ? 'px-3 py-4 h-auto' : 'px-2 h-auto py-3'
+                  }`}>
+                    <Avatar className={`flex-shrink-0 ${
+                      isTablet ? 'mr-4 h-12 w-12' : 'mr-3 h-10 w-10'
+                    }`}>
                       <AvatarImage 
                         src={avatarSrc} 
                         alt={displayName}
                         className="object-contain"
                       />
-                      <AvatarFallback className="text-sm font-semibold">{nameInitials}</AvatarFallback>
+                      <AvatarFallback className={`font-semibold ${
+                        isTablet ? 'text-base' : 'text-sm'
+                      }`}>{nameInitials}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col text-left min-w-0 flex-1">
-                      <span className="font-semibold text-sm truncate leading-tight">{displayName}</span>
-                      <span className="text-muted-foreground text-xs truncate leading-tight mt-0.5">{user?.email}</span>
+                      <span className={`font-semibold truncate leading-tight ${
+                        isTablet ? 'text-base' : 'text-sm'
+                      }`}>{displayName}</span>
+                      <span className={`text-muted-foreground truncate leading-tight mt-0.5 ${
+                        isTablet ? 'text-sm' : 'text-xs'
+                      }`}>{user?.email}</span>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
@@ -188,10 +199,12 @@ export function AppSidebar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <SidebarMenu className="px-2">
+            <SidebarMenu className={isTablet ? 'px-3' : 'px-2'}>
               {navigation.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-12 text-base">
+                  <SidebarMenuButton asChild className={`transition-all hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 ${
+                    isTablet ? 'h-14 text-base' : 'h-12 text-base'
+                  }`}>
                     <NavLink
                       to={item.url}
                       onClick={(e) => {
@@ -199,10 +212,12 @@ export function AppSidebar() {
                         handleNavigation(item.url);
                       }}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-all hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 ${isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`
+                        `flex items-center rounded-lg font-medium ${
+                          isTablet ? 'gap-4 px-4 py-4' : 'gap-3 px-3 py-3'
+                        } text-sm ${isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`
                       }
                     >
-                      <item.icon className="h-5 w-5" />
+                      <item.icon className={isTablet ? 'h-6 w-6' : 'h-5 w-5'} />
                       <span className="truncate">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>

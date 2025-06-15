@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, User, Settings2, Bell, Database } from 'lucide-react';
@@ -8,6 +7,7 @@ import { usePendingSettings } from '@/hooks/usePendingSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsTablet } from '@/hooks/use-tablet';
 
 // Import refactored components
 import SettingsSidebar from '@/components/settings/SettingsSidebar';
@@ -22,6 +22,7 @@ const Settings = () => {
   const { isLoading: isAuthLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
   
   // Gerenciar mudanças pendentes
   const {
@@ -153,8 +154,71 @@ const Settings = () => {
             </div>
           </Tabs>
         </div>
+      ) : isTablet ? (
+        // Tablet: layout híbrido com sidebar compacta e tabs principais
+        <div className="flex flex-col gap-6">
+          <div className="flex gap-6">
+            <div className="w-[200px] shrink-0">
+              <SettingsSidebar 
+                onTabChange={handleTabChange} 
+                activeTab={activeTab}
+              />
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="mb-6 w-full grid grid-cols-4 h-12">
+                  <TabsTrigger value="profile" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Perfil
+                  </TabsTrigger>
+                  <TabsTrigger value="interface" className="flex items-center gap-2">
+                    <Settings2 className="h-4 w-4" />
+                    Interface
+                  </TabsTrigger>
+                  <TabsTrigger value="notifications" className="flex items-center gap-2">
+                    <Bell className="h-4 w-4" />
+                    Notificações
+                  </TabsTrigger>
+                  <TabsTrigger value="system" className="flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    Sistema
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="profile">
+                  <ProfileTab />
+                </TabsContent>
+                
+                <TabsContent value="interface">
+                  <InterfaceTab 
+                    settings={pendingSettings} 
+                    isSaving={isSaving} 
+                    hasChanges={pendingChanges.hasChanges}
+                    onSave={handleSaveInterfaceSettings}
+                    onUpdateSettings={handleUpdatePendingSettings}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="notifications">
+                  <NotificationsTab 
+                    settings={pendingSettings} 
+                    isLoading={isSaving}
+                    hasChanges={pendingChanges.hasChanges}
+                    onSave={handleSaveNotificationSettings}
+                    onUpdateSettings={handleUpdatePendingSettings}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="system">
+                  <BackupTab />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </div>
       ) : (
-        // Desktop: sidebar + tabs
+        // Desktop: sidebar + tabs (layout original)
         <div className="flex flex-col md:flex-row gap-6">
           <div className="w-full md:w-[240px] shrink-0">
             <SettingsSidebar 
