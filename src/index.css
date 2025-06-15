@@ -3,6 +3,7 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 @import "./styles/mobile.css";
+@import "./styles/tablet.css";
 @import "./styles/density.css";
 @import "./styles/mobile-enhancements.css";
 
