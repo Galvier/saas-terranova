@@ -1,111 +1,121 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2 } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
+import { useUserSettings } from '@/hooks/useUserSettings';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+
+// Import refactored components
 import SettingsSidebar from '@/components/settings/SettingsSidebar';
 import ProfileTab from '@/components/settings/tabs/ProfileTab';
-import NotificationsTab from '@/components/settings/tabs/NotificationsTab';
 import InterfaceTab from '@/components/settings/tabs/InterfaceTab';
-import IntegrationsTab from '@/components/settings/tabs/IntegrationsTab';
+import NotificationsTab from '@/components/settings/tabs/NotificationsTab';
 import BackupTab from '@/components/settings/tabs/BackupTab';
-import PageHeader from '@/components/PageHeader';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const Settings = () => {
+  const { toast } = useToast();
+  const { settings, isLoading: isSettingsLoading, isSaving, updateSettings } = useUserSettings();
+  const { isLoading: isAuthLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
-  const isMobile = useIsMobile();
+  
+  // Handle tab changes from sidebar
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    // Find and click the tab trigger to ensure proper tab activation
+    document.getElementById(`${tabId}-tab`)?.click();
+  };
+  
+  // Handle saving interface settings
+  const handleSaveInterfaceSettings = () => {
+    updateSettings({
+      theme: settings.theme,
+      animationsEnabled: settings.animationsEnabled
+    });
+    
+    toast({
+      title: "Configurações salvas",
+      description: "Suas preferências de interface foram atualizadas"
+    });
+  };
+  
+  // Handle saving notification settings
+  const handleSaveNotificationSettings = () => {
+    updateSettings({
+      notificationPreferences: {
+        email: settings.notificationPreferences.email,
+        system: settings.notificationPreferences.system,
+        alerts: settings.notificationPreferences.alerts
+      }
+    });
+    
+    toast({
+      title: "Configurações salvas",
+      description: "Suas preferências de notificação foram atualizadas"
+    });
+  };
 
-  if (isMobile) {
+  // Show loading state while settings are being fetched
+  if (isSettingsLoading || isAuthLoading) {
     return (
-      <div className="animate-fade-in mobile-container">
-        <PageHeader 
-          title="Configurações" 
-          subtitle="Gerencie suas preferências e configurações do sistema"
-        />
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 mb-6">
-            <TabsTrigger value="profile" className="mobile-text">Perfil</TabsTrigger>
-            <TabsTrigger value="notifications" className="mobile-text">Notificações</TabsTrigger>
-            <TabsTrigger value="interface" className="mobile-text hidden sm:block">Interface</TabsTrigger>
-            <TabsTrigger value="integrations" className="mobile-text hidden sm:block">Integrações</TabsTrigger>
-            <TabsTrigger value="backup" className="mobile-text hidden sm:block">Backup</TabsTrigger>
-          </TabsList>
-          
-          <div className="mobile-card">
-            <TabsContent value="profile" className="mt-0">
-              <ProfileTab />
-            </TabsContent>
-            
-            <TabsContent value="notifications" className="mt-0">
-              <NotificationsTab 
-                settings={{}}
-                isLoading={false}
-                onUpdateSettings={() => {}}
-              />
-            </TabsContent>
-            
-            <TabsContent value="interface" className="mt-0">
-              <InterfaceTab 
-                settings={{}}
-                isSaving={false}
-                onSave={() => {}}
-                onUpdateSettings={() => {}}
-              />
-            </TabsContent>
-            
-            <TabsContent value="integrations" className="mt-0">
-              <IntegrationsTab />
-            </TabsContent>
-            
-            <TabsContent value="backup" className="mt-0">
-              <BackupTab />
-            </TabsContent>
-          </div>
-        </Tabs>
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-lg font-medium">Carregando configurações...</span>
       </div>
     );
   }
-
+  
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in space-y-6">
       <PageHeader 
-        title="Configurações" 
-        subtitle="Gerencie suas preferências e configurações do sistema"
+        title="Configurações do Sistema" 
+        subtitle="Personalize suas preferências e configurações do sistema" 
       />
       
-      <div className="flex gap-6">
-        <div className="w-64 flex-shrink-0">
-          <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="w-full md:w-[240px] shrink-0">
+          <SettingsSidebar 
+            onTabChange={handleTabChange} 
+            activeTab={activeTab}
+          />
         </div>
         
-        <div className="flex-1 min-w-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex-1">
+          <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-6 w-full overflow-x-auto justify-start">
+              <TabsTrigger value="profile" id="profile-tab">Perfil</TabsTrigger>
+              <TabsTrigger value="interface" id="interface-tab">Interface</TabsTrigger>
+              <TabsTrigger value="notifications" id="notifications-tab">Notificações</TabsTrigger>
+              <TabsTrigger value="system" id="system-tab">Sistema</TabsTrigger>
+            </TabsList>
+            
+            {/* Profile Settings */}
             <TabsContent value="profile">
               <ProfileTab />
             </TabsContent>
             
-            <TabsContent value="notifications">
-              <NotificationsTab 
-                settings={{}}
-                isLoading={false}
-                onUpdateSettings={() => {}}
-              />
-            </TabsContent>
-            
+            {/* Interface Settings */}
             <TabsContent value="interface">
               <InterfaceTab 
-                settings={{}}
-                isSaving={false}
-                onSave={() => {}}
-                onUpdateSettings={() => {}}
+                settings={settings} 
+                isSaving={isSaving} 
+                onSave={handleSaveInterfaceSettings}
+                onUpdateSettings={updateSettings}
               />
             </TabsContent>
             
-            <TabsContent value="integrations">
-              <IntegrationsTab />
+            {/* Notifications Settings */}
+            <TabsContent value="notifications">
+              <NotificationsTab 
+                settings={settings} 
+                isLoading={isSaving}
+                onUpdateSettings={updateSettings}
+              />
             </TabsContent>
             
-            <TabsContent value="backup">
+            {/* System Settings */}
+            <TabsContent value="system">
               <BackupTab />
             </TabsContent>
           </Tabs>

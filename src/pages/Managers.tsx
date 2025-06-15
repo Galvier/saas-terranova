@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import PageHeader from '@/components/PageHeader';
 import { UserPlus, RefreshCcw, WrenchIcon } from 'lucide-react';
 import { deleteManager, getAllManagers, fixAuthManagerInconsistencies } from '@/integrations/supabase';
 import { ManagerSearch } from '@/components/managers/ManagerSearch';
-import ManagersTable from '@/components/managers/ManagersTable';
+import { ManagersTable } from '@/components/managers/ManagersTable';
 import { DeleteManagerDialog } from '@/components/managers/DeleteManagerDialog';
 import { useNavigate } from 'react-router-dom';
 import type { Manager } from '@/integrations/supabase';
@@ -257,10 +258,11 @@ const Managers = () => {
       
       <ManagersTable 
         managers={filteredManagers}
-        onEdit={() => {}}
-        onDelete={handleDeleteManager}
-        onTogglePassword={() => {}}
-        onChangePassword={() => {}}
+        isLoading={isLoading}
+        onDeleteManager={handleDeleteManager}
+        isAdmin={isAdmin}
+        onRefreshData={handleRefreshData}
+        isFixingInconsistencies={isFixingInconsistencies}
       />
       
       {isAdmin && (
