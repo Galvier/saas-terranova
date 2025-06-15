@@ -26,13 +26,13 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'success':
-        return <Check className="h-6 w-6 text-green-500" />;
+        return <Check className="h-5 w-5 md:h-6 md:w-6 text-green-500" />;
       case 'warning':
-        return <AlertCircle className="h-6 w-6 text-yellow-500" />;
+        return <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-yellow-500" />;
       case 'error':
-        return <AlertCircle className="h-6 w-6 text-red-500" />;
+        return <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-red-500" />;
       default:
-        return <Bell className="h-6 w-6 text-blue-500" />;
+        return <Bell className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />;
     }
   };
 
@@ -65,24 +65,24 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md mx-4 max-h-[85vh] overflow-hidden p-0 gap-0 rounded-xl border-0 shadow-2xl">
+      <DialogContent className="w-[95vw] max-w-md mx-auto max-h-[90vh] overflow-hidden p-0 gap-0 rounded-xl border-0 shadow-2xl">
         {/* Header com gradiente */}
-        <div className={`p-6 pb-4 rounded-t-xl bg-gradient-to-br ${
+        <div className={`p-4 md:p-6 pb-3 md:pb-4 rounded-t-xl bg-gradient-to-br ${
           notification.type === 'success' ? 'from-green-50 to-green-100' :
           notification.type === 'warning' ? 'from-yellow-50 to-yellow-100' :
           notification.type === 'error' ? 'from-red-50 to-red-100' :
           'from-blue-50 to-blue-100'
         }`}>
           <DialogHeader className="space-y-0">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-full bg-white shadow-sm border">
+            <div className="flex items-start gap-3 md:gap-4">
+              <div className="p-2 md:p-3 rounded-full bg-white shadow-sm border flex-shrink-0">
                 {getNotificationIcon(notification.type)}
               </div>
               <div className="flex-1 min-w-0">
-                <DialogTitle className="text-left text-xl font-bold text-gray-900 leading-tight mb-3">
+                <DialogTitle className="text-left text-lg md:text-xl font-bold text-gray-900 leading-tight mb-2 md:mb-3 pr-2">
                   {notification.title}
                 </DialogTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge className={`text-xs font-medium border ${getTypeColor(notification.type)}`}>
                     {getTypeLabel(notification.type)}
                   </Badge>
@@ -98,18 +98,18 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
         </div>
 
         {/* Conteúdo da mensagem */}
-        <div className="px-6 py-4 bg-white overflow-y-auto max-h-[40vh]">
-          <DialogDescription className="text-base leading-relaxed text-gray-700 whitespace-pre-wrap font-normal">
+        <div className="px-4 md:px-6 py-3 md:py-4 bg-white overflow-y-auto max-h-[50vh] md:max-h-[40vh]">
+          <DialogDescription className="text-sm md:text-base leading-relaxed text-gray-700 whitespace-pre-wrap font-normal">
             {notification.message}
           </DialogDescription>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 rounded-b-xl">
-          <div className="flex items-center justify-between gap-4">
+        <div className="px-4 md:px-6 py-3 md:py-4 bg-gray-50 border-t border-gray-100 rounded-b-xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Clock className="h-4 w-4" />
-              <span>
+              <span className="text-xs md:text-sm">
                 {formatDistanceToNow(new Date(notification.created_at), {
                   addSuffix: true,
                   locale: ptBR
@@ -117,12 +117,12 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
               </span>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-gray-600 hover:text-gray-800 flex-1 sm:flex-none"
               >
                 <X className="h-4 w-4 mr-1" />
                 Fechar
@@ -132,7 +132,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                 <Button
                   size="sm"
                   onClick={handleMarkAsRead}
-                  className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm"
+                  className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm flex-1 sm:flex-none"
                 >
                   <Check className="h-4 w-4 mr-1" />
                   Marcar como lida
