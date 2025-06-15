@@ -102,47 +102,41 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
     system: true
   };
 
-  // Determinar quantas abas temos
-  const tabCount = isAdmin ? 3 : 1; // preferences + broadcast (admin) + system (admin)
-
   return (
     <div className="space-y-6">
       <Tabs defaultValue="preferences" className="w-full">
-        <TabsList className={`w-full ${
-          isTablet ? `grid-cols-${tabCount} h-12` : `grid-cols-${tabCount}`
-        } grid`}>
-          <TabsTrigger value="preferences" className={`flex items-center gap-2 ${
-            isTablet ? 'text-sm px-4' : 'px-2'
-          }`}>
-            <Settings className={isTablet ? 'h-5 w-5' : 'h-4 w-4'} />
-            <span className={isTablet ? 'inline' : 'hidden sm:inline'}>Preferências</span>
+        <TabsList className={cn(
+          "w-full grid h-12",
+          isAdmin ? "grid-cols-3" : "grid-cols-1"
+        )}>
+          <TabsTrigger value="preferences" className="flex items-center gap-2 px-4">
+            <Settings className="h-4 w-4" />
+            <span className={isMobile ? "hidden sm:inline" : "inline"}>Preferências</span>
           </TabsTrigger>
           {isAdmin && (
-            <TabsTrigger value="broadcast" className={`flex items-center gap-2 ${
-              isTablet ? 'text-sm px-4' : 'px-2'
-            }`}>
-              <Send className={isTablet ? 'h-5 w-5' : 'h-4 w-4'} />
-              <span className={isTablet ? 'inline' : 'hidden sm:inline'}>Broadcast</span>
+            <TabsTrigger value="broadcast" className="flex items-center gap-2 px-4">
+              <Send className="h-4 w-4" />
+              <span className={isMobile ? "hidden sm:inline" : "inline"}>Broadcast</span>
             </TabsTrigger>
           )}
           {isAdmin && (
-            <TabsTrigger value="system" className={`flex items-center gap-2 ${
-              isTablet ? 'text-sm px-4' : 'px-2'
-            }`}>
-              <Settings className={isTablet ? 'h-5 w-5' : 'h-4 w-4'} />
-              <span className={isTablet ? 'inline' : 'hidden sm:inline'}>Sistema</span>
+            <TabsTrigger value="system" className="flex items-center gap-2 px-4">
+              <Settings className="h-4 w-4" />
+              <span className={isMobile ? "hidden sm:inline" : "inline"}>Sistema</span>
             </TabsTrigger>
           )}
         </TabsList>
 
-        <TabsContent value="preferences" className={`space-y-4 ${
-          isTablet ? 'space-y-6' : ''
-        }`}>
+        <TabsContent value="preferences" className={cn(
+          "space-y-4",
+          isTablet && "space-y-6"
+        )}>
           <Card>
-            <CardHeader className={isTablet ? 'p-6' : ''}>
-              <CardTitle className={`flex items-center gap-2 ${
-                isTablet ? 'text-lg' : ''
-              }`}>
+            <CardHeader className={isTablet ? "p-6" : ""}>
+              <CardTitle className={cn(
+                "flex items-center gap-2",
+                isTablet && "text-lg"
+              )}>
                 Preferências de Notificação
                 {hasChanges && (
                   <div className="flex items-center gap-1">
@@ -151,13 +145,14 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                   </div>
                 )}
               </CardTitle>
-              <CardDescription className={isTablet ? 'text-sm' : ''}>
+              <CardDescription className={isTablet ? "text-sm" : ""}>
                 Configure quais tipos de notificações você deseja receber
               </CardDescription>
             </CardHeader>
-            <CardContent className={`space-y-3 ${
-              isTablet ? 'p-6 space-y-4' : ''
-            }`}>
+            <CardContent className={cn(
+              "space-y-3",
+              isTablet && "p-6 space-y-4"
+            )}>
               {isMobile ? (
                 <div className="space-y-2">
                   <MobileNotificationToggle
@@ -187,16 +182,19 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                 </div>
               ) : (
                 <>
-                  <div className={`flex items-center justify-between border rounded-lg ${
-                    isTablet ? 'p-4' : 'p-3'
-                  }`}>
+                  <div className={cn(
+                    "flex items-center justify-between border rounded-lg",
+                    isTablet ? "p-4" : "p-3"
+                  )}>
                     <div>
-                      <h4 className={`font-medium ${
-                        isTablet ? 'text-base' : 'text-sm'
-                      }`}>Notificações do Sistema</h4>
-                      <p className={`text-gray-600 ${
-                        isTablet ? 'text-sm' : 'text-xs'
-                      }`}>
+                      <h4 className={cn(
+                        "font-medium",
+                        isTablet ? "text-base" : "text-sm"
+                      )}>Notificações do Sistema</h4>
+                      <p className={cn(
+                        "text-gray-600",
+                        isTablet ? "text-sm" : "text-xs"
+                      )}>
                         Atualizações importantes do sistema e manutenções
                       </p>
                     </div>
@@ -204,20 +202,23 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                       checked={preferences.system}
                       onCheckedChange={(checked) => handlePreferenceChange('system', checked)}
                       disabled={isLoading}
-                      className={isTablet ? 'scale-110' : ''}
+                      className={isTablet ? "scale-110" : ""}
                     />
                   </div>
 
-                  <div className={`flex items-center justify-between border rounded-lg ${
-                    isTablet ? 'p-4' : 'p-3'
-                  }`}>
+                  <div className={cn(
+                    "flex items-center justify-between border rounded-lg",
+                    isTablet ? "p-4" : "p-3"
+                  )}>
                     <div>
-                      <h4 className={`font-medium ${
-                        isTablet ? 'text-base' : 'text-sm'
-                      }`}>Alertas de Métricas</h4>
-                      <p className={`text-gray-600 ${
-                        isTablet ? 'text-sm' : 'text-xs'
-                      }`}>
+                      <h4 className={cn(
+                        "font-medium",
+                        isTablet ? "text-base" : "text-sm"
+                      )}>Alertas de Métricas</h4>
+                      <p className={cn(
+                        "text-gray-600",
+                        isTablet ? "text-sm" : "text-xs"
+                      )}>
                         Avisos quando métricas estão fora do alvo ou em atraso
                       </p>
                     </div>
@@ -225,20 +226,23 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                       checked={preferences.alerts}
                       onCheckedChange={(checked) => handlePreferenceChange('alerts', checked)}
                       disabled={isLoading}
-                      className={isTablet ? 'scale-110' : ''}
+                      className={isTablet ? "scale-110" : ""}
                     />
                   </div>
 
-                  <div className={`flex items-center justify-between border rounded-lg ${
-                    isTablet ? 'p-4' : 'p-3'
-                  }`}>
+                  <div className={cn(
+                    "flex items-center justify-between border rounded-lg",
+                    isTablet ? "p-4" : "p-3"
+                  )}>
                     <div>
-                      <h4 className={`font-medium ${
-                        isTablet ? 'text-base' : 'text-sm'
-                      }`}>Notificações por Email</h4>
-                      <p className={`text-gray-600 ${
-                        isTablet ? 'text-sm' : 'text-xs'
-                      }`}>
+                      <h4 className={cn(
+                        "font-medium",
+                        isTablet ? "text-base" : "text-sm"
+                      )}>Notificações por Email</h4>
+                      <p className={cn(
+                        "text-gray-600",
+                        isTablet ? "text-sm" : "text-xs"
+                      )}>
                         Receber notificações importantes por email
                       </p>
                     </div>
@@ -246,15 +250,16 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                       checked={preferences.email}
                       onCheckedChange={(checked) => handlePreferenceChange('email', checked)}
                       disabled={isLoading}
-                      className={isTablet ? 'scale-110' : ''}
+                      className={isTablet ? "scale-110" : ""}
                     />
                   </div>
                 </>
               )}
             </CardContent>
-            <CardFooter className={`border-t bg-muted/50 ${
-              isTablet ? 'px-6 py-5' : 'px-4 md:px-6 py-4'
-            }`}>
+            <CardFooter className={cn(
+              "border-t bg-muted/50",
+              isTablet ? "px-6 py-5" : "px-4 md:px-6 py-4"
+            )}>
               <Button 
                 onClick={onSave} 
                 disabled={isLoading || !hasChanges}
@@ -266,16 +271,18 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className={`mr-2 animate-spin ${
-                      isTablet ? 'h-5 w-5' : 'h-4 w-4'
-                    }`} />
+                    <Loader2 className={cn(
+                      "mr-2 animate-spin",
+                      isTablet ? "h-5 w-5" : "h-4 w-4"
+                    )} />
                     Salvando...
                   </>
                 ) : (
                   <>
-                    <Save className={`mr-2 ${
-                      isTablet ? 'h-5 w-5' : 'h-4 w-4'
-                    }`} />
+                    <Save className={cn(
+                      "mr-2",
+                      isTablet ? "h-5 w-5" : "h-4 w-4"
+                    )} />
                     {hasChanges ? "Salvar Alterações" : "Salvar"}
                   </>
                 )}
