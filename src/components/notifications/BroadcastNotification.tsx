@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Send, Users, UserCheck, Building2 } from 'lucide-react';
+import { Send, Users, UserCheck, Building2, Info, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { notificationService, NotificationTemplate } from '@/services/notificationService';
 import { useDepartmentsData } from '@/hooks/useDepartmentsData';
@@ -25,6 +26,7 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [notificationType, setNotificationType] = useState<'info' | 'warning' | 'success' | 'error'>('info');
   const [isLoading, setIsLoading] = useState(false);
+  const [showVariablesHelp, setShowVariablesHelp] = useState(false);
   
   const { toast } = useToast();
   const { departments } = useDepartmentsData();
@@ -72,12 +74,28 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
     try {
       let notificationCount = 0;
 
+      // Preparar variáveis para substituição
+      const variables: Record<string, any> = {};
+      
+      // Adicionar informações do departamento se selecionado
+      if (targetType === 'department' && selectedDepartment) {
+        const dept = departments.find(d => d.id === selectedDepartment);
+        if (dept) {
+          variables.department_name = dept.name;
+        }
+      }
+
+      // Adicionar variáveis de exemplo para demonstração
+      variables.current_date = new Date().toLocaleDateString('pt-BR');
+      variables.current_period = new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
+
       if (selectedTemplate) {
         // Usar template existente
         notificationCount = await notificationService.broadcastFromTemplate({
           templateId: selectedTemplate,
           targetType,
-          departmentId: targetType === 'department' ? selectedDepartment : undefined
+          departmentId: targetType === 'department' ? selectedDepartment : undefined,
+          variables
         });
       } else {
         // Criar template temporário e enviar
@@ -94,7 +112,8 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
           notificationCount = await notificationService.broadcastFromTemplate({
             templateId: tempTemplateId,
             targetType,
-            departmentId: targetType === 'department' ? selectedDepartment : undefined
+            departmentId: targetType === 'department' ? selectedDepartment : undefined,
+            variables
           });
         }
       }
@@ -156,6 +175,25 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
     return typeTranslations[type] || type;
   };
 
+  const insertVariable = (variable: string) => {
+    const textarea = document.getElementById('message-textarea') as HTMLTextAreaElement;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value;
+      const before = text.substring(0, start);
+      const after = text.substring(end, text.length);
+      const newText = before + `{{${variable}}}` + after;
+      setCustomMessage(newText);
+      
+      // Manter o foco e posição do cursor
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + variable.length + 4, start + variable.length + 4);
+      }, 0);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -202,13 +240,130 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
 
         {/* Mensagem personalizada */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Mensagem</label>
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Mensagem</label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowVariablesHelp(!showVariablesHelp)}
+              className="flex items-center gap-1 text-xs"
+            >
+              <HelpCircle className="h-3 w-3" />
+              Variáveis disponíveis
+            </Button>
+          </div>
           <Textarea
+            id="message-textarea"
             value={customMessage}
             onChange={(e) => setCustomMessage(e.target.value)}
             placeholder="Digite a mensagem da notificação"
             rows={3}
           />
+          
+          {/* Ajuda com variáveis */}
+          <Collapsible open={showVariablesHelp} onOpenChange={setShowVariablesHelp}>
+            <CollapsibleContent className="space-y-3">
+              <Card className="border-blue-200 bg-blue-50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Variáveis Disponíveis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid gap-2">
+                    <div className="text-xs font-medium text-blue-700">Variáveis de Sistema:</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertVariable('user_name')}
+                        className="justify-start text-xs h-8"
+                      >
+                        {{user_name}}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertVariable('department_name')}
+                        className="justify-start text-xs h-8"
+                      >
+                        {{department_name}}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertVariable('current_date')}
+                        className="justify-start text-xs h-8"
+                      >
+                        {{current_date}}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertVariable('current_period')}
+                        className="justify-start text-xs h-8"
+                      >
+                        {{current_period}}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <div className="text-xs font-medium text-blue-700">Variáveis de Métricas:</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertVariable('metric_name')}
+                        className="justify-start text-xs h-8"
+                      >
+                        {{metric_name}}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertVariable('target')}
+                        className="justify-start text-xs h-8"
+                      >
+                        {{target}}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertVariable('current_value')}
+                        className="justify-start text-xs h-8"
+                      >
+                        {{current_value}}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertVariable('achievement_percentage')}
+                        className="justify-start text-xs h-8"
+                      >
+                        {{achievement_percentage}}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded">
+                    <strong>Dica:</strong> Clique nos botões acima para inserir variáveis na mensagem. 
+                    As variáveis serão substituídas automaticamente pelos valores corretos quando a notificação for enviada.
+                  </div>
+                </CardContent>
+              </Card>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Tipo de notificação */}

@@ -122,6 +122,8 @@ export const notificationService = {
 
   async broadcastFromTemplate(params: BroadcastParams): Promise<number | null> {
     try {
+      console.log('Broadcasting notification with variables:', params.variables);
+      
       const { data, error } = await supabase.rpc('broadcast_notification_from_template', {
         template_id_param: params.templateId,
         target_type: params.targetType,
@@ -130,6 +132,8 @@ export const notificationService = {
       });
 
       if (error) throw error;
+      
+      console.log('Broadcast result:', data);
       return data;
     } catch (error) {
       console.error('Error broadcasting notification:', error);
