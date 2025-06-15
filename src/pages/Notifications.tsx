@@ -85,15 +85,6 @@ const Notifications: React.FC = () => {
     }
   };
 
-  const getNotificationBadgeVariant = (type: string) => {
-    switch (type) {
-      case 'success': return 'default';
-      case 'warning': return 'secondary';
-      case 'error': return 'destructive';
-      default: return 'outline';
-    }
-  };
-
   return (
     <div className="w-full min-w-0 max-w-full overflow-x-hidden">
       <div className="mobile-container space-y-4 md:space-y-6">
@@ -215,9 +206,6 @@ const Notifications: React.FC = () => {
                               <h3 className={`font-medium truncate-mobile ${!notification.is_read ? 'font-semibold' : ''}`}>
                                 {notification.title}
                               </h3>
-                              <Badge variant={getNotificationBadgeVariant(notification.type) as any} className="flex-shrink-0">
-                                {notification.type}
-                              </Badge>
                               {!notification.is_read && (
                                 <Badge variant="default" className="text-xs flex-shrink-0">
                                   Nova

@@ -104,11 +104,18 @@ const NotificationsDropdown: React.FC = () => {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <h4 className={`text-sm font-medium truncate ${
-                          !notification.is_read ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                        }`}>
-                          {notification.title}
-                        </h4>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className={`text-sm font-medium truncate ${
+                            !notification.is_read ? 'text-foreground font-semibold' : 'text-muted-foreground'
+                          }`}>
+                            {notification.title}
+                          </h4>
+                          {!notification.is_read && (
+                            <Badge variant="default" className="text-xs">
+                              Nova
+                            </Badge>
+                          )}
+                        </div>
                         <p className={`text-xs ${
                           !notification.is_read ? 'text-foreground/80' : 'text-muted-foreground'
                         } line-clamp-2`}>
