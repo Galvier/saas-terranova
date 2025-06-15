@@ -112,7 +112,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   };
 
   // Function to render trend icon
-  const renderTrendIcon = (metric: MetricDefinition) => {
+  const renderT​rendIcon = (metric: MetricDefinition) => {
     if (!metric.current || !metric.target) return <Minus className="h-4 w-4 text-muted-foreground" />;
     
     if (metric.lower_is_better) {

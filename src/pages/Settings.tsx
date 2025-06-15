@@ -51,7 +51,7 @@ const Settings = () => {
                 <InterfaceTab 
                   settings={settings}
                   isSaving={isSaving}
-                  onSave={() => Promise.resolve()}
+                  onSave={updateSettings}
                   onUpdateSettings={updateSettings}
                 />
               </TabsContent>
@@ -100,7 +100,7 @@ const Settings = () => {
               <InterfaceTab 
                 settings={settings}
                 isSaving={isSaving}
-                onSave={() => Promise.resolve()}
+                onSave={updateSettings}
                 onUpdateSettings={updateSettings}
               />
             </TabsContent>
