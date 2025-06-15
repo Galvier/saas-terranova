@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Check, Calendar, Tag, Info } from 'lucide-react';
+import { Check, Calendar, Info } from 'lucide-react';
 import { Notification } from '@/hooks/useNotifications';
 
 interface NotificationViewDialogProps {
@@ -51,25 +51,27 @@ const NotificationViewDialog: React.FC<NotificationViewDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl sm:max-w-lg w-[95vw] sm:w-full max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-start gap-3">
             <span className="text-2xl flex-shrink-0">
               {getNotificationIcon(notification.type)}
             </span>
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <DialogTitle className="text-lg font-semibold">
+            <div className="flex-1 space-y-2 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <DialogTitle className="text-lg font-semibold break-words">
                   {notification.title}
                 </DialogTitle>
-                <Badge variant={getNotificationBadgeVariant(notification.type) as any}>
-                  {notification.type}
-                </Badge>
-                {!notification.is_read && (
-                  <Badge variant="default" className="text-xs">
-                    Nova
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant={getNotificationBadgeVariant(notification.type) as any}>
+                    {notification.type}
                   </Badge>
-                )}
+                  {!notification.is_read && (
+                    <Badge variant="default" className="text-xs">
+                      Nova
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -84,35 +86,22 @@ const NotificationViewDialog: React.FC<NotificationViewDialogProps> = ({
               <Info className="h-4 w-4" />
               Mensagem
             </h4>
-            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 p-3 rounded-lg">
+            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 p-3 rounded-lg break-words">
               {notification.message}
             </p>
           </div>
 
-          {/* Metadata */}
-          {notification.metadata && Object.keys(notification.metadata).length > 0 && (
-            <div className="space-y-2">
-              <h4 className="font-medium flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                Detalhes Adicionais
-              </h4>
-              <div className="bg-muted/50 p-3 rounded-lg">
-                <pre className="text-xs text-muted-foreground overflow-x-auto">
-                  {JSON.stringify(notification.metadata, null, 2)}
-                </pre>
-              </div>
-            </div>
-          )}
-
           {/* Data */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>
-              {formatDistanceToNow(new Date(notification.created_at), { 
-                addSuffix: true, 
-                locale: ptBR 
-              })}
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 flex-shrink-0" />
+              <span>
+                {formatDistanceToNow(new Date(notification.created_at), { 
+                  addSuffix: true, 
+                  locale: ptBR 
+                })}
+              </span>
+            </div>
             <span className="text-xs">
               ({new Date(notification.created_at).toLocaleString('pt-BR')})
             </span>
@@ -122,8 +111,12 @@ const NotificationViewDialog: React.FC<NotificationViewDialogProps> = ({
           {!notification.is_read && (
             <>
               <Separator />
-              <div className="flex justify-end">
-                <Button onClick={handleMarkAsRead} className="flex items-center gap-2">
+              <div className="flex justify-center sm:justify-end">
+                <Button 
+                  onClick={handleMarkAsRead} 
+                  className="flex items-center gap-2 w-full sm:w-auto"
+                  size="sm"
+                >
                   <Check className="h-4 w-4" />
                   Marcar como lida
                 </Button>
