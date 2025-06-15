@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Bell, Send, Settings, Save, Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -26,7 +27,7 @@ interface NotificationsTabProps {
   onUpdateSettings: (newSettings: any) => void;
 }
 
-// Mobile Notification Toggle Component
+// Mobile Notification Toggle Component - Redesigned for compactness
 const MobileNotificationToggle = ({ 
   id,
   title,
@@ -46,29 +47,23 @@ const MobileNotificationToggle = ({
     <button
       onClick={() => !disabled && onCheckedChange(!checked)}
       disabled={disabled}
-      className="w-full flex items-center justify-between p-4 rounded-lg border transition-all duration-200 min-h-[70px] touch-manipulation hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full flex items-center justify-between p-3 rounded-lg border transition-all duration-200 min-h-[52px] touch-manipulation hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <div className="flex flex-col items-start gap-1 flex-1 min-w-0">
+      <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
         <span className="text-sm font-medium text-left">{title}</span>
         <span className="text-xs text-muted-foreground text-left line-clamp-2">
           {description}
         </span>
       </div>
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <span className={cn(
-          "text-xs font-medium transition-colors",
-          checked ? "text-primary" : "text-muted-foreground"
-        )}>
-          {checked ? "ATIVO" : "INATIVO"}
-        </span>
+      <div className="flex items-center flex-shrink-0 ml-3">
         <Checkbox 
           id={id}
           checked={checked}
           onCheckedChange={onCheckedChange}
           disabled={disabled}
           className={cn(
-            "h-5 w-5",
-            checked && "bg-primary border-primary"
+            "h-4 w-4",
+            checked && "bg-primary border-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary"
           )}
         />
       </div>
@@ -148,9 +143,9 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                 Configure quais tipos de notificações você deseja receber
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               {isMobile ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <MobileNotificationToggle
                     id="system-notifications"
                     title="Notificações do Sistema"
