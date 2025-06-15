@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { notificationService, NotificationTemplate } from '@/services/notificationService';
+import { directBroadcastService } from '@/services/directBroadcastService';
 import { useDepartmentsData } from '@/hooks/useDepartmentsData';
 import { translateTemplateName } from '@/utils/roleTranslations';
 import VariablesHelper from './VariablesHelper';
@@ -101,13 +102,11 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
     setIsLoading(true);
 
     try {
-      console.log('Starting broadcast notification...');
+      console.log('Starting direct broadcast notification...');
       console.log('Target type:', targetType);
       console.log('Selected department:', selectedDepartment);
       console.log('Title:', customTitle);
       console.log('Message:', customMessage);
-
-      let notificationCount = 0;
 
       // Preparar variáveis para substituição
       const variables: Record<string, any> = {};
@@ -121,66 +120,25 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
         }
       }
 
-      // Adicionar variáveis de exemplo para demonstração
+      // Adicionar variáveis de contexto
       variables.current_date = new Date().toLocaleDateString('pt-BR');
       variables.current_period = new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
       
       console.log('Variables prepared:', variables);
 
-      if (selectedTemplate) {
-        console.log('Using existing template:', selectedTemplate);
-        try {
-          // Usar template existente
-          notificationCount = await notificationService.broadcastFromTemplate({
-            templateId: selectedTemplate,
-            targetType,
-            departmentId: targetType === 'department' ? selectedDepartment : undefined,
-            variables
-          });
-        } catch (templateError) {
-          console.error('Error with existing template:', templateError);
-          throw new Error(`Erro ao usar template existente: ${templateError instanceof Error ? templateError.message : 'Erro desconhecido'}`);
-        }
-      } else {
-        console.log('Creating temporary template...');
-        try {
-          // Criar template temporário e enviar
-          const tempTemplateName = `temp_broadcast_${Date.now()}`;
-          const tempTemplateId = await notificationService.createTemplate({
-            name: tempTemplateName,
-            title: customTitle,
-            message: customMessage,
-            type: notificationType,
-            category: 'broadcast',
-            is_active: false // Template temporário
-          });
+      // Usar o novo serviço de broadcast direto
+      const notificationCount = await directBroadcastService.sendDirectBroadcast({
+        title: customTitle,
+        message: customMessage,
+        type: notificationType,
+        targetType,
+        departmentId: targetType === 'department' ? selectedDepartment : undefined,
+        variables
+      });
 
-          console.log('Temporary template created:', tempTemplateId);
+      console.log('Direct broadcast completed. Notification count:', notificationCount);
 
-          if (tempTemplateId) {
-            try {
-              notificationCount = await notificationService.broadcastFromTemplate({
-                templateId: tempTemplateId,
-                targetType,
-                departmentId: targetType === 'department' ? selectedDepartment : undefined,
-                variables
-              });
-            } catch (broadcastError) {
-              console.error('Error broadcasting with temporary template:', broadcastError);
-              throw new Error(`Erro ao enviar com template temporário: ${broadcastError instanceof Error ? broadcastError.message : 'Erro desconhecido'}`);
-            }
-          } else {
-            throw new Error('Falha ao criar template temporário - ID nulo retornado');
-          }
-        } catch (createError) {
-          console.error('Error creating temporary template:', createError);
-          throw new Error(`Falha ao criar template temporário: ${createError instanceof Error ? createError.message : 'Erro desconhecido'}`);
-        }
-      }
-
-      console.log('Notification count:', notificationCount);
-
-      if (notificationCount !== null && notificationCount > 0) {
+      if (notificationCount > 0) {
         toast({
           title: 'Sucesso',
           description: `Notificação enviada para ${notificationCount} usuário(s)`,
@@ -195,30 +153,19 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
         setNotificationType('info');
         
         onSent?.();
-      } else if (notificationCount === 0) {
+      } else {
         toast({
           title: 'Aviso',
           description: 'Nenhum usuário encontrado para os critérios selecionados',
           variant: 'destructive'
         });
-      } else {
-        throw new Error('Falha ao enviar notificações - retorno nulo da função');
       }
     } catch (error) {
-      console.error('Error sending broadcast:', error);
+      console.error('Error sending direct broadcast:', error);
       let errorMessage = 'Erro desconhecido ao enviar notificação';
       
       if (error instanceof Error) {
         errorMessage = error.message;
-        
-        // Verificar tipos específicos de erro para dar feedback mais útil
-        if (errorMessage.includes('Template not found')) {
-          errorMessage = 'Template não encontrado. Tente recarregar a página.';
-        } else if (errorMessage.includes('case not found')) {
-          errorMessage = 'Erro interno na função SQL. A correção foi aplicada, tente novamente.';
-        } else if (errorMessage.includes('department')) {
-          errorMessage = 'Erro relacionado ao departamento selecionado. Verifique se está ativo.';
-        }
       }
       
       toast({
@@ -417,7 +364,9 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
               'Enviando...'
             ) : (
               <>
-                {getTargetIcon()}
+                {targetType === 'all' && <Users className="h-4 w-4" />}
+                {targetType === 'admins' && <UserCheck className="h-4 w-4" />}
+                {targetType === 'department' && <Building2 className="h-4 w-4" />}
                 <span className="ml-2">Enviar Notificação</span>
               </>
             )}

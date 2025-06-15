@@ -143,6 +143,7 @@ export const notificationService = {
     }
   },
 
+  // Mantém método SQL como fallback
   async broadcastFromTemplate(params: BroadcastParams): Promise<number | null> {
     try {
       console.log('Broadcasting notification with params:', params);
