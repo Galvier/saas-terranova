@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell, Send, Settings, Save, Loader2, AlertCircle } from 'lucide-react';
+import { Send, Settings, Save, Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -11,7 +11,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsTablet } from '@/hooks/use-tablet';
 import { cn } from '@/lib/utils';
 import BroadcastNotification from '@/components/notifications/BroadcastNotification';
-import PushNotificationSettings from '@/components/notifications/PushNotificationSettings';
 import NotificationSettings from '@/components/notifications/NotificationSettings';
 
 interface NotificationsTabProps {
@@ -103,23 +102,20 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
     system: true
   };
 
+  // Determinar quantas abas temos
+  const tabCount = isAdmin ? 3 : 1; // preferences + broadcast (admin) + system (admin)
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="preferences" className="w-full">
         <TabsList className={`w-full ${
-          isTablet ? 'grid-cols-4 h-12' : 'grid-cols-4'
+          isTablet ? `grid-cols-${tabCount} h-12` : `grid-cols-${tabCount}`
         } grid`}>
           <TabsTrigger value="preferences" className={`flex items-center gap-2 ${
             isTablet ? 'text-sm px-4' : 'px-2'
           }`}>
             <Settings className={isTablet ? 'h-5 w-5' : 'h-4 w-4'} />
             <span className={isTablet ? 'inline' : 'hidden sm:inline'}>Preferências</span>
-          </TabsTrigger>
-          <TabsTrigger value="push" className={`flex items-center gap-2 ${
-            isTablet ? 'text-sm px-4' : 'px-2'
-          }`}>
-            <Bell className={isTablet ? 'h-5 w-5' : 'h-4 w-4'} />
-            <span className={isTablet ? 'inline' : 'hidden sm:inline'}>Push</span>
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="broadcast" className={`flex items-center gap-2 ${
@@ -286,10 +282,6 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
               </Button>
             </CardFooter>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="push">
-          <PushNotificationSettings />
         </TabsContent>
 
         {isAdmin && (
