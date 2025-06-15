@@ -130,7 +130,7 @@ const VariablesHelper: React.FC<VariablesHelperProps> = ({ onVariableClick }) =>
         <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded border border-blue-200">
           <strong>💡 Dicas importantes:</strong>
           <ul className="mt-1 space-y-1 list-disc list-inside">
-            <li>Use as variáveis exatamente como mostrado, com as chaves duplas `{{}}`</li>
+            <li>Use as variáveis exatamente como mostrado, com as chaves duplas</li>
             <li>Variáveis de métricas só funcionam em contextos específicos</li>
             <li>Teste sempre suas mensagens antes de enviar em massa</li>
             <li>Variáveis não encontradas aparecerão como texto normal</li>
