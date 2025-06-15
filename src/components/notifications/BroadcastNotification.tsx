@@ -37,8 +37,19 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
   }, []);
 
   const loadTemplates = async () => {
-    const templateList = await notificationService.getTemplates();
-    setTemplates(templateList);
+    try {
+      console.log('Loading templates...');
+      const templateList = await notificationService.getTemplates();
+      console.log('Templates loaded:', templateList);
+      setTemplates(templateList);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      toast({
+        title: 'Erro',
+        description: 'Falha ao carregar templates',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleTemplateSelect = (templateId: string) => {
@@ -92,6 +103,12 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
     setIsLoading(true);
 
     try {
+      console.log('Starting broadcast notification...');
+      console.log('Target type:', targetType);
+      console.log('Selected department:', selectedDepartment);
+      console.log('Title:', customTitle);
+      console.log('Message:', customMessage);
+
       let notificationCount = 0;
 
       // Preparar variáveis para substituição
@@ -102,14 +119,18 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
         const dept = departments.find(d => d.id === selectedDepartment);
         if (dept) {
           variables.department_name = dept.name;
+          console.log('Department name added to variables:', dept.name);
         }
       }
 
       // Adicionar variáveis de exemplo para demonstração
       variables.current_date = new Date().toLocaleDateString('pt-BR');
       variables.current_period = new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
+      
+      console.log('Variables prepared:', variables);
 
       if (selectedTemplate) {
+        console.log('Using existing template:', selectedTemplate);
         // Usar template existente
         notificationCount = await notificationService.broadcastFromTemplate({
           templateId: selectedTemplate,
@@ -118,15 +139,19 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
           variables
         });
       } else {
+        console.log('Creating temporary template...');
         // Criar template temporário e enviar
+        const tempTemplateName = `temp_broadcast_${Date.now()}`;
         const tempTemplateId = await notificationService.createTemplate({
-          name: `temp_${Date.now()}`,
+          name: tempTemplateName,
           title: customTitle,
           message: customMessage,
           type: notificationType,
           category: 'broadcast',
           is_active: false // Template temporário
         });
+
+        console.log('Temporary template created:', tempTemplateId);
 
         if (tempTemplateId) {
           notificationCount = await notificationService.broadcastFromTemplate({
@@ -135,8 +160,12 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
             departmentId: targetType === 'department' ? selectedDepartment : undefined,
             variables
           });
+        } else {
+          throw new Error('Falha ao criar template temporário');
         }
       }
+
+      console.log('Notification count:', notificationCount);
 
       if (notificationCount !== null && notificationCount > 0) {
         toast({
@@ -153,14 +182,21 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
         setNotificationType('info');
         
         onSent?.();
+      } else if (notificationCount === 0) {
+        toast({
+          title: 'Aviso',
+          description: 'Nenhum usuário encontrado para os critérios selecionados',
+          variant: 'destructive'
+        });
       } else {
-        throw new Error('Falha ao enviar notificações');
+        throw new Error('Falha ao enviar notificações - retorno nulo');
       }
     } catch (error) {
       console.error('Error sending broadcast:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: 'Erro',
-        description: 'Falha ao enviar notificação',
+        description: `Falha ao enviar notificação: ${errorMessage}`,
         variant: 'destructive'
       });
     } finally {
@@ -363,6 +399,35 @@ const BroadcastNotification: React.FC<BroadcastNotificationProps> = ({ onSent })
       </Card>
     </div>
   );
+};
+
+// Helper functions
+const getTargetIcon = (targetType: string) => {
+  switch (targetType) {
+    case 'all': return <Users className="h-4 w-4" />;
+    case 'admins': return <UserCheck className="h-4 w-4" />;
+    case 'department': return <Building2 className="h-4 w-4" />;
+    default: return <Users className="h-4 w-4" />;
+  }
+};
+
+const getTypeColor = (type: string) => {
+  switch (type) {
+    case 'success': return 'bg-green-100 text-green-800';
+    case 'warning': return 'bg-yellow-100 text-yellow-800';
+    case 'error': return 'bg-red-100 text-red-800';
+    default: return 'bg-blue-100 text-blue-800';
+  }
+};
+
+const translateNotificationType = (type: string) => {
+  const typeTranslations: Record<string, string> = {
+    'info': 'Informação',
+    'success': 'Sucesso',
+    'warning': 'Aviso',
+    'error': 'Erro'
+  };
+  return typeTranslations[type] || type;
 };
 
 export default BroadcastNotification;

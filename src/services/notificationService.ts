@@ -40,6 +40,7 @@ export interface BroadcastParams {
 export const notificationService = {
   async createNotification(params: CreateNotificationParams): Promise<string | null> {
     try {
+      console.log('Creating notification:', params);
       const { data, error } = await supabase.rpc('create_notification', {
         target_user_id: params.targetUserId,
         notification_title: params.title,
@@ -48,7 +49,12 @@ export const notificationService = {
         notification_metadata: params.metadata || {}
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating notification:', error);
+        throw error;
+      }
+      
+      console.log('Notification created successfully:', data);
       return data;
     } catch (error) {
       console.error('Error creating notification:', error);
@@ -58,9 +64,15 @@ export const notificationService = {
 
   async processAutomaticNotifications(): Promise<any> {
     try {
+      console.log('Processing automatic notifications...');
       const { data, error } = await supabase.functions.invoke('automatic-notifications');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error processing automatic notifications:', error);
+        throw error;
+      }
+      
+      console.log('Automatic notifications processed:', data);
       return data;
     } catch (error) {
       console.error('Error processing automatic notifications:', error);
@@ -70,12 +82,16 @@ export const notificationService = {
 
   async getTemplates(): Promise<NotificationTemplate[]> {
     try {
+      console.log('Fetching notification templates...');
       const { data, error } = await supabase
         .from('notification_templates')
         .select('*')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching templates:', error);
+        throw error;
+      }
       
       // Map the Supabase response to our typed interface
       const typedTemplates: NotificationTemplate[] = (data || []).map(item => ({
@@ -90,6 +106,7 @@ export const notificationService = {
         updated_at: item.updated_at
       }));
       
+      console.log('Templates fetched successfully:', typedTemplates.length);
       return typedTemplates;
     } catch (error) {
       console.error('Error fetching templates:', error);
@@ -99,6 +116,7 @@ export const notificationService = {
 
   async createTemplate(params: CreateTemplateParams): Promise<string | null> {
     try {
+      console.log('Creating template:', params);
       const { data, error } = await supabase
         .from('notification_templates')
         .insert({
@@ -112,7 +130,12 @@ export const notificationService = {
         .select('id')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating template:', error);
+        throw error;
+      }
+      
+      console.log('Template created successfully:', data?.id);
       return data?.id || null;
     } catch (error) {
       console.error('Error creating template:', error);
@@ -122,7 +145,29 @@ export const notificationService = {
 
   async broadcastFromTemplate(params: BroadcastParams): Promise<number | null> {
     try {
-      console.log('Broadcasting notification with variables:', params.variables);
+      console.log('Broadcasting notification with params:', params);
+      
+      // Verificar se o template existe antes de tentar fazer broadcast
+      const { data: templateCheck, error: templateError } = await supabase
+        .from('notification_templates')
+        .select('id, name, is_active')
+        .eq('id', params.templateId)
+        .single();
+
+      if (templateError || !templateCheck) {
+        console.error('Template not found:', templateError);
+        throw new Error('Template não encontrado');
+      }
+
+      if (!templateCheck.is_active) {
+        console.error('Template is not active:', templateCheck);
+        // Para templates temporários, permitir mesmo se não ativo
+        if (!templateCheck.name.startsWith('temp_')) {
+          throw new Error('Template não está ativo');
+        }
+      }
+
+      console.log('Template validated:', templateCheck);
       
       const { data, error } = await supabase.rpc('broadcast_notification_from_template', {
         template_id_param: params.templateId,
@@ -131,13 +176,16 @@ export const notificationService = {
         variables: params.variables || {}
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error broadcasting notification:', error);
+        throw error;
+      }
       
-      console.log('Broadcast result:', data);
+      console.log('Broadcast completed successfully. Notification count:', data);
       return data;
     } catch (error) {
       console.error('Error broadcasting notification:', error);
-      return null;
+      throw error;
     }
   }
 };
